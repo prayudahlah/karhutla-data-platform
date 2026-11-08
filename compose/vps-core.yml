@@ -1,0 +1,3 @@
+# VM core.
+# TODO: add Postgres, Prefect server, FastAPI, portal, Metabase, Prometheus, Grafana, Loki, Caddy, and Authelia.
+services: {}

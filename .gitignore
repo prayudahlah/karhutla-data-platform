@@ -1,0 +1,34 @@
+# secrets
+.env
+.env.*
+!.env.example
+
+# data dan model
+data/
+models/
+mlruns/
+*.parquet
+!tests/fixtures/**/*.parquet
+
+# runtime
+logs/
+minio-data/
+postgres-data/
+redpanda-data/
+
+# python
+__pycache__/
+*.py[cod]
+.venv/
+*.egg-info/
+
+# test dan coverage
+.pytest_cache/
+.ruff_cache/
+coverage.xml
+htmlcov/
+
+# editor dan OS
+.DS_Store
+.idea/
+.vscode/

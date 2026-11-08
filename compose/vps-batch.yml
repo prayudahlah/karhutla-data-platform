@@ -1,0 +1,3 @@
+# VM batch.
+# TODO: add MinIO, consumer, Prefect worker, DuckDB, MLflow, and LightGBM.
+services: {}

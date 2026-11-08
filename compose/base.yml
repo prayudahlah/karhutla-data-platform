@@ -1,0 +1,9 @@
+# Shared Compose configuration.
+# TODO: define networks, volumes, and common anchors.
+name: karhutla
+
+services: {}
+
+networks: {}
+
+volumes: {}

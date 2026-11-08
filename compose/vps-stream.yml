@@ -1,0 +1,3 @@
+# VM stream.
+# TODO: add Redpanda and FIRMS producer.
+services: {}
