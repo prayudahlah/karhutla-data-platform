@@ -1,2 +1,19 @@
-# TODO: define Prefect deployments.
-deployments: []
+# Deployment Prefect untuk ingestion batch.
+#
+# Daftarkan dengan (butuh server Prefect yang bisa dijangkau):
+#   prefect deploy --all
+#
+# Tanpa server, flow tetap bisa dijalankan manual:
+#   python -m flows.openmeteo_ingestion --limit 2
+
+deployments:
+  - name: open-meteo-bronze-daily
+    description: Ingest Open-Meteo weather + air quality ke Garage Bronze
+    entrypoint: flows/openmeteo_ingestion.py:daily_ingestion
+    schedules:
+      - cron: "0 2 * * *"
+        timezone: Asia/Jakarta
+    work_pool:
+      name: default
+    parameters:
+      limit: null

@@ -117,6 +117,19 @@ def open_meteo_bronze_ingestion(
     return result
 
 
+@flow(name="open-meteo-bronze-daily", log_prints=True)
+def daily_ingestion(limit: int | None = None) -> dict[str, Any]:
+    """Entrypoint untuk Prefect deployment: muat daftar kota, lalu ingest.
+
+    Dipakai `prefect.yaml`. Kalau dijalankan manual, lebih mudah memakai
+    `python -m flows.openmeteo_ingestion`.
+    """
+    settings = Settings.from_env()
+    cities = load_cities(settings.openmeteo.city_csv, limit=limit)
+    payload = [city.as_dict() for city in cities]
+    return open_meteo_bronze_ingestion(payload, new_run_id())
+
+
 def verify(run_id: str) -> dict[str, Any]:
     settings = Settings.from_env()
     store = BronzeStore(settings.garage)
