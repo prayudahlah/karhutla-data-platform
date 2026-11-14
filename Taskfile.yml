@@ -140,6 +140,17 @@ tasks:
     cmds:
       - '{{.BATCH_COMPOSE}} exec -T consumer python stream/src/ls_bronze.py --count'
 
+  # ---------------------------------------------------------- burned area
+  burned-fetch:
+    desc: Unduh MCD64A1 ke Bronze, misal task burned-fetch -- 2026-09
+    cmds:
+      - 'python -m flows.burned_area_ingestion --month {{.CLI_ARGS}}'
+
+  burned-verify:
+    desc: Baca ulang manifest Bronze, misal task burned-verify -- <run_id>
+    cmds:
+      - 'python -m flows.burned_area_ingestion --verify-only {{.CLI_ARGS}}'
+
   # ----------------------------------------------------------- node lain
   up-core:
     desc: Nyalakan node core
