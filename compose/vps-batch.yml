@@ -1,14 +1,22 @@
-# Node batch: Garage (object storage) + garage-webui (browser).
+# Node batch: Garage (object storage), garage-webui (browser), dan consumer FIRMS.
 #
-# Kredensial diambil dari `.env` di root repo (gitignored). File itu hanya
-# berisi GARAGE_DEFAULT_ACCESS_KEY / GARAGE_DEFAULT_SECRET_KEY yang dipakai
-# Garage saat start dengan --default-bucket.
+# Kredensial diambil dari `.env` di root repo (gitignored). File itu berisi
+# GARAGE_DEFAULT_ACCESS_KEY / GARAGE_DEFAULT_SECRET_KEY yang dipakai Garage saat
+# start dengan --default-bucket.
 #
 # Jalankan dari root repo:
 #   docker compose -f compose/base.yml -f compose/vps-batch.yml up -d
 #
 # Web UI: http://localhost:3909
 # S3 API: http://localhost:3900   (path-style, region "garage")
+#
+# Service stream (redpanda) tidak didefinisikan di sini karena hidup di node lain.
+# Di lokal, jalankan `just dev` (stream) lalu `just up-batch`; keduanya memakai
+# network yang sama dari compose/base.yml sehingga consumer bisa menjangkau
+# redpanda. Di VM asli, REDPANDA_BROKERS=stream:9092 lewat Tailscale.
+#
+# Consumer tidak punya depends_on ke redpanda (service itu tidak ada di file ini),
+# tapi bergantung pada Garage yang sehat.
 
 services:
   garage:
@@ -56,6 +64,32 @@ services:
       - "3909:3909"
     networks:
       - karhutla
+
+  consumer:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.stream
+    image: karhutla/firms-consumer:local
+    container_name: karhutla-firms-consumer
+    restart: unless-stopped
+    stop_grace_period: 30s
+    depends_on:
+      garage:
+        condition: service_healthy
+    environment:
+      DATA_DIR: /app/data
+      REDPANDA_BROKERS: ${REDPANDA_BROKERS:-redpanda:9092}
+      REDPANDA_TOPIC: ${REDPANDA_TOPIC:-firms.hotspot.raw}
+      REDPANDA_DLQ_TOPIC: ${REDPANDA_DLQ_TOPIC:-firms.hotspot.dlq}
+      CONSUMER_GROUP: ${CONSUMER_GROUP:-bronze-firms}
+      CONSUMER_FLUSH_SECONDS: ${CONSUMER_FLUSH_SECONDS:-60}
+      CONSUMER_MAX_EVENTS: ${CONSUMER_MAX_EVENTS:-5000}
+      TZ: ${TZ:-Asia/Jakarta}
+    volumes:
+      - ../data/batch:/app/data
+    networks:
+      - karhutla
+    command: ["python", "stream/src/consumer.py"]
 
 volumes:
   garage-meta:
