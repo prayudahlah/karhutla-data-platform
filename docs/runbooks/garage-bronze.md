@@ -25,37 +25,34 @@ $secret = -join ((1..64) | ForEach-Object { '{0:x}' -f (Get-Random -Maximum 16) 
 
 `infra/garage/garage.toml` diabaikan oleh git. Jangan commit file tersebut.
 
-## 2. Jalankan Garage
+## 2. Jalankan Garage dan web UI
 
-Generate kredensial S3 lokal, lalu jalankan container dengan volume persisten:
+Garage dan browser-nya didefinisikan di `compose/vps-batch.yml`. Jalankan dari
+root repository:
 
 ```powershell
-$accessKey = "GK" + (-join ((1..32) | ForEach-Object { '{0:x}' -f (Get-Random -Maximum 16) }))
-$secretKey = -join ((1..64) | ForEach-Object { '{0:x}' -f (Get-Random -Maximum 16) })
-
-docker run -d --name karhutla-garage `
-  -p 3900:3900 -p 3901:3901 -p 3902:3902 -p 3903:3903 `
-  -v "${PWD}\infra\garage\garage.toml:/etc/garage.toml:ro" `
-  -v karhutla-garage-meta:/var/lib/garage/meta `
-  -v karhutla-garage-data:/var/lib/garage/data `
-  -e GARAGE_DEFAULT_ACCESS_KEY=$accessKey `
-  -e GARAGE_DEFAULT_SECRET_KEY=$secretKey `
-  -e GARAGE_DEFAULT_BUCKET=lakehouse `
-  dxflrs/garage:v2.3.0 /garage server --single-node --default-bucket
+docker compose -f compose/base.yml -f compose/vps-batch.yml up -d
 ```
 
-Tag `v2.5.0` juga didukung; `v2.3.0` adalah versi minimum untuk flag
-`--single-node` dan `--default-bucket`.
+Sekali jalan, dua container naik:
+
+| Container | Port | Fungsi |
+|---|---|---|
+| `karhutla-garage` | 3900 | S3 API |
+| | 3902 | `s3_web` (website hosting, **bukan** browser) |
+| | 3903 | admin API + metrics |
+| `karhutla-garage-webui` | 3909 | browser bucket, kelola key, status cluster |
 
 Cek container dan bucket:
 
 ```powershell
-docker ps --filter name=karhutla-garage
+docker compose -f compose/base.yml -f compose/vps-batch.yml ps
 docker exec karhutla-garage /garage status
 docker exec karhutla-garage /garage bucket list
 ```
 
-Tulis kredensial ke `.env` lokal (jangan commit):
+Tulis kredensial ke `.env` lokal (jangan commit). Nilai `GARAGE_*_TOKEN` harus
+sama dengan yang ada di `infra/garage/garage.toml`:
 
 ```dotenv
 GARAGE_ENDPOINT=http://127.0.0.1:3900
@@ -64,9 +61,39 @@ GARAGE_ACCESS_KEY_ID=<accessKey>
 GARAGE_SECRET_ACCESS_KEY=<secretKey>
 GARAGE_BUCKET=lakehouse
 GARAGE_FORCE_PATH_STYLE=true
+GARAGE_DEFAULT_BUCKET=lakehouse
+GARAGE_DEFAULT_ACCESS_KEY=<accessKey>
+GARAGE_DEFAULT_SECRET_KEY=<secretKey>
 BRONZE_PREFIX=bronze/open_meteo
+BRONZE_PREFIX_FIRMS=bronze/firms
 OPENMETEO_CITY_CSV=resources/indonesia_cities.csv
 ```
+
+## 2b. Buka web UI
+
+Buka <http://localhost:3909>. garage-webui membaca `admin_token` dan
+`rpc_public_addr` dari `infra/garage/garage.toml`, jadi `[admin]` di file itu
+wajib ada — tanpa itu UI terbuka tetapi tidak bisa memuat data.
+
+Yang bisa dilakukan di sana:
+
+- melihat status cluster dan layout
+- menelusuri isi bucket `lakehouse` sampai `bronze/open_meteo/...` dan
+  mengunduh objeknya
+- membuat bucket dan access key
+
+Mengaktifkan login (opsional):
+
+```dotenv
+GARAGE_WEBUI_AUTH=admin:$2y$10$...
+```
+
+Hash dibuat dengan `htpasswd -nbBC 10 admin PasswordKamu`. **Setiap `$` di hash
+harus ditulis `$$`** di `.env`/compose, kalau tidak Compose menganggapnya
+variabel dan hash-nya rusak.
+
+Untuk akses dari laptop lain, pakai alamat Tailscale
+(`http://100.72.0.53:3909`), jangan buka port ke internet.
 
 Untuk menjalankan Prefect secara lokal tanpa server, jangan isi
 `PREFECT_API_URL` di `.env`. Flow akan otomatis membuat temporary Prefect API
@@ -155,5 +182,12 @@ pip install -e ".[dlt]"
   `garage key allow`.
 - **Prefect mencoba konek ke server**: kosongkan `PREFECT_API_URL` untuk mode
   ephemeral lokal.
-- **Mau reset total**: `docker rm -f karhutla-garage`,
-  `docker volume rm karhutla-garage-meta karhutla-garage-data`.
+- **Web UI terbuka tapi data kosong**: `[admin]` belum ada di `garage.toml`,
+  atau `api_bind_addr` masih `127.0.0.1:3903` sehingga container webui tidak
+  bisa menjangkaunya. Harus `[::]:3903`.
+- **Web UI 401/403**: `admin_token` di `garage.toml` berbeda dengan
+  `GARAGE_ADMIN_TOKEN` di `.env`.
+- **Login web UI selalu gagal**: hash bcrypt mengandung `$` yang ditelan
+  Compose; ganti setiap `$` menjadi `$$`.
+- **Mau reset total**: `docker compose -f compose/base.yml -f compose/vps-batch.yml down`,
+  lalu `docker volume rm karhutla-garage-meta karhutla-garage-data`.
