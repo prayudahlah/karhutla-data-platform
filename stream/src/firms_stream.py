@@ -135,11 +135,22 @@ def tg_discover_topics():
 
 # ---------------------------------------------------------------- FIRMS
 def fetch(map_key, source, bbox, day_range, timeout=60):
+    """Ambil CSV FIRMS.
+
+    URL memuat MAP_KEY, jadi pesan galat sengaja dibuat tanpa URL. Tanpa ini,
+    teks exception requests akan membawa kunci ke log dan notifikasi Telegram.
+    """
     url = f"{BASE_URL}/{map_key}/{source}/{bbox}/{day_range}"
-    resp = requests.get(url, timeout=timeout)
-    resp.raise_for_status()
+    try:
+        resp = requests.get(url, timeout=timeout)
+        resp.raise_for_status()
+    except requests.RequestException as exc:
+        status = getattr(exc.response, "status_code", None)
+        raise RuntimeError(
+            f"FIRMS API gagal (sumber {source}, HTTP {status or 'tidak ada respons'})"
+        ) from None
     if "latitude" not in resp.text[:300]:
-        raise ValueError(f"Respons bukan CSV valid: {resp.text[:200]!r}")
+        raise ValueError(f"Respons dari {source} bukan CSV yang dikenali")
     return pd.read_csv(io.StringIO(resp.text))
 
 
