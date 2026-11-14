@@ -1,35 +1,58 @@
 name: firms_hotspot
 owner: Kelompok 8 - Yuda
 layer: silver
-status: skeleton
+status: partial
 location:
   storage: Garage (S3-compatible)
   bucket: lakehouse
+  # Keluaran normalisasi (format-only), ditulis oleh `python -m batch.silver.firms`.
+  normalized_prefix: silver/_normalized/firms/dataset=hotspot
+  normalized_pattern: date=<acq_date>/part-00000.parquet
+  # Tabel final (dedup per event_id) ditulis oleh dbt setelah tabel scar siap.
   prefix: silver/firms/dataset=hotspot
   pattern: date=YYYY-MM-DD/part-00000.parquet
-grain: Satu baris per event_id; duplikat Bronze dipilih dengan ingested_at terbaru.
+grain: Satu baris per event FIRMS sebelum dedup. Tabel final wajib unik per event_id.
+deduplication:
+  key: event_id
+  tie_break: ingested_at terbaru
+  status: belum diterapkan di normalizer; dikerjakan di dbt (lihat roadmap branch 5)
+  reason: >-
+    Bronze bersifat at-least-once sehingga event yang sama bisa muncul beberapa
+    kali setelah replay spool atau crash sebelum commit offset.
 schema:
   event_id: {type: string, description: sha1 dari lat|lon|acq_date|acq_time|satellite}
-  source: {type: string}
-  satellite: {type: string}
-  instrument: {type: string}
+  source: {type: string, description: sumber FIRMS, mis. VIIRS_NOAA20_NRT}
+  satellite: {type: string, description: kode satelit, mis. N20}
+  instrument: {type: string, nullable: true}
   latitude: {type: double}
   longitude: {type: double}
-  acq_ts_utc: {type: timestamp}
-  acq_ts_local: {type: timestamp, nullable: true}
-  confidence: {type: string, nullable: true}
-  frp: {type: double, nullable: true}
+  acq_ts_utc: {type: timestamp, description: waktu akuisisi dalam UTC}
+  acq_ts_local: {type: timestamp, description: waktu akuisisi dalam Asia/Jakarta}
+  acq_date: {type: date, description: tanggal akuisisi, dasar partisi}
+  acq_time: {type: string, description: empat digit HHMM}
+  confidence: {type: string, description: label VIIRS atau angka MODIS sebagai teks}
+  confidence_score: {type: integer, nullable: true, description: skor 0-100 untuk MODIS}
+  frp: {type: double, nullable: true, description: fire radiative power, MW}
+  brightness: {type: double, nullable: true, description: bright_ti4 VIIRS atau brightness MODIS}
+  brightness_secondary: {type: double, nullable: true, description: bright_ti5 atau bright_t31}
+  scan: {type: double, nullable: true}
+  track: {type: double, nullable: true}
+  daynight: {type: string, nullable: true}
+  version: {type: string, nullable: true}
   ingested_at: {type: timestamp}
+  in_bbox: {type: boolean, description: koordinat berada di dalam bbox studi}
+  source_file: {type: string, description: kunci objek JSONL di Bronze}
 freshness:
-  expected: mengikuti batch consumer FIRMS
+  expected: mengikuti flush consumer (default 60 detik)
   alert_threshold: belum ditetapkan
 retention: mengikuti kebijakan Silver
 classification: public
 quality_rules:
-  - event_id unik setelah dedup
-  - latitude dan longitude berada di bbox Indonesia
-  - frp tidak negatif bila tersedia
-  - duplikat dilaporkan sebelum dibuang
+  - event_id, acq_ts_utc, latitude, dan longitude tidak boleh kosong
+  - baris rusak masuk karantina dengan alasan, bukan menghentikan proses
+  - rasio event_id ganda maksimal 10%; di atas itu laporan DQ ditandai failed
+  - minimal 95% baris berada di dalam bbox studi
+  - laporan DQ ditulis ke silver/_dq/firms/dataset=hotspot/run_id=<run_id>.json
 consumers:
   - silver_hotspot_scar_label
   - gold_risk_grid
