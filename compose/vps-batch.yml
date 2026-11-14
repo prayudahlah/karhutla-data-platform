@@ -131,6 +131,39 @@ services:
       start_period: 60s
     command: ["python", "stream/src/consumer.py"]
 
+  prefect-worker:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.python
+    image: karhutla/python:local
+    container_name: karhutla-prefect-worker
+    restart: unless-stopped
+    depends_on:
+      garage:
+        condition: service_healthy
+    env_file:
+      - path: ../.env
+        required: false
+    environment:
+      # Alamat dari dalam jaringan compose, bukan dari host.
+      PREFECT_API_URL: http://core:4200/api
+      GARAGE_ENDPOINT: http://garage:3900
+      GARAGE_FORCE_PATH_STYLE: "true"
+      BURNED_AREA_BBOX: ${BURNED_AREA_BBOX:-95,-11,141,6}
+      TZ: ${TZ:-Asia/Jakarta}
+    volumes:
+      # Kode di-mount supaya perubahan flow tidak perlu build ulang.
+      - ../:/app
+    networks:
+      - karhutla
+    # Pool dibuat terpisah lewat `task prefect-pool`.
+    command: ["prefect", "worker", "start", "--pool", "default"]
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
 volumes:
   garage-meta:
     name: karhutla-garage-meta

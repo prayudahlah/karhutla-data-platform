@@ -151,6 +151,27 @@ tasks:
     cmds:
       - 'python -m flows.burned_area_ingestion --verify-only {{.CLI_ARGS}}'
 
+  # ------------------------------------------------------------- prefect
+  prefect-up:
+    desc: Nyalakan Prefect server (core) dan worker (batch)
+    cmds:
+      - 'docker compose -f compose/base.yml -f compose/vps-core.yml -f compose/vps-batch.yml up -d prefect-server prefect-worker'
+
+  prefect-down:
+    desc: Hentikan Prefect server dan worker
+    cmds:
+      - 'docker compose -f compose/base.yml -f compose/vps-core.yml -f compose/vps-batch.yml stop prefect-server prefect-worker'
+
+  prefect-pool:
+    desc: Buat work pool default, cukup sekali
+    cmds:
+      - 'docker exec -e PREFECT_API_URL=http://127.0.0.1:4200/api karhutla-prefect-server prefect work-pool create default --type process || true'
+
+  deploy:
+    desc: Daftarkan deployment dari prefect.yaml ke server lokal
+    cmds:
+      - 'docker compose -f compose/base.yml -f compose/vps-core.yml -f compose/vps-batch.yml run --rm -e PREFECT_API_URL=http://core:4200/api prefect-worker python -m prefect deploy --all'
+
   # ----------------------------------------------------------- node lain
   up-core:
     desc: Nyalakan node core
