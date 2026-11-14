@@ -1,0 +1,10 @@
+version: 2
+
+sources:
+  - name: silver_fixtures
+    description: Small Parquet fixtures used by the Silver foundation smoke model.
+    meta:
+      external_location: "tests/fixtures/{name}.parquet"
+    tables:
+      - name: silver_sample
+        description: Three-row fixture proving dbt can read normalized Parquet.

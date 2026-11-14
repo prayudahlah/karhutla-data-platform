@@ -1,0 +1,78 @@
+version: 2
+
+models:
+  - name: stg_open_meteo_weather
+    description: Normalized Open-Meteo weather rows with hive partition date.
+    columns:
+      - name: province
+        data_tests:
+          - not_null
+      - name: city
+        data_tests:
+          - not_null
+      - name: ts_utc
+        data_tests:
+          - not_null
+      - name: date
+        data_tests:
+          - not_null
+
+  - name: stg_open_meteo_air_quality
+    description: Normalized Open-Meteo air-quality rows with hive partition date.
+    columns:
+      - name: province
+        data_tests:
+          - not_null
+      - name: city
+        data_tests:
+          - not_null
+      - name: ts_utc
+        data_tests:
+          - not_null
+      - name: date
+        data_tests:
+          - not_null
+
+  - name: open_meteo_weather
+    description: Deduplicated weather, one row per province/city/hour.
+    columns:
+      - name: province
+        data_tests:
+          - not_null
+      - name: city
+        data_tests:
+          - not_null
+      - name: ts_utc
+        data_tests:
+          - not_null
+      - name: ts_local
+        data_tests:
+          - not_null
+      - name: run_id
+        data_tests:
+          - not_null
+      - name: date
+        data_tests:
+          - not_null
+
+  - name: open_meteo_air_quality
+    description: Deduplicated air quality, one row per province/city/hour.
+    columns:
+      - name: province
+        data_tests:
+          - not_null
+      - name: city
+        data_tests:
+          - not_null
+      - name: ts_utc
+        data_tests:
+          - not_null
+      - name: ts_local
+        data_tests:
+          - not_null
+      - name: run_id
+        data_tests:
+          - not_null
+      - name: date
+        data_tests:
+          - not_null
