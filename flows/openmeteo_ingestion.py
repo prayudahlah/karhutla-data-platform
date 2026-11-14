@@ -72,6 +72,7 @@ def ingest_cities_task(
             province=item["province"],
             latitude=float(item["latitude"]),
             longitude=float(item["longitude"]),
+            number=item.get("no"),
         )
         for item in cities_payload
     ]

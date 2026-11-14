@@ -33,13 +33,16 @@ class City:
     province: str
     latitude: float
     longitude: float
+    # nomor urut opsional dari kolom "no" di CSV referensi
+    number: int | None = None
 
     @property
     def slug(self) -> str:
         return slugify(f"{self.name} {self.province}")
 
-    def as_dict(self) -> dict[str, str | float]:
+    def as_dict(self) -> dict[str, str | float | int | None]:
         return {
+            "no": self.number,
             "name": self.name,
             "province": self.province,
             "latitude": self.latitude,
@@ -70,6 +73,7 @@ def load_cities(
     cities: list[City] = []
     seen: set[tuple[str, str]] = set()
     seen_slugs: set[str] = set()
+    seen_numbers: set[int] = set()
 
     with csv_path.open("r", encoding="utf-8-sig", newline="") as handle:
         reader = csv.DictReader(handle)
@@ -109,7 +113,32 @@ def load_cities(
                 raise LocationError(f"Duplicate city/province at {csv_path}:{row_number}: {name}")
             seen.add(key)
 
-            city = City(name=name, province=province, latitude=latitude, longitude=longitude)
+            raw_number = (row.get("no") or "").strip()
+            number: int | None = None
+            if raw_number:
+                try:
+                    number = int(raw_number)
+                except ValueError as exc:
+                    raise LocationError(
+                        f"Invalid 'no' column at {csv_path}:{row_number}: {raw_number!r}"
+                    ) from exc
+                if number < 1:
+                    raise LocationError(
+                        f"'no' must be positive at {csv_path}:{row_number}: {number}"
+                    )
+                if number in seen_numbers:
+                    raise LocationError(
+                        f"Duplicate 'no' at {csv_path}:{row_number}: {number}"
+                    )
+                seen_numbers.add(number)
+
+            city = City(
+                name=name,
+                province=province,
+                latitude=latitude,
+                longitude=longitude,
+                number=number,
+            )
             if city.slug in seen_slugs:
                 raise LocationError(f"Duplicate city slug at {csv_path}:{row_number}: {city.slug}")
             seen_slugs.add(city.slug)

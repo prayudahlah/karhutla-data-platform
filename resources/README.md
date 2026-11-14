@@ -6,10 +6,12 @@ Satu titik per provinsi: **38 baris**, koordinat ibu kota provinsi. Dipakai
 sebagai titik request Open-Meteo saat `OPENMETEO_LOCATION_LEVEL=province`
 (nilai default).
 
-- Kolom: `city,province,latitude,longitude` — `city` berisi nama ibu kota.
+- Kolom: `no,city,province,latitude,longitude` — `no` adalah nomor urut 1–38
+  (barat ke timur), `city` berisi nama ibu kota.
 - Termasuk lima provinsi yang tidak punya kota: Sulawesi Barat, Papua Barat,
   Papua Selatan, Papua Tengah, Papua Pegunungan.
 - Koordinat adalah pusat ibu kota, bukan centroid poligon provinsi.
+- `no` ikut tercatat di setiap entri manifest (`entries[].no`).
 
 ## `indonesia_cities.csv`
 

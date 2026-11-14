@@ -20,6 +20,14 @@ def test_province_reference_has_38_unique_entries() -> None:
     assert all(94.0 <= province.longitude <= 142.0 for province in provinces)
 
 
+def test_provinces_are_numbered_one_to_38_in_order() -> None:
+    provinces = load_cities(PROVINCES_PATH)
+
+    assert [province.number for province in provinces] == list(range(1, 39))
+    assert provinces[0].province == "Aceh"
+    assert provinces[-1].province == "Papua Selatan"
+
+
 def test_province_reference_covers_former_missing_provinces() -> None:
     names = {province.province for province in load_cities(PROVINCES_PATH)}
 

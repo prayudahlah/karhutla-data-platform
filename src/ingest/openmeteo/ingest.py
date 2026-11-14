@@ -133,6 +133,7 @@ def ingest_city(
 
             entries.append(
                 {
+                    "no": city.number,
                     "dataset": dataset,
                     "city": city.name,
                     "province": city.province,
