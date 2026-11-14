@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import os
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 
 WEATHER_VARIABLES: tuple[str, ...] = (
@@ -149,9 +149,22 @@ class OpenMeteoSettings:
 
 
 @dataclass(frozen=True)
+class FirmsBronzeSettings:
+    """Prefix Bronze untuk stream FIRMS (ditulis consumer di node batch)."""
+
+    prefix: str = "bronze/firms"
+
+    @classmethod
+    def from_env(cls) -> FirmsBronzeSettings:
+        return cls(prefix=_get("BRONZE_PREFIX_FIRMS", cls.prefix).strip("/"))
+
+
+@dataclass(frozen=True)
 class Settings:
     garage: GarageSettings
     openmeteo: OpenMeteoSettings
+    # punya default supaya konstruksi Settings(...) lama tetap valid
+    firms_bronze: FirmsBronzeSettings = field(default_factory=FirmsBronzeSettings)
 
     @classmethod
     def from_env(cls, env_file: str | Path | None = ".env") -> Settings:
@@ -160,4 +173,5 @@ class Settings:
         return cls(
             garage=GarageSettings.from_env(),
             openmeteo=OpenMeteoSettings.from_env(),
+            firms_bronze=FirmsBronzeSettings.from_env(),
         )

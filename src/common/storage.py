@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 import json
 import logging
+from collections.abc import Iterable
 from typing import Any
 
 import boto3
@@ -40,6 +41,14 @@ def _is_not_found(exc: ClientError) -> bool:
 
 def serialize_json(payload: Any) -> bytes:
     return json.dumps(payload, ensure_ascii=False, indent=JSON_INDENT).encode("utf-8")
+
+
+def serialize_jsonl(records: Iterable[Any]) -> bytes:
+    """Satu objek JSON per baris, tanpa indentasi. Dipakai batch event stream."""
+    return b"".join(
+        json.dumps(record, ensure_ascii=False, separators=(",", ":")).encode("utf-8") + b"\n"
+        for record in records
+    )
 
 
 def sha256_hex(payload: bytes) -> str:
@@ -132,15 +141,16 @@ class BronzeStore:
                 raise ObjectNotFoundError(f"Object not found: s3://{self.bucket}/{key}") from exc
             raise BronzeStorageError(f"Cannot head object {key!r}: {exc}") from exc
 
-    def put_json(
+    def put_bytes(
         self,
         key: str,
-        payload: Any,
+        body: bytes,
         *,
+        content_type: str = "application/octet-stream",
         metadata: dict[str, str] | None = None,
         overwrite: bool = False,
     ) -> str:
-        body = serialize_json(payload)
+        """Upload body apa adanya. Dipakai put_json dan put_jsonl."""
         digest = sha256_hex(body)
         object_metadata = {"sha256": digest}
         if metadata:
@@ -156,7 +166,7 @@ class BronzeStore:
                 Bucket=self.bucket,
                 Key=key,
                 Body=body,
-                ContentType="application/json",
+                ContentType=content_type,
                 Metadata=object_metadata,
             )
         except (ClientError, BotoCoreError) as exc:
@@ -164,6 +174,38 @@ class BronzeStore:
 
         logger.info("Uploaded s3://%s/%s (%d bytes)", self.bucket, key, len(body))
         return digest
+
+    def put_json(
+        self,
+        key: str,
+        payload: Any,
+        *,
+        metadata: dict[str, str] | None = None,
+        overwrite: bool = False,
+    ) -> str:
+        return self.put_bytes(
+            key,
+            serialize_json(payload),
+            content_type="application/json",
+            metadata=metadata,
+            overwrite=overwrite,
+        )
+
+    def put_jsonl(
+        self,
+        key: str,
+        records: Iterable[Any],
+        *,
+        metadata: dict[str, str] | None = None,
+        overwrite: bool = False,
+    ) -> str:
+        return self.put_bytes(
+            key,
+            serialize_jsonl(records),
+            content_type="application/x-ndjson",
+            metadata=metadata,
+            overwrite=overwrite,
+        )
 
     def read_bytes(self, key: str) -> bytes:
         try:

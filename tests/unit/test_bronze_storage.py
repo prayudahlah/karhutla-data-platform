@@ -145,6 +145,29 @@ def test_put_json_can_overwrite_explicitly() -> None:
     assert store.read_json("bronze/a.json") == {"value": 2}
 
 
+def test_put_jsonl_writes_one_record_per_line() -> None:
+    store, client = _store()
+    records = [{"event_id": "a", "frp": 1}, {"event_id": "b", "frp": 2}]
+
+    digest = store.put_jsonl("bronze/part-0.jsonl", records, metadata={"run-id": "run-2"})
+
+    body = client.objects[("lakehouse", "bronze/part-0.jsonl")]["body"]
+    assert body == b'{"event_id":"a","frp":1}\n{"event_id":"b","frp":2}\n'
+    assert digest == sha256_hex(body)
+    assert client.objects[("lakehouse", "bronze/part-0.jsonl")]["content_type"] == (
+        "application/x-ndjson"
+    )
+    assert store.readback_sha256("bronze/part-0.jsonl") == digest
+
+
+def test_put_jsonl_refuses_overwrite_by_default() -> None:
+    store, _ = _store()
+    store.put_jsonl("bronze/part-0.jsonl", [{"n": 1}])
+
+    with pytest.raises(ObjectAlreadyExistsError):
+        store.put_jsonl("bronze/part-0.jsonl", [{"n": 1}])
+
+
 def test_missing_object_and_listing() -> None:
     store, _ = _store()
 
