@@ -183,8 +183,22 @@ tasks:
     desc: Jalankan dbt build (salin dbt/profiles.yml.example dulu)
     env:
       SILVER_NORMALIZED_ROOT: data/silver/_normalized
+      SILVER_PUBLISH_ROOT: data/silver/published
     cmds:
+      - 'python -m batch.silver.prepare'
       - 'dbt build --project-dir dbt --profiles-dir dbt'
+
+  silver-pull:
+    desc: Turunkan parquet normalized dari Garage, mis. task silver-pull -- --month 2026-09
+    cmds:
+      - 'python -m batch.silver.sync pull {{.CLI_ARGS}}'
+
+  silver-push:
+    desc: Unggah hasil dbt ke Garage
+    env:
+      SILVER_PUBLISH_ROOT: data/silver/published
+    cmds:
+      - 'python -m batch.silver.sync push {{.CLI_ARGS}}'
 
   silver-check:
     desc: Lint, test, dan dbt build fondasi Silver

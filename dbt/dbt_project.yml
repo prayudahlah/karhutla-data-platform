@@ -14,3 +14,6 @@ clean-targets:
 models:
   karhutla:
     +materialized: view
+
+vars:
+  silver_publish_root: "{{ env_var('SILVER_PUBLISH_ROOT', 'data/silver/published') }}"

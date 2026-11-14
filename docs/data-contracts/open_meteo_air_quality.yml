@@ -5,8 +5,12 @@ status: implemented
 location:
   storage: Garage (S3-compatible)
   bucket: lakehouse
+  publish:
+    materialization: external parquet (dbt-duckdb)
+    local_root: data/silver/published/
+    uploader: python -m batch.silver.sync push
   prefix: silver/open_meteo/dataset=air_quality
-  pattern: date=YYYY-MM-DD/part-00000.parquet
+  pattern: date=YYYY-MM-DD/*.parquet
 source:
   bronze_layouts:
     - bronze/open_meteo/air_quality/ingest_date=.../run_id=.../*.json
