@@ -59,13 +59,13 @@ Semua PR menuju `dev`. Nomor di depan adalah urutan merge.
 | 2 | `feat/silver-openmeteo` | Aulia | `dev` setelah 1 | merged |
 | 3 | `feat/silver-firms` | Yuda | `dev` setelah 1 | merged |
 | 4 | `feat/silver-mcd64a1` | Yuda | `dev`, boleh paralel | merged |
-| 5 | `feat/silver-hotspot-label` | Yuda | `dev` setelah 2, 3, 4 | PR dibuka |
-| 6 | `docs/contracts-silver` | Aulia | `dev` setelah 2 sampai 5 | belum |
+| 5 | `feat/silver-hotspot-label` | Yuda | `dev` setelah 2, 3, 4 | merged |
+| 6 | `docs/contracts-silver` | Aulia | `dev` setelah 2 sampai 5 | lokal selesai, belum PR |
 | 7 | `feat/silver-align` | Yuda | `dev` | merged |
 | 8 | `chore/silver-ops` | Yuda | `dev` | merged |
 | 9 | `feat/firms-backfill` | Yuda | `dev` | merged |
 | 10 | `feat/openmeteo-backfill` | Yuda | `dev` | merged |
-| 11 | `fix/silver-idempotent` | Yuda | `dev` | PR dibuka |
+| 11 | `fix/silver-idempotent` | Yuda | `dev` | merged |
 
 Branch `3` dan `4` boleh mulai sebelum `1` merge, asalkan stub tiga fungsi di
 `src/batch/silver/` sudah disepakati. Yang ditunda hanya penyambungan ke writer

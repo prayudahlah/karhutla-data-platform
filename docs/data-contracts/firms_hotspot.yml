@@ -5,20 +5,19 @@ status: implemented
 location:
   storage: Garage (S3-compatible)
   bucket: lakehouse
-  # Keluaran normalisasi (format-only), ditulis oleh `python -m batch.silver.firms`.
   normalized_prefix: silver/_normalized/firms/dataset=hotspot
-  normalized_pattern: date=<acq_date>/part-00000.parquet
-  # Tabel final (dedup per event_id) ditulis oleh dbt setelah tabel scar siap.
+  normalized_pattern: date=YYYY-MM-DD/part-00000.parquet
   publish:
     materialization: external parquet (dbt-duckdb)
     local_root: data/silver/published/firms/hotspot
     uploader: python -m batch.silver.sync push
   prefix: silver/firms/dataset=hotspot
   pattern: date=YYYY-MM-DD/*.parquet
-grain: Satu baris per event FIRMS sebelum dedup. Tabel final wajib unik per event_id.
+normalized_grain: Satu baris per event FIRMS, termasuk duplikat replay.
+grain: Satu baris per event_id setelah dedup.
 deduplication:
   key: event_id
-  tie_break: ingested_at terbaru
+  tie_break: ingested_at terbaru, lalu source_file terbesar
   status: diterapkan di model dbt firms_hotspot
   reason: >-
     Bronze bersifat at-least-once sehingga event yang sama bisa muncul beberapa
@@ -33,6 +32,7 @@ schema:
   acq_ts_utc: {type: timestamp, description: waktu akuisisi dalam UTC}
   acq_ts_local: {type: timestamp, description: waktu akuisisi dalam Asia/Jakarta}
   acq_date: {type: date, description: tanggal akuisisi, dasar partisi}
+  date: {type: date, description: kolom partisi final, sama dengan acq_date}
   acq_time: {type: string, description: empat digit HHMM}
   confidence: {type: string, description: label VIIRS atau angka MODIS sebagai teks}
   confidence_score: {type: integer, nullable: true, description: skor 0-100 untuk MODIS}

@@ -5,9 +5,11 @@ status: implemented
 location:
   storage: Garage (S3-compatible)
   bucket: lakehouse
+  normalized_prefix: silver/_normalized/open_meteo/dataset=air_quality
+  normalized_pattern: date=YYYY-MM-DD/part-00000.parquet
   publish:
     materialization: external parquet (dbt-duckdb)
-    local_root: data/silver/published/
+    local_root: data/silver/published/open_meteo/air_quality
     uploader: python -m batch.silver.sync push
   prefix: silver/open_meteo/dataset=air_quality
   pattern: date=YYYY-MM-DD/*.parquet
@@ -17,7 +19,16 @@ source:
     - bronze/open_meteo/dataset=air_quality/ingest_date=.../run_id=.../*.json
     - bronze/open_meteo/dataset=air_quality/period=YYYY-MM/run_id=backfill/*.json
   location_level: province
+normalized_grain: Satu baris per provinsi, kota, dan jam, termasuk duplikat antar run.
 grain: Satu baris per provinsi, kota, dan jam setelah dedup.
+deduplication:
+  key: [province, city, ts_utc]
+  tie_break: ingestion_timestamp terbaru, lalu run_id terbesar
+  status: diterapkan di model dbt open_meteo_air_quality
+  reason: >-
+    Bronze dapat memuat beberapa run untuk lokasi dan jam yang sama. Dataset
+    sudah terpisah per tabel, sehingga province dipakai untuk membedakan nama
+    kota yang sama di provinsi berbeda.
 schema:
   date: {type: date, description: Partisi tanggal UTC dari ts_utc}
   province: {type: string}
