@@ -25,8 +25,8 @@ Detail ada di `docs/data-sources.md`.
 
 Belum bisa dijalankan karena service Compose masih placeholder.
 
-1. Copy `.env.example` menjadi `.env` untuk dev lokal, atau `.env.stream`, `.env.batch`, `.env.core` di tiap VM.
-2. Install `just`.
+1. Copy `.env.example` menjadi `.env` untuk node batch dan core, lalu `stream/.env.example` menjadi `stream/.env` untuk node stream. Keduanya `chmod 600`.
+2. Install [Task](https://taskfile.dev): `winget install Task.Task` di Windows.
 3. Lihat daftar perintah.
 
 ```bash
