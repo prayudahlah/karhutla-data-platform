@@ -15,6 +15,7 @@ logs/
 minio-data/
 postgres-data/
 redpanda-data/
+infra/garage/garage.toml
 
 # python
 __pycache__/
@@ -32,3 +33,6 @@ htmlcov/
 .DS_Store
 .idea/
 .vscode/
+
+# artefak tooling lokal (.openchamber/screenshots)
+.openchamber/
