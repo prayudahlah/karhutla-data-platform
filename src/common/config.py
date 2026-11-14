@@ -85,6 +85,19 @@ def _get_float(name: str, default: float) -> float:
         raise ConfigError(f"{name} must be a number, got {raw!r}") from exc
 
 
+def _get_floats(name: str, default: tuple[float, ...]) -> tuple[float, ...]:
+    raw = _get(name, ",".join(f"{value:g}" for value in default))
+    parts = [part.strip() for part in raw.split(",") if part.strip()]
+    if len(parts) != len(default):
+        raise ConfigError(
+            f"{name} must contain {len(default)} comma-separated numbers, got {raw!r}"
+        )
+    try:
+        return tuple(float(part) for part in parts)
+    except ValueError as exc:
+        raise ConfigError(f"{name} must contain numbers, got {raw!r}") from exc
+
+
 def _get_bool(name: str, default: bool) -> bool:
     raw = _get(name, "true" if default else "false").lower()
     if raw in {"1", "true", "yes", "on"}:
@@ -175,11 +188,52 @@ class FirmsBronzeSettings:
 
 
 @dataclass(frozen=True)
+class BurnedAreaSettings:
+    """Ingest produk burned area (MCD64A1) dari LP DAAC ke Bronze.
+
+    Token Earthdata tidak wajib ada saat konfigurasi dibaca, supaya tes dan
+    perintah offline tidak butuh kredensial. Keberadaannya diperiksa saat
+    unduhan benar-benar dijalankan.
+    """
+
+    cmr_url: str = "https://cmr.earthdata.nasa.gov/search/granules.json"
+    short_name: str = "MCD64A1"
+    version: str = "061"
+    token: str = ""
+    bronze_prefix: str = "bronze/mcd64a1"
+    bbox: tuple[float, float, float, float] = (95.0, -11.0, 141.0, 6.0)
+    timeout_seconds: float = 60.0
+    max_retries: int = 3
+    page_size: int = 2000
+
+    @classmethod
+    def from_env(cls) -> BurnedAreaSettings:
+        bbox = _get_floats("BURNED_AREA_BBOX", (95.0, -11.0, 141.0, 6.0))
+        west, south, east, north = bbox
+        if west >= east or south >= north:
+            raise ConfigError(
+                "BURNED_AREA_BBOX must be west,south,east,north with west<east and south<north"
+            )
+        return cls(
+            cmr_url=_get("CMR_GRANULES_URL", cls.cmr_url),
+            short_name=_get("BURNED_AREA_SHORT_NAME", cls.short_name),
+            version=_get("BURNED_AREA_VERSION", cls.version),
+            token=_get("EARTHDATA_TOKEN"),
+            bronze_prefix=_get("BRONZE_PREFIX_MCD64A1", cls.bronze_prefix).strip("/"),
+            bbox=(west, south, east, north),
+            timeout_seconds=_get_float("BURNED_AREA_TIMEOUT_SECONDS", cls.timeout_seconds),
+            max_retries=_get_int("BURNED_AREA_MAX_RETRIES", cls.max_retries),
+            page_size=_get_int("BURNED_AREA_PAGE_SIZE", cls.page_size),
+        )
+
+
+@dataclass(frozen=True)
 class Settings:
     garage: GarageSettings
     openmeteo: OpenMeteoSettings
     # punya default supaya konstruksi Settings(...) lama tetap valid
     firms_bronze: FirmsBronzeSettings = field(default_factory=FirmsBronzeSettings)
+    burned_area: BurnedAreaSettings = field(default_factory=BurnedAreaSettings.from_env)
 
     @classmethod
     def from_env(cls, env_file: str | Path | None = ".env") -> Settings:
@@ -189,4 +243,5 @@ class Settings:
             garage=GarageSettings.from_env(),
             openmeteo=OpenMeteoSettings.from_env(),
             firms_bronze=FirmsBronzeSettings.from_env(),
+            burned_area=BurnedAreaSettings.from_env(),
         )

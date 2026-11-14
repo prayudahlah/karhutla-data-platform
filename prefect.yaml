@@ -17,3 +17,13 @@ deployments:
       name: default
     parameters:
       limit: null
+
+  - name: mcd64a1-bronze-monthly
+    description: Ingest MCD64A1 burned area ke Garage Bronze
+    entrypoint: flows/burned_area_ingestion.py:monthly_ingestion
+    schedules:
+      - cron: "0 6 5 * *"
+        timezone: Asia/Jakarta
+    work_pool:
+      name: default
+    parameters: {}

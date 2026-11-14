@@ -1,3 +1,46 @@
 # VM core.
-# TODO: add Postgres, Prefect server, FastAPI, portal, Metabase, Prometheus, Grafana, Loki, Caddy, and Authelia.
-services: {}
+# TODO: Postgres, FastAPI, portal, Metabase, Prometheus, Grafana, Loki, Caddy,
+# dan Authelia belum ditambahkan.
+services:
+  prefect-server:
+    image: prefecthq/prefect:3-latest
+    container_name: karhutla-prefect-server
+    restart: unless-stopped
+    # Root dipakai supaya volume SQLite bisa ditulis tanpa mengatur izin dulu.
+    # Ganti ke user prefect kalau nanti sudah memakai Postgres.
+    user: "0:0"
+    command: ["prefect", "server", "start", "--host", "0.0.0.0"]
+    environment:
+      PREFECT_SERVER_API_HOST: 0.0.0.0
+      PREFECT_UI_API_URL: http://127.0.0.1:4200/api
+      PREFECT_SERVER_DATABASE_CONNECTION_URL: sqlite+aiosqlite:////var/lib/prefect/prefect.db
+      TZ: ${TZ:-Asia/Jakarta}
+    ports:
+      - "4200:4200"
+    volumes:
+      - prefect-data:/var/lib/prefect
+    networks:
+      - karhutla
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - >-
+          python -c "import urllib.request,sys;
+          sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:4200/api/health', timeout=5).status == 200 else 1)"
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 40s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+volumes:
+  prefect-data:
+    name: karhutla-prefect-data
+
+networks:
+  karhutla:
+    name: karhutla
