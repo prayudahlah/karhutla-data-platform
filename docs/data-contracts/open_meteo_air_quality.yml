@@ -1,0 +1,40 @@
+name: open_meteo_air_quality
+owner: Kelompok 8 - Aulia
+layer: silver
+status: skeleton
+location:
+  storage: Garage (S3-compatible)
+  bucket: lakehouse
+  prefix: silver/open_meteo/dataset=air_quality
+  pattern: date=YYYY-MM-DD/part-00000.parquet
+grain: Satu baris per provinsi, kota, dan jam.
+schema:
+  province: {type: string}
+  city: {type: string}
+  latitude: {type: double}
+  longitude: {type: double}
+  ts_utc: {type: timestamp}
+  ts_local: {type: timestamp, nullable: true}
+  run_id: {type: string}
+  ingestion_timestamp: {type: timestamp}
+  pm2_5: {type: double, nullable: true}
+  pm10: {type: double, nullable: true}
+  carbon_monoxide: {type: double, nullable: true}
+  nitrogen_dioxide: {type: double, nullable: true}
+  sulphur_dioxide: {type: double, nullable: true}
+  ozone: {type: double, nullable: true}
+  aerosol_optical_depth: {type: double, nullable: true}
+  units_json: {type: string, description: Salinan hourly_units dari respons Open-Meteo}
+freshness:
+  expected: harian
+  alert_threshold: belum ditetapkan
+retention: mengikuti kebijakan Silver
+classification: public
+quality_rules:
+  - kunci provinsi, kota, dan ts_utc unik setelah dedup
+  - setiap lokasi memiliki 24 jam per tanggal lokal
+  - jumlah baris cocok dengan record_count Bronze
+  - variabel di luar daftar yang diharapkan masuk karantina
+consumers:
+  - gold_risk_grid
+  - fitur model

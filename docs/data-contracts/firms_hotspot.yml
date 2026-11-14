@@ -1,0 +1,35 @@
+name: firms_hotspot
+owner: Kelompok 8 - Yuda
+layer: silver
+status: skeleton
+location:
+  storage: Garage (S3-compatible)
+  bucket: lakehouse
+  prefix: silver/firms/dataset=hotspot
+  pattern: date=YYYY-MM-DD/part-00000.parquet
+grain: Satu baris per event_id; duplikat Bronze dipilih dengan ingested_at terbaru.
+schema:
+  event_id: {type: string, description: sha1 dari lat|lon|acq_date|acq_time|satellite}
+  source: {type: string}
+  satellite: {type: string}
+  instrument: {type: string}
+  latitude: {type: double}
+  longitude: {type: double}
+  acq_ts_utc: {type: timestamp}
+  acq_ts_local: {type: timestamp, nullable: true}
+  confidence: {type: string, nullable: true}
+  frp: {type: double, nullable: true}
+  ingested_at: {type: timestamp}
+freshness:
+  expected: mengikuti batch consumer FIRMS
+  alert_threshold: belum ditetapkan
+retention: mengikuti kebijakan Silver
+classification: public
+quality_rules:
+  - event_id unik setelah dedup
+  - latitude dan longitude berada di bbox Indonesia
+  - frp tidak negatif bila tersedia
+  - duplikat dilaporkan sebelum dibuang
+consumers:
+  - silver_hotspot_scar_label
+  - gold_risk_grid

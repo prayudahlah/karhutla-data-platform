@@ -14,7 +14,23 @@ Satu file YAML per dataset. Field minimal:
 - `quality_rules`
 - `consumers`
 
-Data contract untuk tiga mart belum dibuat.
+Kerangka kontrak Silver ada di `docs/data-contracts/*.yml`; isi `schema` dan
+`quality_rules` final di PR masing-masing dataset.
+
+## Tata letak Silver
+
+Silver mengikuti bentuk Bronze agar DuckDB bisa membaca partisi tanpa logika
+khusus per dataset:
+
+```text
+silver/_normalized/<sumber>/dataset=<dataset>/date=YYYY-MM-DD/part-00000.parquet
+silver/<sumber>/dataset=<dataset>/date=YYYY-MM-DD/part-00000.parquet
+```
+
+`_normalized` hanya berisi hasil normalisasi format. Dedup dan aturan kualitas
+dijalankan dbt sebelum data ditulis ke tabel Silver final. Laporan DQ disimpan
+di `silver/_dq/...`, baris ditolak di `silver/_quarantine/...`, dan manifest di
+`silver/manifests/run_id=<run_id>.json`.
 
 ## Tata letak Bronze
 

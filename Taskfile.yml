@@ -178,6 +178,19 @@ tasks:
     cmds:
       - 'docker compose -f compose/base.yml -f compose/vps-core.yml up -d'
 
+  # --------------------------------------------------------------- silver
+  dbt-build:
+    desc: Jalankan dbt build (salin dbt/profiles.yml.example dulu)
+    cmds:
+      - 'dbt build --project-dir dbt --profiles-dir dbt'
+
+  silver-check:
+    desc: Lint, test, dan dbt build fondasi Silver
+    cmds:
+      - task: lint
+      - task: test
+      - task: dbt-build
+
   # ------------------------------------------------------------- kualitas
   test:
     desc: Jalankan unit test
