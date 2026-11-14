@@ -7,7 +7,7 @@
 ## Cara test
 
 ```bash
-just test
+task test
 ```
 
 ## Bukti

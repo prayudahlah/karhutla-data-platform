@@ -1,0 +1,199 @@
+version: '3'
+
+dotenv: ['.env']
+
+vars:
+  STREAM_COMPOSE: docker compose -f compose/base.yml -f compose/vps-stream.yml
+  DEV_COMPOSE: docker compose -f compose/base.yml -f compose/vps-stream.yml -f compose/dev.yml
+  BATCH_COMPOSE: docker compose -f compose/base.yml -f compose/vps-batch.yml
+  RPK: docker compose -f compose/base.yml -f compose/vps-stream.yml exec -T redpanda rpk -X brokers=redpanda:9092
+
+tasks:
+  default:
+    silent: true
+    cmds:
+      - task --list
+
+  # ------------------------------------------------------------------ dev
+  dev:
+    desc: Nyalakan node stream (redpanda, console, producer) + port ke localhost
+    cmds:
+      - '{{.DEV_COMPOSE}} up -d --build'
+
+  down:
+    desc: Matikan node stream
+    cmds:
+      - '{{.DEV_COMPOSE}} down'
+
+  ps:
+    desc: Status container node stream
+    cmds:
+      - '{{.DEV_COMPOSE}} ps'
+
+  logs:
+    desc: 'Ikuti log node stream. Pakai: task logs SERVICE=consumer'
+    vars:
+      SERVICE: '{{default "producer" .SERVICE}}'
+    cmds:
+      - '{{.DEV_COMPOSE}} logs -f {{.SERVICE}}'
+
+  # --------------------------------------------------------------- stream
+  up-stream:
+    desc: Nyalakan node stream tanpa port ke host
+    cmds:
+      - '{{.STREAM_COMPOSE}} up -d --build'
+
+  down-stream:
+    desc: Matikan node stream
+    cmds:
+      - '{{.STREAM_COMPOSE}} down'
+
+  ps-stream:
+    desc: Status container node stream
+    cmds:
+      - '{{.STREAM_COMPOSE}} ps'
+
+  logs-stream:
+    desc: 'Ikuti log node stream. Pakai: task logs-stream SERVICE=producer'
+    vars:
+      SERVICE: '{{default "producer" .SERVICE}}'
+    cmds:
+      - '{{.STREAM_COMPOSE}} logs -f {{.SERVICE}}'
+
+  topics:
+    desc: Daftar topik beserta jumlah partisi
+    cmds:
+      - '{{.RPK}} topic list -d'
+
+  topic:
+    desc: Detail partisi dan offset firms.hotspot.raw
+    cmds:
+      - '{{.RPK}} topic describe firms.hotspot.raw -p'
+
+  consume:
+    desc: Lihat 5 pesan terakhir di firms.hotspot.raw
+    cmds:
+      - '{{.RPK}} topic consume firms.hotspot.raw --num 5'
+
+  dlq:
+    desc: Offset topik DLQ
+    cmds:
+      - '{{.RPK}} topic describe firms.hotspot.dlq -p'
+
+  dlq-peek:
+    desc: Lihat satu pesan DLQ (menunggu kalau kosong)
+    cmds:
+      - "{{.RPK}} topic consume firms.hotspot.dlq --offset start --num 1 -f '%v\\n'"
+
+  selftest:
+    desc: Kirim 3 event sintetis ke topik
+    cmds:
+      - '{{.STREAM_COMPOSE}} exec -T producer python stream/src/firms_stream.py --selftest-publish'
+
+  replay:
+    desc: Kirim ulang file spool producer yang belum terkirim
+    cmds:
+      - '{{.STREAM_COMPOSE}} exec -T producer python stream/src/replay_spool.py'
+
+  # ---------------------------------------------------------------- batch
+  up-batch:
+    desc: Nyalakan node batch (garage, garage-webui, consumer)
+    cmds:
+      - '{{.BATCH_COMPOSE}} up -d --build'
+
+  down-batch:
+    desc: Matikan node batch
+    cmds:
+      - '{{.BATCH_COMPOSE}} down'
+
+  ps-batch:
+    desc: Status container node batch
+    cmds:
+      - '{{.BATCH_COMPOSE}} ps'
+
+  logs-batch:
+    desc: 'Ikuti log node batch. Pakai: task logs-batch SERVICE=garage'
+    vars:
+      SERVICE: '{{default "consumer" .SERVICE}}'
+    cmds:
+      - '{{.BATCH_COMPOSE}} logs -f {{.SERVICE}}'
+
+  consume-once:
+    desc: Hentikan consumer, konsumsi sisa pesan, lalu nyalakan lagi
+    cmds:
+      - '{{.BATCH_COMPOSE}} stop consumer'
+      - '{{.BATCH_COMPOSE}} run --rm consumer python stream/src/consumer.py --once'
+      - '{{.BATCH_COMPOSE}} start consumer'
+
+  lag:
+    desc: Lag consumer group bronze-firms per partisi
+    cmds:
+      - '{{.RPK}} group describe bronze-firms'
+
+  bronze-files:
+    desc: Daftar objek Bronze FIRMS di Garage
+    cmds:
+      - '{{.BATCH_COMPOSE}} exec -T consumer python stream/src/ls_bronze.py'
+
+  bronze-lines:
+    desc: Jumlah objek Bronze FIRMS di Garage
+    cmds:
+      - '{{.BATCH_COMPOSE}} exec -T consumer python stream/src/ls_bronze.py --count'
+
+  # ----------------------------------------------------------- node lain
+  up-core:
+    desc: Nyalakan node core
+    cmds:
+      - 'docker compose --env-file .env.core -f compose/base.yml -f compose/vps-core.yml up -d'
+
+  # ------------------------------------------------------------- kualitas
+  test:
+    desc: Jalankan unit test
+    cmds:
+      - 'python -m pytest -q'
+
+  coverage:
+    desc: Test dengan laporan coverage
+    cmds:
+      - 'python -m pytest --cov=src --cov-report=term-missing'
+
+  lint:
+    desc: Cek gaya kode
+    cmds:
+      - 'python -m ruff check .'
+
+  fmt:
+    desc: Rapikan format kode
+    cmds:
+      - 'python -m ruff format .'
+
+  check:
+    desc: Lint lalu test
+    cmds:
+      - task: lint
+      - task: test
+
+  backfill:
+    desc: 'Backfill batch. Pakai: task backfill START=2026-11-01 END=2026-11-14'
+    cmds:
+      - 'python -m src.batch.flows --start {{.START}} --end {{.END}}'
+
+  seed:
+    desc: Isi data contoh
+    cmds:
+      - 'bash scripts/seed.sh'
+
+  benchmark:
+    desc: Jalankan benchmark
+    cmds:
+      - 'bash scripts/benchmark.sh'
+
+  backup:
+    desc: Backup
+    cmds:
+      - 'bash scripts/backup.sh'
+
+  restore:
+    desc: Restore
+    cmds:
+      - 'bash scripts/restore.sh'

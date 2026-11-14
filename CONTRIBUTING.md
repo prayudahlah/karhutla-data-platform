@@ -29,9 +29,9 @@ Gunakan conventional commits:
 ## Test
 
 ```bash
-just lint
-just test
-just coverage
+task lint
+task test
+task coverage
 ```
 
 ## Secret dan data

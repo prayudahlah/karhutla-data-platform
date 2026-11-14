@@ -30,8 +30,8 @@ Belum bisa dijalankan karena service Compose masih placeholder.
 3. Lihat daftar perintah.
 
 ```bash
-just --list
-just dev
+task --list
+task dev
 ```
 
 ## Open-Meteo ke Bronze
