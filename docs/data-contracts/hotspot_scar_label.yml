@@ -1,33 +1,67 @@
 name: hotspot_scar_label
 owner: Kelompok 8 - Yuda
 layer: silver
-status: skeleton
+status: implemented
 location:
   storage: Garage (S3-compatible)
   bucket: lakehouse
-  prefix: silver/hotspot_scar_label
-  pattern: date=YYYY-MM-DD/part-00000.parquet
-grain: Satu baris per hotspot dengan label scar terdekat.
+  publish:
+    materialization: external parquet (dbt-duckdb)
+    local_root: data/silver/published/firms/hotspot_label
+    uploader: python -m batch.silver.sync push
+  prefix: silver/firms/dataset=hotspot_label
+  pattern: date=YYYY-MM-DD/*.parquet
+grain: Satu baris per event_id. Setiap hotspot muncul tepat sekali, termasuk yang tidak punya scar.
 schema:
-  event_id: {type: string}
-  tile: {type: string, nullable: true}
-  row: {type: integer, nullable: true}
-  col: {type: integer, nullable: true}
-  burn_date: {type: date, nullable: true}
-  gap_days: {type: integer, nullable: true}
-  tier: {type: string, nullable: true}
+  event_id: {type: string, description: sha1 dari kunci dedup FIRMS}
+  source: {type: string}
+  satellite: {type: string}
+  instrument: {type: string, nullable: true}
   latitude: {type: double}
   longitude: {type: double}
   acq_ts_utc: {type: timestamp}
+  acq_ts_local: {type: timestamp}
+  acq_date: {type: date}
+  date: {type: date, description: sama dengan acq_date, kolom partisi}
+  acq_time: {type: string}
+  confidence: {type: string}
+  confidence_score: {type: integer, nullable: true}
+  frp: {type: double, nullable: true}
+  brightness: {type: double, nullable: true}
+  brightness_secondary: {type: double, nullable: true}
+  scan: {type: double, nullable: true}
+  track: {type: double, nullable: true}
+  daynight: {type: string, nullable: true}
+  version: {type: string, nullable: true}
+  ingested_at: {type: timestamp}
+  in_bbox: {type: boolean}
+  source_file: {type: string}
+  tile: {type: string, nullable: true, description: tile MCD64A1 yang memuat hotspot}
+  pixel_row: {type: integer, nullable: true, description: indeks baris piksel sinusoidal}
+  pixel_col: {type: integer, nullable: true, description: indeks kolom piksel sinusoidal}
+  burn_date: {type: date, nullable: true, description: tanggal terbakar scar terdekat}
+  gap_days: {type: integer, nullable: true, description: selisih absolut hari, null bila tanpa scar}
+  tier: {type: string, description: kuat, sedang, lemah, atau kandidat}
+tier_rules:
+  macro: dbt/macros/burn_scar_tier.sql
+  tiers:
+    kuat: gap_days <= 3
+    sedang: gap_days 4-7
+    lemah: gap_days 8-14
+    kandidat: tanpa scar, atau gap_days > 14
+  meaning: >-
+    Tingkat ini menyatakan kekuatan bukti, bukan tingkat bahaya. Hotspot dengan
+    bukti lemah belum tentu tidak berbahaya.
 freshness:
   expected: mengikuti pembaruan FIRMS dan MCD64A1
   alert_threshold: belum ditetapkan
 retention: mengikuti kebijakan Silver
 classification: public
 quality_rules:
-  - event_id unik
-  - gap_days tidak negatif bila burn_date tersedia
-  - tier mengikuti aturan sql/silver/burn_scar_tiers.sql
+  - event_id unik dan tidak null
+  - jumlah baris sama dengan jumlah hotspot di firms_hotspot
+  - tier konsisten dengan gap_days
+  - tier hanya bernilai kuat, sedang, lemah, atau kandidat
 consumers:
   - gold_risk_grid
   - fitur model

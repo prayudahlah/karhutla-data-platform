@@ -12,9 +12,13 @@ location:
   # Tabel pendukung periode yang sama.
   tiles_prefix: silver/_normalized/mcd64a1/dataset=tiles
   coverage_prefix: silver/_normalized/mcd64a1/dataset=coverage
-  # Tabel final (dedup dan konformasi) ditulis oleh dbt, menyusul.
+  # Tabel final ditulis dbt: hanya piksel di dalam bbox studi.
+  publish:
+    materialization: external parquet (dbt-duckdb)
+    local_root: data/silver/published/mcd64a1/burn_scar
+    uploader: python -m batch.silver.sync push
   prefix: silver/mcd64a1/dataset=burn_scar
-  pattern: date=YYYY-MM-DD/part-00000.parquet
+  pattern: date=YYYY-MM-DD/*.parquet
 grain: Satu baris per piksel terbakar per tile. Partisi memakai burn_date, bukan tanggal unduh.
 schema:
   tile: {type: string, description: nama tile sinusoidal, mis. h28v09}

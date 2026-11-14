@@ -18,6 +18,10 @@ from pathlib import Path
 PUBLISHED_DATASETS: tuple[tuple[str, str], ...] = (
     ("open_meteo", "weather"),
     ("open_meteo", "air_quality"),
+    ("firms", "hotspot"),
+    ("firms", "hotspot_label"),
+    ("mcd64a1", "burn_scar"),
+    ("mcd64a1", "tiles"),
 )
 
 DEFAULT_ROOT = "data/silver/published"

@@ -59,7 +59,7 @@ Semua PR menuju `dev`. Nomor di depan adalah urutan merge.
 | 2 | `feat/silver-openmeteo` | Aulia | `dev` setelah 1 | merged |
 | 3 | `feat/silver-firms` | Yuda | `dev` setelah 1 | merged |
 | 4 | `feat/silver-mcd64a1` | Yuda | `dev`, boleh paralel | merged |
-| 5 | `feat/silver-hotspot-label` | Yuda | `dev` setelah 2, 3, 4 | belum |
+| 5 | `feat/silver-hotspot-label` | Yuda | `dev` setelah 2, 3, 4 | PR dibuka |
 | 6 | `docs/contracts-silver` | Aulia | `dev` setelah 2 sampai 5 | belum |
 | 7 | `feat/silver-align` | Yuda | `dev` | merged |
 | 8 | `chore/silver-ops` | Yuda | `dev` | merged |
