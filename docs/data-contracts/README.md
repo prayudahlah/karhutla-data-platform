@@ -91,3 +91,20 @@ Satu hotspot yang terlihat oleh dua satelit berbeda menghasilkan dua
 | `open_meteo.weather` | batch | harian | Prefect |
 | `open_meteo.air_quality` | batch | harian | Prefect |
 | `mcd64a1.burned_area` | batch | bulanan | Prefect |
+
+## Dua sumber tulis untuk FIRMS
+
+Dataset `firms.hotspot` diisi dua jalur, dan keduanya memakai partisi yang
+berbeda sesuai sifat datanya:
+
+| Jalur | Partisi | Contoh |
+|---|---|---|
+| Stream (harian) | waktu ambil | `source=N20/ingest_date=2026-11-14/ingest_hour=07/` |
+| Backfill (historis) | periode data | `source=N20/period=2026-09/part-backfill-...jsonl` |
+
+Backfill memakai `period=` supaya menjalankan ulang bulan yang sama
+menghasilkan kunci yang sama, sehingga idempoten. Kalau memakai `ingest_date=`,
+setiap kali dijalankan ulang akan lahir salinan baru di partisi berbeda.
+
+Keduanya dibaca oleh normalizer Silver yang sama, karena pola akhiran berkasnya
+tetap `*.jsonl`.

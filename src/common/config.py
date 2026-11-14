@@ -228,12 +228,56 @@ class BurnedAreaSettings:
 
 
 @dataclass(frozen=True)
+class FirmsBackfillSettings:
+    """Tarik hotspot historis lewat area API FIRMS.
+
+    Kunci MAP_KEY sama dengan yang dipakai producer di node stream, tapi di sini
+    dibaca dari environment node batch.
+    """
+
+    map_key: str = ""
+    bbox: tuple[float, float, float, float] = (95.0, -11.0, 141.0, 6.0)
+    sources: tuple[str, ...] = (
+        "VIIRS_NOAA20_NRT",
+        "VIIRS_NOAA21_NRT",
+        "MODIS_NRT",
+    )
+    window_days: int = 5
+    timeout_seconds: float = 60.0
+    max_retries: int = 3
+
+    @classmethod
+    def from_env(cls) -> FirmsBackfillSettings:
+        bbox = _get_floats("FIRMS_BACKFILL_BBOX", cls.bbox)
+        west, south, east, north = bbox
+        if west >= east or south >= north:
+            raise ConfigError(
+                "FIRMS_BACKFILL_BBOX must be west,south,east,north with west<east and south<north"
+            )
+        raw_sources = _get("FIRMS_BACKFILL_SOURCES", ",".join(cls.sources))
+        sources = tuple(part.strip() for part in raw_sources.split(",") if part.strip())
+        if not sources:
+            raise ConfigError("FIRMS_BACKFILL_SOURCES tidak boleh kosong")
+        return cls(
+            map_key=_get("FIRMS_MAP_KEY"),
+            bbox=(west, south, east, north),
+            sources=sources,
+            window_days=_get_int("FIRMS_BACKFILL_WINDOW_DAYS", cls.window_days),
+            timeout_seconds=_get_float("FIRMS_BACKFILL_TIMEOUT_SECONDS", cls.timeout_seconds),
+            max_retries=_get_int("FIRMS_BACKFILL_MAX_RETRIES", cls.max_retries),
+        )
+
+
+@dataclass(frozen=True)
 class Settings:
     garage: GarageSettings
     openmeteo: OpenMeteoSettings
     # punya default supaya konstruksi Settings(...) lama tetap valid
     firms_bronze: FirmsBronzeSettings = field(default_factory=FirmsBronzeSettings)
     burned_area: BurnedAreaSettings = field(default_factory=BurnedAreaSettings.from_env)
+    firms_backfill: FirmsBackfillSettings = field(
+        default_factory=FirmsBackfillSettings.from_env
+    )
 
     @classmethod
     def from_env(cls, env_file: str | Path | None = ".env") -> Settings:
@@ -244,4 +288,5 @@ class Settings:
             openmeteo=OpenMeteoSettings.from_env(),
             firms_bronze=FirmsBronzeSettings.from_env(),
             burned_area=BurnedAreaSettings.from_env(),
+            firms_backfill=FirmsBackfillSettings.from_env(),
         )
