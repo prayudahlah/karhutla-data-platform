@@ -176,7 +176,7 @@ tasks:
   up-core:
     desc: Nyalakan node core
     cmds:
-      - 'docker compose --env-file .env.core -f compose/base.yml -f compose/vps-core.yml up -d'
+      - 'docker compose -f compose/base.yml -f compose/vps-core.yml up -d'
 
   # ------------------------------------------------------------- kualitas
   test:
