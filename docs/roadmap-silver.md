@@ -54,11 +54,11 @@ Semua PR menuju `dev`. Nomor di depan adalah urutan merge.
 
 | # | Branch | Pemilik | Base | Status |
 |---|---|---|---|---|
-| 0 | `fix/ci-dev` | Yuda | `dev` | PR dibuka, CI hijau |
-| 1 | `chore/silver-foundation` | Aulia | `dev` | lokal selesai, belum PR |
-| 2 | `feat/silver-openmeteo` | Aulia | `dev` setelah 1 | lokal selesai, belum PR |
-| 3 | `feat/silver-firms` | Yuda | `dev` setelah 1 | belum |
-| 4 | `feat/silver-mcd64a1` | Yuda | `dev`, boleh paralel | PR dibuka |
+| 0 | `fix/ci-dev` | Yuda | `dev` | merged |
+| 1 | `chore/silver-foundation` | Aulia | `dev` | merged |
+| 2 | `feat/silver-openmeteo` | Aulia | `dev` setelah 1 | merged |
+| 3 | `feat/silver-firms` | Yuda | `dev` setelah 1 | PR dibuka |
+| 4 | `feat/silver-mcd64a1` | Yuda | `dev`, boleh paralel | merged |
 | 5 | `feat/silver-hotspot-label` | Yuda | `dev` setelah 2, 3, 4 | belum |
 | 6 | `docs/contracts-silver` | Aulia | `dev` setelah 2 sampai 5 | belum |
 
