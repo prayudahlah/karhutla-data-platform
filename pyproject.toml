@@ -29,6 +29,7 @@ silver = [
 dev = [
     "pytest>=8.0",
     "pytest-cov>=5.0",
+    "pyyaml>=6.0",
     "ruff>=0.7",
     "pre-commit>=3.8",
 ]

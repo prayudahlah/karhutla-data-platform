@@ -1,43 +1,48 @@
 name: mcd64a1_burn_scar
 owner: Kelompok 8 - Yuda
 layer: silver
-status: active
+status: implemented
 location:
   storage: Garage (S3-compatible)
   bucket: lakehouse
-  # Keluaran normalisasi (format-only), ditulis oleh
-  # `python -m batch.silver.mcd64a1`.
   normalized_prefix: silver/_normalized/mcd64a1/dataset=burn_scar
-  normalized_pattern: date=<burn_date>/part-00000.parquet
-  # Tabel pendukung periode yang sama.
+  normalized_pattern: date=YYYY-MM-DD/part-00000.parquet
   tiles_prefix: silver/_normalized/mcd64a1/dataset=tiles
   coverage_prefix: silver/_normalized/mcd64a1/dataset=coverage
-  # Tabel final ditulis dbt: hanya piksel di dalam bbox studi.
   publish:
     materialization: external parquet (dbt-duckdb)
     local_root: data/silver/published/mcd64a1/burn_scar
     uploader: python -m batch.silver.sync push
   prefix: silver/mcd64a1/dataset=burn_scar
-  pattern: date=YYYY-MM-DD/*.parquet
-grain: Satu baris per piksel terbakar per tile. Partisi memakai burn_date, bukan tanggal unduh.
+  pattern: burn_date=YYYY-MM-DD/*.parquet
+partition_note: >-
+  Tabel final memakai burn_date=YYYY-MM-DD, bukan date=YYYY-MM-DD, karena
+  burn_date adalah waktu data yang menjadi kunci join hotspot. Ini pengecualian
+  yang disengaja dari aturan partisi Silver lainnya.
+normalized_grain: Satu baris per piksel terbakar per tile, memakai kolom row dan col.
+grain: Satu baris per piksel terbakar per tile setelah filter bbox, memakai pixel_row dan pixel_col.
 schema:
   tile: {type: string, description: nama tile sinusoidal, mis. h28v09}
-  row: {type: integer, description: indeks baris piksel di dalam tile}
-  col: {type: integer, description: indeks kolom piksel di dalam tile}
+  pixel_row: {type: integer, description: indeks baris piksel di dalam tile}
+  pixel_col: {type: integer, description: indeks kolom piksel di dalam tile}
   latitude: {type: double, description: titik tengah piksel, derajat}
   longitude: {type: double, description: titik tengah piksel, derajat}
-  burn_date: {type: date, description: hari piksel terbakar}
+  burn_date: {type: date, description: hari piksel terbakar dan dasar partisi final}
   burn_month: {type: string, description: periode granule asal, YYYY-MM}
   burn_doy: {type: integer, description: nomor hari dalam setahun, 1-366}
   qa: {type: integer, nullable: true, description: layer Quality Assurance produk}
   uncertainty: {type: integer, nullable: true, description: Burn Date Uncertainty}
   first_day: {type: integer, nullable: true, description: First Day of reliable change}
   last_day: {type: integer, nullable: true, description: Last Day of reliable change}
-  in_bbox: {type: boolean, description: titik tengah berada di dalam BURNED_AREA_BBOX}
   source_file: {type: string, description: kunci objek HDF di Bronze}
+normalized_schema:
+  row: {type: integer, description: indeks baris sebelum diubah menjadi pixel_row}
+  col: {type: integer, description: indeks kolom sebelum diubah menjadi pixel_col}
+  in_bbox: {type: boolean, description: titik tengah berada di dalam BURNED_AREA_BBOX}
 supporting_tables:
   tiles:
-    grain: satu baris per tile per periode
+    grain: Satu baris per tile dari periode terbaru.
+    final_prefix: silver/mcd64a1/dataset=tiles/tiles.parquet
     schema:
       tile: {type: string}
       period: {type: string, description: YYYY-MM}
@@ -48,7 +53,8 @@ supporting_tables:
       nx: {type: integer}
       ny: {type: integer}
   coverage:
-    grain: satu baris per tile per periode
+    grain: Satu baris per tile per periode, hanya di lapisan normalized.
+    normalized_prefix: silver/_normalized/mcd64a1/dataset=coverage
     schema:
       period: {type: string}
       tile: {type: string}
@@ -65,7 +71,7 @@ classification: public
 quality_rules:
   - burn_date berada di dalam periode tile; yang di luar masuk karantina
   - piksel di luar periode maksimal 5% dari total, kalau lebih laporan DQ ditandai failed
-  - coordinate berada di dalam BURNED_AREA_BBOX ditandai lewat kolom in_bbox
+  - koordinat di dalam BURNED_AREA_BBOX ditandai lewat kolom in_bbox
   - tile yang belum masuk tercatat di tabel coverage
   - laporan DQ ditulis ke silver/_dq/mcd64a1/dataset=burn_scar/run_id=<run_id>.json
 consumers:

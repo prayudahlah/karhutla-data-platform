@@ -11,7 +11,18 @@ location:
     uploader: python -m batch.silver.sync push
   prefix: silver/firms/dataset=hotspot_label
   pattern: date=YYYY-MM-DD/*.parquet
+source_models:
+  - firms_hotspot
+  - mcd64a1_tiles
+  - mcd64a1_burn_scar
 grain: Satu baris per event_id. Setiap hotspot muncul tepat sekali, termasuk yang tidak punya scar.
+deduplication:
+  key: event_id
+  tie_break: gap_days terkecil, nulls last
+  status: diterapkan saat join ke mcd64a1_burn_scar
+  reason: >-
+    Satu hotspot bisa beririsan dengan beberapa piksel scar. Yang dipakai adalah
+    scar dengan jarak hari paling dekat; hotspot tanpa scar tetap dipertahankan.
 schema:
   event_id: {type: string, description: sha1 dari kunci dedup FIRMS}
   source: {type: string}
