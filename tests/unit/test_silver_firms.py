@@ -259,3 +259,54 @@ def test_normalize_writes_dq_report() -> None:
 def test_normalize_without_bronze_raises() -> None:
     with pytest.raises(FirmsSilverError):
         normalize(FakeStore(), _settings(), run_id="run-5")
+
+
+def test_main_wires_normalize(monkeypatch) -> None:
+    from batch.silver import firms
+
+    captured: dict[str, Any] = {}
+
+    def fake_normalize(store, settings, *, run_id, local_root=None, overwrite=False):
+        captured.update(run_id=run_id, local_root=local_root)
+        return {"rows_written": 0}
+
+    monkeypatch.setattr(firms, "normalize", fake_normalize)
+
+    class DummySettings:
+        garage = object()
+
+        @staticmethod
+        def from_env():
+            return DummySettings()
+
+    monkeypatch.setattr(firms, "Settings", DummySettings)
+    monkeypatch.setattr(firms, "BronzeStore", lambda settings: object())
+
+    assert firms.main(["normalize", "--run-id", "run-x"]) == 0
+    assert captured["run_id"] == "run-x"
+    assert captured["local_root"] is not None
+
+
+def test_main_can_disable_local_mirror(monkeypatch) -> None:
+    from batch.silver import firms
+
+    captured: dict[str, Any] = {}
+
+    def fake_normalize(store, settings, *, run_id, local_root=None, overwrite=False):
+        captured.update(local_root=local_root)
+        return {"rows_written": 0}
+
+    monkeypatch.setattr(firms, "normalize", fake_normalize)
+
+    class DummySettings:
+        garage = object()
+
+        @staticmethod
+        def from_env():
+            return DummySettings()
+
+    monkeypatch.setattr(firms, "Settings", DummySettings)
+    monkeypatch.setattr(firms, "BronzeStore", lambda settings: object())
+
+    assert firms.main(["normalize", "--run-id", "run-x", "--no-mirror"]) == 0
+    assert captured["local_root"] is None

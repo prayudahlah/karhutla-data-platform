@@ -18,7 +18,14 @@ from collections.abc import Sequence
 from pathlib import Path
 from typing import Any
 
-from batch.silver.parquet import PARQUET_CONTENT_TYPE, ObjectStore
+import pyarrow as pa
+
+from batch.silver.parquet import (
+    PARQUET_CONTENT_TYPE,
+    ObjectStore,
+    parquet_bytes,
+    upload_parquet,
+)
 from common.config import Settings
 from common.storage import BronzeStore
 
@@ -28,6 +35,37 @@ SILVER_PREFIX = "silver"
 
 class SyncError(RuntimeError):
     """Folder atau kunci tidak sesuai bentuk yang diharapkan."""
+
+
+def mirror_path(local_root: Path, key: str) -> Path:
+    """Petakan kunci Silver ke path lokal, membuang akar ``silver/``."""
+    for prefix in (NORMALIZED_PREFIX, SILVER_PREFIX):
+        if key.startswith(f"{prefix}/"):
+            return local_root / key[len(prefix) + 1 :]
+    raise SyncError(f"Kunci tidak berada di bawah {SILVER_PREFIX}: {key}")
+
+
+def publish_table(
+    store: ObjectStore,
+    key: str,
+    table: pa.Table,
+    *,
+    local_root: Path | None = None,
+    metadata: dict[str, str] | None = None,
+    overwrite: bool = False,
+) -> str:
+    """Tulis ke Garage, dan opsional ke salinan lokal untuk dbt.
+
+    Dua normalizer sebelumnya berbeda: satu menulis lokal lalu push, yang lain
+    hanya ke Garage. Fungsi ini menyatukan keduanya: object storage selalu
+    menjadi tujuan utama, salinan lokal hanya untuk kenyamanan dbt.
+    """
+    digest = upload_parquet(store, key, table, metadata=metadata, overwrite=overwrite)
+    if local_root is not None:
+        destination = mirror_path(local_root, key)
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        destination.write_bytes(parquet_bytes(table))
+    return digest
 
 
 def pull(

@@ -145,3 +145,44 @@ def test_push_rejects_flat_layout(tmp_path: Path) -> None:
 def test_push_without_files_raises(tmp_path: Path) -> None:
     with pytest.raises(SyncError):
         push(FakeStore(), local_root=tmp_path)
+
+
+def test_mirror_path_strips_silver_prefix() -> None:
+    from batch.silver.sync import mirror_path
+
+    path = mirror_path(
+        Path("/tmp/x"),
+        "silver/_normalized/firms/dataset=hotspot/date=2026-09-08/part.parquet",
+    )
+
+    assert path == Path("/tmp/x/firms/dataset=hotspot/date=2026-09-08/part.parquet")
+
+
+def test_publish_table_writes_remote_and_local(tmp_path: Path) -> None:
+    import pyarrow as pa
+
+    from batch.silver.parquet import read_parquet_bytes
+    from batch.silver.sync import publish_table
+
+    store = FakeStore()
+    table = pa.table({"a": [1, 2]})
+    key = "silver/_normalized/firms/dataset=hotspot/date=2026-09-08/part-00000.parquet"
+
+    publish_table(store, key, table, local_root=tmp_path)
+
+    assert key in store.objects
+    local = tmp_path / "firms/dataset=hotspot/date=2026-09-08/part-00000.parquet"
+    assert read_parquet_bytes(local.read_bytes()).num_rows == 2
+
+
+def test_publish_table_without_local_root_only_remote() -> None:
+    import pyarrow as pa
+
+    from batch.silver.sync import publish_table
+
+    store = FakeStore()
+    key = "silver/_normalized/firms/dataset=hotspot/date=2026-09-08/part.parquet"
+
+    publish_table(store, key, pa.table({"a": [1]}))
+
+    assert key in store.objects

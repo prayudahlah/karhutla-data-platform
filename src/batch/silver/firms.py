@@ -15,19 +15,25 @@ Keluaran:
 
 from __future__ import annotations
 
+import argparse
 import json
 import re
 from collections import Counter, defaultdict
+from collections.abc import Sequence
 from datetime import UTC, date, datetime
+from pathlib import Path
 from typing import Any
 from zoneinfo import ZoneInfo
 
 import pyarrow as pa
 
 from batch.silver.dq import DQReport, check_not_null, write_quarantine
-from batch.silver.parquet import ObjectStore, table_from_rows, upload_parquet
+from batch.silver.parquet import ObjectStore, table_from_rows
 from batch.silver.paths import dq_report_key, normalized_key, quarantine_key
+from batch.silver.sync import publish_table
 from common.config import Settings
+from common.run import new_run_id
+from common.storage import BronzeStore
 
 SOURCE = "firms"
 DATASET = "hotspot"
@@ -269,6 +275,7 @@ def normalize(
     settings: Settings,
     *,
     run_id: str,
+    local_root: Path | None = None,
     overwrite: bool = False,
 ) -> dict[str, Any]:
     """Urai seluruh objek Bronze FIRMS menjadi Parquet Silver."""
@@ -299,10 +306,11 @@ def normalize(
 
     written = 0
     for acq_date in sorted(rows_by_date):
-        upload_parquet(
+        publish_table(
             store,
             normalized_key(SOURCE, DATASET, acq_date),
             table_from_rows(rows_by_date[acq_date], schema=FIRMS_SCHEMA),
+            local_root=local_root,
             metadata={"run-id": run_id, "source": SOURCE, "dataset": DATASET},
             overwrite=overwrite,
         )
@@ -376,3 +384,38 @@ def normalize(
 def _duplicate_events(rows: list[dict[str, Any]]) -> int:
     counts = Counter(row["event_id"] for row in rows)
     return sum(count - 1 for count in counts.values() if count > 1)
+
+
+def main(argv: Sequence[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(description="Normalisasi FIRMS Bronze ke Silver")
+    sub = parser.add_subparsers(dest="command", required=True)
+
+    normalize_parser = sub.add_parser("normalize", help="JSONL Bronze -> parquet")
+    normalize_parser.add_argument("--run-id", default=None, help="Default dibuat otomatis")
+    normalize_parser.add_argument(
+        "--local-root",
+        type=Path,
+        default=Path("data/silver/_normalized"),
+        help="salinan lokal untuk dbt",
+    )
+    normalize_parser.add_argument(
+        "--no-mirror",
+        action="store_true",
+        help="jangan menulis salinan lokal, cukup ke Garage",
+    )
+
+    args = parser.parse_args(argv)
+    settings = Settings.from_env()
+    store = BronzeStore(settings.garage)
+    result = normalize(
+        store,
+        settings,
+        run_id=args.run_id or new_run_id(),
+        local_root=None if args.no_mirror else args.local_root,
+    )
+    print(json.dumps(result, indent=2, ensure_ascii=False))
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

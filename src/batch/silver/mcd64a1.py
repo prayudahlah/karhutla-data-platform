@@ -23,10 +23,13 @@ tertulis, jadi tidak perlu unduh ulang.
 
 from __future__ import annotations
 
+import argparse
+import json
 import os
 import re
 import tempfile
 from collections import Counter, defaultdict
+from collections.abc import Sequence
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta
 from pathlib import Path
@@ -36,9 +39,12 @@ import numpy as np
 import pyarrow as pa
 
 from batch.silver.dq import DQReport, check_not_null, check_row_count, write_quarantine
-from batch.silver.parquet import ObjectStore, table_from_rows, upload_parquet
+from batch.silver.parquet import ObjectStore, table_from_rows
 from batch.silver.paths import dq_report_key, normalized_key, quarantine_key
-from common.config import BurnedAreaSettings
+from batch.silver.sync import publish_table
+from common.config import BurnedAreaSettings, Settings
+from common.run import new_run_id
+from common.storage import BronzeStore
 
 SOURCE = "mcd64a1"
 BRONZE_DATASET = "burned_area"
@@ -359,6 +365,7 @@ def normalize_month(
     *,
     month: str,
     run_id: str,
+    local_root: Path | None = None,
     overwrite: bool = False,
 ) -> dict[str, Any]:
     """Urai semua tile satu periode dari Bronze menjadi Parquet Silver."""
@@ -390,26 +397,29 @@ def normalize_month(
     written = 0
     for burn_day in sorted(scar_by_date):
         rows = scar_by_date[burn_day]
-        upload_parquet(
+        publish_table(
             store,
             normalized_key(SOURCE, SCAR_DATASET, burn_day),
             table_from_rows(rows, schema=SCAR_SCHEMA),
+            local_root=local_root,
             metadata={"run-id": run_id, "source": SOURCE, "dataset": SCAR_DATASET},
             overwrite=overwrite,
         )
         written += len(rows)
 
-    upload_parquet(
+    publish_table(
         store,
         normalized_key(SOURCE, TILES_DATASET, start),
         table_from_rows(tile_rows, schema=TILE_SCHEMA),
+        local_root=local_root,
         metadata={"run-id": run_id, "source": SOURCE, "dataset": TILES_DATASET},
         overwrite=overwrite,
     )
-    upload_parquet(
+    publish_table(
         store,
         normalized_key(SOURCE, COVERAGE_DATASET, start),
         table_from_rows(coverage_rows, schema=COVERAGE_SCHEMA),
+        local_root=local_root,
         metadata={"run-id": run_id, "source": SOURCE, "dataset": COVERAGE_DATASET},
         overwrite=overwrite,
     )
@@ -474,3 +484,46 @@ def _duplicate_rows(scar_by_date: dict[date, list[dict[str, Any]]]) -> int:
     keys = [(row["tile"], row["row"], row["col"]) for rows in scar_by_date.values() for row in rows]
     counts = Counter(keys)
     return sum(count - 1 for count in counts.values() if count > 1)
+
+
+def main(argv: Sequence[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(description="Normalisasi MCD64A1 Bronze ke Silver")
+    sub = parser.add_subparsers(dest="command", required=True)
+
+    normalize_parser = sub.add_parser("normalize", help="HDF Bronze -> parquet")
+    normalize_parser.add_argument(
+        "--month", action="append", required=True, help="YYYY-MM, boleh diulang"
+    )
+    normalize_parser.add_argument("--run-id", default=None, help="Default dibuat otomatis")
+    normalize_parser.add_argument(
+        "--local-root",
+        type=Path,
+        default=Path("data/silver/_normalized"),
+        help="salinan lokal untuk dbt",
+    )
+    normalize_parser.add_argument(
+        "--no-mirror",
+        action="store_true",
+        help="jangan menulis salinan lokal, cukup ke Garage",
+    )
+
+    args = parser.parse_args(argv)
+    settings = Settings.from_env()
+    store = BronzeStore(settings.garage)
+    run_id = args.run_id or new_run_id()
+    results = [
+        normalize_month(
+            store,
+            settings.burned_area,
+            month=month,
+            run_id=run_id,
+            local_root=None if args.no_mirror else args.local_root,
+        )
+        for month in args.month
+    ]
+    print(json.dumps(results, indent=2, ensure_ascii=False))
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
