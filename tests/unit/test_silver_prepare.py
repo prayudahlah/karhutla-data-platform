@@ -56,3 +56,48 @@ def test_ensure_profiles_raises_without_example(tmp_path: Path) -> None:
 
     with pytest.raises(FileNotFoundError):
         ensure_profiles(tmp_path)
+
+
+def test_clean_publish_root_removes_stale_partitions(tmp_path: Path) -> None:
+    from batch.silver.prepare import clean_publish_root
+
+    stale = tmp_path / "open_meteo" / "weather" / "date=2020-01-01"
+    stale.mkdir(parents=True)
+    (stale / "old.parquet").write_bytes(b"x")
+    (tmp_path / "open_meteo" / "weather" / "keep.txt").write_text("y")
+
+    removed = clean_publish_root(tmp_path)
+
+    assert removed == 2
+    assert not tmp_path.exists()
+
+
+def test_clean_publish_root_returns_zero_when_missing(tmp_path: Path) -> None:
+    from batch.silver.prepare import clean_publish_root
+
+    missing = tmp_path / "belum-ada" / "sub"
+
+    assert clean_publish_root(missing) == 0
+
+
+def test_clean_refuses_shallow_path() -> None:
+    import pytest
+
+    from batch.silver.prepare import clean_publish_root
+
+    with pytest.raises(ValueError):
+        clean_publish_root(Path("/"))
+
+
+def test_clean_then_prepare_recreates_dataset_folders(tmp_path: Path) -> None:
+    from batch.silver.prepare import clean_publish_root, prepare_publish_root
+
+    stale = tmp_path / "open_meteo" / "weather" / "date=2020-01-01"
+    stale.mkdir(parents=True)
+    (stale / "old.parquet").write_bytes(b"x")
+
+    clean_publish_root(tmp_path)
+    prepare_publish_root(tmp_path)
+
+    assert not stale.exists()
+    assert (tmp_path / "open_meteo" / "weather").is_dir()

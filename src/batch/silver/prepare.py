@@ -40,6 +40,29 @@ def prepare_publish_root(
     return created
 
 
+def _assert_safe_clean_target(root: Path) -> Path:
+    """Tolak path yang terlalu dangkal.
+
+    Salah ketik pada SILVER_PUBLISH_ROOT bisa berakibat menghapus folder lain,
+    jadi pembersihan hanya diizinkan untuk path yang cukup dalam.
+    """
+    resolved = root.resolve()
+    anchor = Path(resolved.anchor)
+    if resolved in {anchor, anchor.parent, Path.home()} or len(resolved.parts) < 3:
+        raise ValueError(f"Menolak membersihkan path terlalu dangkal: {resolved}")
+    return resolved
+
+
+def clean_publish_root(root: Path) -> int:
+    """Kosongkan folder hasil dbt, kembalikan jumlah berkas yang dihapus."""
+    resolved = _assert_safe_clean_target(root)
+    if not resolved.exists():
+        return 0
+    removed = sum(1 for path in resolved.rglob("*") if path.is_file())
+    shutil.rmtree(resolved)
+    return removed
+
+
 def ensure_profiles(project_dir: Path = Path("dbt")) -> Path | None:
     """Salin profiles.yml.example kalau profiles.yml belum ada.
 
@@ -63,8 +86,14 @@ def main(argv: Sequence[str] | None = None) -> int:
         default=os.environ.get("SILVER_PUBLISH_ROOT", DEFAULT_ROOT),
         help="akar folder hasil dbt",
     )
+    parser.add_argument(
+        "--clean",
+        action="store_true",
+        help="kosongkan folder hasil dulu supaya partisi lama tidak tertinggal",
+    )
     args = parser.parse_args(argv)
 
+    removed = clean_publish_root(Path(args.root)) if args.clean else 0
     created = prepare_publish_root(Path(args.root))
     created_profiles = ensure_profiles()
     print(
@@ -72,6 +101,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             {
                 "root": args.root,
                 "folders": [str(folder) for folder in created],
+                "files_removed": removed,
                 "profiles_created": str(created_profiles) if created_profiles else None,
             },
             indent=2,

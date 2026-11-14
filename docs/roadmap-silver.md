@@ -64,7 +64,8 @@ Semua PR menuju `dev`. Nomor di depan adalah urutan merge.
 | 7 | `feat/silver-align` | Yuda | `dev` | merged |
 | 8 | `chore/silver-ops` | Yuda | `dev` | merged |
 | 9 | `feat/firms-backfill` | Yuda | `dev` | merged |
-| 10 | `feat/openmeteo-backfill` | Yuda | `dev` | PR dibuka |
+| 10 | `feat/openmeteo-backfill` | Yuda | `dev` | merged |
+| 11 | `fix/silver-idempotent` | Yuda | `dev` | PR dibuka |
 
 Branch `3` dan `4` boleh mulai sebelum `1` merge, asalkan stub tiga fungsi di
 `src/batch/silver/` sudah disepakati. Yang ditunda hanya penyambungan ke writer

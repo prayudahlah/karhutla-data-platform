@@ -366,7 +366,7 @@ def normalize_month(
     month: str,
     run_id: str,
     local_root: Path | None = None,
-    overwrite: bool = False,
+    overwrite: bool = True,
 ) -> dict[str, Any]:
     """Urai semua tile satu periode dari Bronze menjadi Parquet Silver."""
     start = parse_month(month)
@@ -506,6 +506,11 @@ def main(argv: Sequence[str] | None = None) -> int:
         action="store_true",
         help="jangan menulis salinan lokal, cukup ke Garage",
     )
+    normalize_parser.add_argument(
+        "--no-overwrite",
+        action="store_true",
+        help="gagal kalau objek sudah ada, bukan menimpanya",
+    )
 
     args = parser.parse_args(argv)
     settings = Settings.from_env()
@@ -518,6 +523,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             month=month,
             run_id=run_id,
             local_root=None if args.no_mirror else args.local_root,
+            overwrite=not args.no_overwrite,
         )
         for month in args.month
     ]
