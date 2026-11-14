@@ -1,9 +1,11 @@
-# Shared Compose configuration.
-# TODO: define networks, volumes, and common anchors.
+# Konfigurasi bersama semua node.
+# File ini hanya berisi network dan volume; service didefinisikan per node.
 name: karhutla
 
-services: {}
+networks:
+  karhutla:
+    name: karhutla
 
-networks: {}
-
-volumes: {}
+volumes:
+  redpanda-data:
+    name: karhutla-redpanda-data

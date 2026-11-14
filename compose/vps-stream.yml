@@ -1,3 +1,109 @@
-# VM stream.
-# TODO: add Redpanda and FIRMS producer.
-services: {}
+# Node stream: Redpanda + producer FIRMS.
+#
+# Tanpa publish port ke host; port dibuka lewat compose/dev.yml.
+#
+# Listener sengaja dipisah dua:
+#   PLAINTEXT -> stream:9092   dipakai container lain di network (alias "stream")
+#   EXTERNAL  -> localhost:19092  dipakai rpk/console dari host
+# Kalau cuma satu listener, salah satu dari keduanya pasti gagal connect.
+# Saat pindah ke VM asli, ganti "localhost" di EXTERNAL dengan IP VM.
+
+services:
+  redpanda:
+    image: redpandadata/redpanda:v26.2.7
+    container_name: karhutla-redpanda
+    restart: unless-stopped
+    command:
+      - redpanda
+      - start
+      - --mode=dev-container
+      - --smp=1
+      - --memory=1G
+      - --reserve-memory=0M
+      - --overprovisioned
+      - --node-id=0
+      - --check=false
+      - --kafka-addr=PLAINTEXT://0.0.0.0:9092,EXTERNAL://0.0.0.0:19092
+      - --advertise-kafka-addr=PLAINTEXT://stream:9092,EXTERNAL://localhost:19092
+      - --rpc-addr=0.0.0.0:33145
+      - --advertise-rpc-addr=stream:33145
+    networks:
+      karhutla:
+        aliases:
+          - stream
+    volumes:
+      - redpanda-data:/var/lib/redpanda/data
+    healthcheck:
+      test: ["CMD-SHELL", "rpk cluster health | grep -q 'Healthy:.*true'"]
+      interval: 10s
+      timeout: 10s
+      retries: 12
+      start_period: 20s
+
+  # One-shot: pastikan topik ada sebelum producer jalan.
+  # auto_create_topics dimatikan supaya topik tidak lahir dengan 1 partisi.
+  redpanda-init:
+    image: redpandadata/redpanda:v26.2.7
+    container_name: karhutla-redpanda-init
+    restart: "no"
+    depends_on:
+      redpanda:
+        condition: service_healthy
+    networks:
+      - karhutla
+    entrypoint: ["/bin/bash", "-c"]
+    command:
+      - |
+        set -euo pipefail
+        rpk -X brokers=redpanda:9092 topic create firms.hotspot.raw -p 3 -r 1 \
+          -c retention.ms=604800000 \
+          -c segment.bytes=134217728 \
+          --if-not-exists
+        rpk -X brokers=redpanda:9092 topic create firms.hotspot.dlq -p 1 -r 1 \
+          -c retention.ms=1209600000 \
+          --if-not-exists
+        rpk -X brokers=redpanda:9092 -X admin.hosts=redpanda:9644 cluster config set auto_create_topics_enabled false || true
+        rpk -X brokers=redpanda:9092 topic list -d
+
+  redpanda-console:
+    image: redpandadata/console:latest
+    container_name: karhutla-redpanda-console
+    restart: unless-stopped
+    depends_on:
+      redpanda:
+        condition: service_healthy
+    environment:
+      KAFKA_BROKERS: redpanda:9092
+    networks:
+      - karhutla
+
+  producer:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.stream
+    image: karhutla/firms-producer:local
+    container_name: karhutla-firms-producer
+    restart: unless-stopped
+    depends_on:
+      redpanda:
+        condition: service_healthy
+      redpanda-init:
+        condition: service_completed_successfully
+    env_file:
+      - path: ../stream/.env
+        required: false
+    environment:
+      # Menimpa isi stream/.env supaya path di dalam container benar.
+      DATA_DIR: /app/data
+      # Sengaja pakai nama service, bukan alias "stream": di laptop yang nama
+      # Tailscale-nya "stream", alias itu jatuh ke MagicDNS saat broker mati
+      # sehingga container mencoba connect ke 100.91.1.14. Di VM asli nilainya
+      # tetap stream:9092 lewat REDPANDA_BROKERS.
+      REDPANDA_BROKERS: ${REDPANDA_BROKERS:-redpanda:9092}
+      REDPANDA_TOPIC: ${REDPANDA_TOPIC:-firms.hotspot.raw}
+      TZ: ${TZ:-Asia/Jakarta}
+    volumes:
+      - ../stream/data:/app/data
+    networks:
+      - karhutla
+    command: ["python", "stream/src/firms_stream.py", "--interval", "600"]

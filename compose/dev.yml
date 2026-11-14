@@ -1,3 +1,11 @@
-# Local development stack.
-# TODO: add Redpanda, MinIO, Postgres, and FastAPI.
-services: {}
+# Override untuk dev di satu laptop: buka port ke host.
+# Dipakai bersama compose/base.yml + compose/vps-stream.yml.
+services:
+  redpanda:
+    ports:
+      - "127.0.0.1:19092:19092"   # listener EXTERNAL, untuk rpk dari host
+      - "127.0.0.1:9644:9644"     # admin API
+
+  redpanda-console:
+    ports:
+      - "127.0.0.1:8080:8080"
