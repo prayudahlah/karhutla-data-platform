@@ -34,6 +34,19 @@ just --list
 just dev
 ```
 
+## Open-Meteo ke Bronze
+
+Ingestion weather dan air quality ke Garage Bronze sudah tersedia:
+
+```bash
+python -m flows.openmeteo_ingestion --limit 2
+python -m flows.openmeteo_ingestion
+python -m flows.openmeteo_ingestion --verify-only <run_id>
+```
+
+Panduan lengkap, termasuk menjalankan Garage lokal, ada di
+`docs/runbooks/garage-bronze.md`.
+
 ## Struktur
 
 - `src/` kode aplikasi

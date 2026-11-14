@@ -3,7 +3,7 @@
 | Req | Bukti | Test command | Status | Owner |
 |---|---|---|---|---|
 | F-01 | Compose, health check, deploy log | TBD | TBD | TBD |
-| F-02 | Batch ingest log, checksum | TBD | TBD | TBD |
+| F-02 | [Open-Meteo Bronze](F-02-openmeteo-bronze.md) | `pytest -q -m integration` | Done | Batch |
 | F-03 | Backfill report | TBD | TBD | TBD |
 | F-04 | Producer, consumer, lag | TBD | TBD | TBD |
 | F-05 | Dedup, DLQ, watermark | TBD | TBD | TBD |
