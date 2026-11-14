@@ -139,6 +139,7 @@ class GarageSettings:
 @dataclass(frozen=True)
 class OpenMeteoSettings:
     weather_url: str = "https://api.open-meteo.com/v1/forecast"
+    archive_url: str = "https://archive-api.open-meteo.com/v1/archive"
     air_quality_url: str = "https://air-quality-api.open-meteo.com/v1/air-quality"
     timezone: str = "Asia/Jakarta"
     forecast_days: int = 3
@@ -164,6 +165,7 @@ class OpenMeteoSettings:
             )
         return cls(
             weather_url=_get("OPENMETEO_WEATHER_URL", cls.weather_url),
+            archive_url=_get("OPENMETEO_ARCHIVE_URL", cls.archive_url),
             air_quality_url=_get("OPENMETEO_AIR_QUALITY_URL", cls.air_quality_url),
             timezone=_get("OPENMETEO_TIMEZONE", cls.timezone),
             forecast_days=_get_int("OPENMETEO_FORECAST_DAYS", cls.forecast_days),

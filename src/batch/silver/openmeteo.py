@@ -143,13 +143,21 @@ def parse_bronze_object(key: str, *, prefix: str, dataset: str) -> BronzeObject 
     else:
         return None
 
-    if not ingest_part.startswith("ingest_date=") or not run_part.startswith("run_id="):
+    if not run_part.startswith("run_id="):
         return None
     if not parts[3].endswith(".json"):
         return None
 
+    # Backfill menulis partisi period=YYYY-MM, sedangkan ingest harian memakai
+    # ingest_date=YYYY-MM-DD. Keduanya diterima; period dipetakan ke hari pertama.
     try:
-        ingest_date = date.fromisoformat(ingest_part.removeprefix("ingest_date="))
+        if ingest_part.startswith("ingest_date="):
+            ingest_date = date.fromisoformat(ingest_part.removeprefix("ingest_date="))
+        elif ingest_part.startswith("period="):
+            period = ingest_part.removeprefix("period=")
+            ingest_date = date.fromisoformat(f"{period}-01")
+        else:
+            return None
     except ValueError:
         return None
 

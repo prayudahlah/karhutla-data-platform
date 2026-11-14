@@ -193,6 +193,11 @@ tasks:
     cmds:
       - 'python -m flows.firms_backfill --month {{.CLI_ARGS}}'
 
+  openmeteo-backfill:
+    desc: Tarik cuaca dan AQ historis, mis. task openmeteo-backfill -- 2026-09
+    cmds:
+      - 'python -m flows.openmeteo_backfill --month {{.CLI_ARGS}}'
+
   silver-openmeteo:
     desc: Normalisasi Open-Meteo Bronze ke Silver
     cmds:

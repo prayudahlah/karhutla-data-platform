@@ -15,6 +15,7 @@ source:
   bronze_layouts:
     - bronze/open_meteo/weather/ingest_date=.../run_id=.../*.json
     - bronze/open_meteo/dataset=weather/ingest_date=.../run_id=.../*.json
+    - bronze/open_meteo/dataset=weather/period=YYYY-MM/run_id=backfill/*.json
   location_level: province
 grain: Satu baris per provinsi, kota, dan jam setelah dedup.
 schema:
