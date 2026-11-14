@@ -1,10 +1,13 @@
 metadata_dir = "/var/lib/garage/meta"
 data_dir = "/var/lib/garage/data"
 db_engine = "sqlite"
+metadata_auto_snapshot_interval = "6h"
 
 replication_factor = 1
 
 rpc_bind_addr = "[::]:3901"
+# Dipakai garage-webui untuk membuat tautan ke node. Di VM batch ganti dengan
+# IP Tailscale, mis. "100.72.0.53:3901".
 rpc_public_addr = "127.0.0.1:3901"
 rpc_secret = "CHANGE_ME_WITH_64_HEX_CHARACTERS"
 
@@ -18,3 +21,10 @@ public_endpoint = "http://127.0.0.1:3900"
 bind_addr = "[::]:3902"
 root_domain = ".web.garage.localhost"
 index = "index.html"
+
+# Wajib untuk garage-webui dan `garage status` dari mesin lain.
+# api_bind_addr harus [::] (bukan 127.0.0.1) karena webui ada di container lain.
+[admin]
+api_bind_addr = "[::]:3903"
+admin_token = "CHANGE_ME_ADMIN_TOKEN"
+metrics_token = "CHANGE_ME_METRICS_TOKEN"
