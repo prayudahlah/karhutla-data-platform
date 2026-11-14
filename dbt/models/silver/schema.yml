@@ -76,3 +76,65 @@ models:
       - name: date
         data_tests:
           - not_null
+
+  - name: stg_firms_hotspot
+    description: Normalized FIRMS hotspot rows, before deduplication.
+    columns:
+      - name: event_id
+        data_tests: [not_null]
+      - name: acq_date
+        data_tests: [not_null]
+      - name: latitude
+        data_tests: [not_null]
+      - name: longitude
+        data_tests: [not_null]
+
+  - name: stg_mcd64a1_burn_scar
+    description: Normalized burned pixels, before filtering to the study bbox.
+    columns:
+      - name: tile
+        data_tests: [not_null]
+      - name: burn_date
+        data_tests: [not_null]
+
+  - name: stg_mcd64a1_tiles
+    description: Sinusoidal grid per tile and period.
+    columns:
+      - name: tile
+        data_tests: [not_null]
+
+  - name: firms_hotspot
+    description: Deduplicated hotspots, one row per event_id.
+    columns:
+      - name: event_id
+        data_tests: [unique, not_null]
+      - name: date
+        data_tests: [not_null]
+
+  - name: mcd64a1_burn_scar
+    description: Burned pixels inside the study bbox.
+    columns:
+      - name: tile
+        data_tests: [not_null]
+      - name: burn_date
+        data_tests: [not_null]
+
+  - name: mcd64a1_tiles
+    description: One grid row per tile, latest period.
+    columns:
+      - name: tile
+        data_tests: [unique, not_null]
+
+  - name: hotspot_scar_label
+    description: Every hotspot with its nearest burn scar and evidence tier.
+    columns:
+      - name: event_id
+        data_tests: [unique, not_null]
+      - name: date
+        data_tests: [not_null]
+      - name: tier
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['kuat', 'sedang', 'lemah', 'kandidat']

@@ -1,7 +1,7 @@
 name: firms_hotspot
 owner: Kelompok 8 - Yuda
 layer: silver
-status: partial
+status: implemented
 location:
   storage: Garage (S3-compatible)
   bucket: lakehouse
@@ -9,13 +9,17 @@ location:
   normalized_prefix: silver/_normalized/firms/dataset=hotspot
   normalized_pattern: date=<acq_date>/part-00000.parquet
   # Tabel final (dedup per event_id) ditulis oleh dbt setelah tabel scar siap.
+  publish:
+    materialization: external parquet (dbt-duckdb)
+    local_root: data/silver/published/firms/hotspot
+    uploader: python -m batch.silver.sync push
   prefix: silver/firms/dataset=hotspot
-  pattern: date=YYYY-MM-DD/part-00000.parquet
+  pattern: date=YYYY-MM-DD/*.parquet
 grain: Satu baris per event FIRMS sebelum dedup. Tabel final wajib unik per event_id.
 deduplication:
   key: event_id
   tie_break: ingested_at terbaru
-  status: belum diterapkan di normalizer; dikerjakan di dbt (lihat roadmap branch 5)
+  status: diterapkan di model dbt firms_hotspot
   reason: >-
     Bronze bersifat at-least-once sehingga event yang sama bisa muncul beberapa
     kali setelah replay spool atau crash sebelum commit offset.
