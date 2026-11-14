@@ -7,9 +7,9 @@
 | F-03 | Backfill report | TBD | TBD | TBD |
 | F-04 | Producer, consumer, lag | `compose/vps-stream.yml` + `compose/vps-batch.yml`; `task lag` = 0; `stream/README.md` | `task selftest` lalu `task lag` | selesai | Kelompok 8 |
 | F-05 | Dedup, DLQ, watermark | dedup producer (`firms_seen.json`), DLQ `firms.hotspot.dlq`, watermark `data/batch/state/watermark.json` | `task dlq`, `task bronze-files` | selesai | Kelompok 8 |
-| F-06 | Bronze, Silver, Gold | TBD | TBD | TBD |
+| F-06 | Bronze, Silver, Gold | Silver Open-Meteo province-only di `silver/open_meteo/`; Gold TBD | `python -m batch.silver.openmeteo normalize ...` lalu `dbt build` dan `export` | sebagian | Batch |
 | F-07 | Delta atau Iceberg snapshot | TBD | TBD | TBD |
-| F-08 | DQ report dan quarantine | TBD | TBD | TBD |
+| F-08 | DQ report dan quarantine | `silver/_dq/open_meteo/`; quarantine writer tersedia | inspeksi manifest `silver/manifests/run_id=...json` | sebagian | Batch |
 | F-09 | Catalog dan lineage | TBD | TBD | TBD |
 | F-10 | Query dan OpenAPI | TBD | TBD | TBD |
 | F-11 | MLflow experiment | TBD | TBD | TBD |

@@ -4,8 +4,8 @@
 !.env.example
 
 # data dan model
-data/
-models/
+/data/
+/models/
 mlruns/
 *.parquet
 !tests/fixtures/**/*.parquet

@@ -1,32 +1,69 @@
 name: mcd64a1_burn_scar
 owner: Kelompok 8 - Yuda
 layer: silver
-status: skeleton
+status: active
 location:
   storage: Garage (S3-compatible)
   bucket: lakehouse
+  # Keluaran normalisasi (format-only), ditulis oleh
+  # `python -m batch.silver.mcd64a1`.
+  normalized_prefix: silver/_normalized/mcd64a1/dataset=burn_scar
+  normalized_pattern: date=<burn_date>/part-00000.parquet
+  # Tabel pendukung periode yang sama.
+  tiles_prefix: silver/_normalized/mcd64a1/dataset=tiles
+  coverage_prefix: silver/_normalized/mcd64a1/dataset=coverage
+  # Tabel final (dedup dan konformasi) ditulis oleh dbt, menyusul.
   prefix: silver/mcd64a1/dataset=burn_scar
   pattern: date=YYYY-MM-DD/part-00000.parquet
-grain: Satu baris per piksel terbakar per tile dan periode.
+grain: Satu baris per piksel terbakar per tile. Partisi memakai burn_date, bukan tanggal unduh.
 schema:
-  tile: {type: string}
-  row: {type: integer}
-  col: {type: integer}
-  latitude: {type: double}
-  longitude: {type: double}
-  burn_date: {type: date}
-  burn_month: {type: string}
-  qa: {type: integer, nullable: true}
-  source_file: {type: string}
+  tile: {type: string, description: nama tile sinusoidal, mis. h28v09}
+  row: {type: integer, description: indeks baris piksel di dalam tile}
+  col: {type: integer, description: indeks kolom piksel di dalam tile}
+  latitude: {type: double, description: titik tengah piksel, derajat}
+  longitude: {type: double, description: titik tengah piksel, derajat}
+  burn_date: {type: date, description: hari piksel terbakar}
+  burn_month: {type: string, description: periode granule asal, YYYY-MM}
+  burn_doy: {type: integer, description: nomor hari dalam setahun, 1-366}
+  qa: {type: integer, nullable: true, description: layer Quality Assurance produk}
+  uncertainty: {type: integer, nullable: true, description: Burn Date Uncertainty}
+  first_day: {type: integer, nullable: true, description: First Day of reliable change}
+  last_day: {type: integer, nullable: true, description: Last Day of reliable change}
+  in_bbox: {type: boolean, description: titik tengah berada di dalam BURNED_AREA_BBOX}
+  source_file: {type: string, description: kunci objek HDF di Bronze}
+supporting_tables:
+  tiles:
+    grain: satu baris per tile per periode
+    schema:
+      tile: {type: string}
+      period: {type: string, description: YYYY-MM}
+      ulx: {type: double, description: sudut kiri atas, meter sinusoidal}
+      uly: {type: double}
+      px: {type: double, description: lebar piksel, meter}
+      py: {type: double, description: tinggi piksel, meter}
+      nx: {type: integer}
+      ny: {type: integer}
+  coverage:
+    grain: satu baris per tile per periode
+    schema:
+      period: {type: string}
+      tile: {type: string}
+      source_file: {type: string}
+      run_id: {type: string}
+      pixels_burned: {type: integer}
+      pixels_outside_month: {type: integer}
+      ingested_at: {type: string}
 freshness:
-  expected: bulanan
+  expected: bulanan, mengikuti rilis MCD64A1 (tertinggal sekitar 2 bulan)
   alert_threshold: belum ditetapkan
 retention: mengikuti kebijakan Silver
 classification: public
 quality_rules:
-  - burn_date berada di dalam periode tile
-  - koordinat berada di bbox Indonesia
+  - burn_date berada di dalam periode tile; yang di luar masuk karantina
+  - piksel di luar periode maksimal 5% dari total, kalau lebih laporan DQ ditandai failed
+  - coordinate berada di dalam BURNED_AREA_BBOX ditandai lewat kolom in_bbox
   - tile yang belum masuk tercatat di tabel coverage
+  - laporan DQ ditulis ke silver/_dq/mcd64a1/dataset=burn_scar/run_id=<run_id>.json
 consumers:
   - silver_hotspot_scar_label
   - gold_risk_grid
