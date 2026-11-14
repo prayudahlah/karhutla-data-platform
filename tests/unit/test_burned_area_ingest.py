@@ -24,6 +24,8 @@ class FakeStore:
 
     def __init__(self) -> None:
         self.objects: dict[str, bytes] = {}
+        # Kunci yang "diserobot" run lain: sudah ada di server, belum di store ini.
+        self.race_keys: set[str] = set()
 
     def object_exists(self, key: str) -> bool:
         return key in self.objects
@@ -37,6 +39,8 @@ class FakeStore:
         metadata: dict[str, str] | None = None,
         overwrite: bool = False,
     ) -> str:
+        if key in self.race_keys:
+            raise ObjectAlreadyExistsError(key)
         if key in self.objects and not overwrite:
             raise ObjectAlreadyExistsError(key)
         self.objects[key] = body
@@ -102,14 +106,15 @@ def test_object_key_uses_granule_identity() -> None:
     key = object_key("bronze/mcd64a1", _granule("h28v09"))
 
     assert key == (
-        "bronze/mcd64a1/month=2026-09/tile=h28v09/MCD64A1.A2026244.h28v09.061.2026314124402.hdf"
+        "bronze/mcd64a1/dataset=burned_area/period=2026-09/tile=h28v09/"
+        "MCD64A1.A2026244.h28v09.061.2026314124402.hdf"
     )
 
 
 def test_object_key_strips_trailing_slash() -> None:
     key = object_key("/bronze/mcd64a1/", _granule("h28v09"))
 
-    assert key.startswith("bronze/mcd64a1/month=2026-09")
+    assert key.startswith("bronze/mcd64a1/dataset=burned_area/period=2026-09")
 
 
 def test_manifest_key_uses_run_date() -> None:
@@ -155,6 +160,24 @@ def test_ingest_skips_existing_object() -> None:
     assert failures == []
     assert entries[0]["action"] == "skipped"
     assert downloader.calls == []
+
+
+def test_ingest_treats_object_written_by_other_run_as_skipped() -> None:
+    granule = _granule("h28v09")
+    store = FakeStore()
+    store.race_keys.add(object_key("bronze/mcd64a1", granule))
+    downloader = FakeDownloader({granule.granule_id: b"HDF"})
+
+    entries, failures = ingest_granules(
+        [granule],
+        downloader=downloader,
+        store=store,
+        run_id=RUN_ID,
+        prefix="bronze/mcd64a1",
+    )
+
+    assert failures == []
+    assert entries[0]["action"] == "skipped"
 
 
 def test_ingest_isolates_failures() -> None:

@@ -76,9 +76,12 @@ Bronze ditulis ke **Garage** (`BRONZE_SINK=garage`, default) memakai
 dev tanpa Garage. Layout sama di kedua mode:
 
 ```
-s3://lakehouse/bronze/firms/source=<SUMBER>/ingest_date=<YYYY-MM-DD>/
+s3://lakehouse/bronze/firms/dataset=hotspot/source=<SUMBER>/ingest_date=<YYYY-MM-DD>/
     ingest_hour=<HH>/part-p<partisi>-<offset_awal>-<offset_akhir>.jsonl
 ```
+
+`dataset=hotspot` adalah partisi Hive, sama seperti sumber lain. Aturan lengkap
+ada di `docs/data-contracts/README.md`.
 
 Nama objek memuat rentang offset, jadi retry dengan offset yang sama menulis ke key yang
 sama. `put_bytes` menolak overwrite, dan `ObjectAlreadyExistsError` diperlakukan sebagai

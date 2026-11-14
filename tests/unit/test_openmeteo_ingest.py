@@ -127,7 +127,7 @@ def test_object_key_prefixes_sequence_number() -> None:
     key = object_key("bronze/open_meteo", "weather", RUN_ID, numbered)
 
     assert key == (
-        "bronze/open_meteo/weather/ingest_date=2026-11-14/"
+        "bronze/open_meteo/dataset=weather/ingest_date=2026-11-14/"
         f"run_id={RUN_ID}/01_banda_aceh_aceh.json"
     )
 

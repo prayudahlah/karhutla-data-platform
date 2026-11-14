@@ -10,7 +10,13 @@ from typing import Any
 
 from common.config import BurnedAreaSettings
 from common.run import run_date_from_run_id, utc_now_iso
-from common.storage import BronzeStorageError, BronzeStore, ObjectNotFoundError, sha256_hex
+from common.storage import (
+    BronzeStorageError,
+    BronzeStore,
+    ObjectAlreadyExistsError,
+    ObjectNotFoundError,
+    sha256_hex,
+)
 from ingest.burned_area.cmr import CmrClient, Granule
 from ingest.burned_area.download import DownloadClient
 
@@ -38,7 +44,10 @@ def object_key(prefix: str, granule: Granule) -> str:
     Granule tidak pernah berubah, jadi mengunduh ulang bulan yang sama tidak
     boleh menghasilkan duplikat dengan nama berbeda.
     """
-    return f"{prefix.strip('/')}/month={granule.month}/tile={granule.tile}/{granule.filename}"
+    return (
+        f"{prefix.strip('/')}/dataset=burned_area"
+        f"/period={granule.month}/tile={granule.tile}/{granule.filename}"
+    )
 
 
 def manifest_key(prefix: str, run_id: str) -> str:
@@ -90,19 +99,35 @@ def ingest_granules(
 
         try:
             body = downloader.fetch(granule)
-            digest = store.put_bytes(
-                key,
-                body,
-                content_type=CONTENT_TYPE_HDF,
-                metadata={
-                    "run-id": run_id,
-                    "source": "mcd64a1",
-                    "month": granule.month,
-                    "tile": granule.tile,
-                    "granule-id": granule.granule_id,
-                },
-                overwrite=overwrite,
-            )
+            try:
+                digest = store.put_bytes(
+                    key,
+                    body,
+                    content_type=CONTENT_TYPE_HDF,
+                    metadata={
+                        "run-id": run_id,
+                        "source": "mcd64a1",
+                        "month": granule.month,
+                        "tile": granule.tile,
+                        "granule-id": granule.granule_id,
+                    },
+                    overwrite=overwrite,
+                )
+            except ObjectAlreadyExistsError:
+                # Run lain menulis granule yang sama lebih dulu. Bukan kegagalan:
+                # granule tidak pernah berubah, jadi objek yang ada sudah benar.
+                logger.info("Sudah ditulis run lain, dilewati: s3://%s/%s", store.bucket, key)
+                entries.append(
+                    {
+                        "granule_id": granule.granule_id,
+                        "month": granule.month,
+                        "tile": granule.tile,
+                        "key": key,
+                        "action": ACTION_SKIPPED,
+                        "size_bytes": granule.size_bytes,
+                    }
+                )
+                continue
             head = store.head_object(key)
             entries.append(
                 {

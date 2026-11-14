@@ -55,7 +55,7 @@ def object_key(prefix: str, dataset: str, run_id: str, city: City) -> str:
     # Nomor urut di depan nama file supaya urutannya enak dibaca di browser.
     stem = f"{city.number:02d}_{city.slug}" if city.number else city.slug
     return (
-        f"{prefix.strip('/')}/{dataset}"
+        f"{prefix.strip('/')}/dataset={dataset}"
         f"/ingest_date={ingest_date}/run_id={run_id}/{stem}.json"
     )
 
