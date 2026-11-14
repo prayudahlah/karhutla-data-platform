@@ -125,7 +125,7 @@ def daily_ingestion(limit: int | None = None) -> dict[str, Any]:
     `python -m flows.openmeteo_ingestion`.
     """
     settings = Settings.from_env()
-    cities = load_cities(settings.openmeteo.city_csv, limit=limit)
+    cities = load_cities(settings.openmeteo.location_csv, limit=limit)
     payload = [city.as_dict() for city in cities]
     return open_meteo_bronze_ingestion(payload, new_run_id())
 
@@ -165,7 +165,7 @@ def main(argv: Sequence[str] | None = None) -> int:
 
     settings = Settings.from_env()
     cities = load_cities(
-        settings.openmeteo.city_csv,
+        settings.openmeteo.location_csv,
         limit=args.limit,
         names=_parse_names(args.cities),
     )

@@ -1,0 +1,39 @@
+city,province,latitude,longitude
+Banda Aceh,Aceh,5.5483,95.3238
+Medan,Sumatera Utara,3.5952,98.6722
+Padang,Sumatera Barat,-0.9471,100.4172
+Pekanbaru,Riau,0.5071,101.4478
+Jambi,Jambi,-1.6101,103.6131
+Palembang,Sumatera Selatan,-2.9761,104.7754
+Bengkulu,Bengkulu,-3.7928,102.2608
+Bandar Lampung,Lampung,-5.3971,105.2668
+Pangkal Pinang,Kepulauan Bangka Belitung,-2.1316,106.1169
+Tanjung Pinang,Kepulauan Riau,0.9186,104.4666
+Jakarta,DKI Jakarta,-6.2088,106.8456
+Bandung,Jawa Barat,-6.9175,107.6191
+Semarang,Jawa Tengah,-6.9932,110.4203
+Yogyakarta,DI Yogyakarta,-7.7956,110.3695
+Surabaya,Jawa Timur,-7.2575,112.7521
+Serang,Banten,-6.1104,106.1503
+Denpasar,Bali,-8.6705,115.2126
+Mataram,Nusa Tenggara Barat,-8.5833,116.1167
+Kupang,Nusa Tenggara Timur,-10.1772,123.6070
+Pontianak,Kalimantan Barat,-0.0263,109.3425
+Palangka Raya,Kalimantan Tengah,-2.2080,113.9167
+Banjarmasin,Kalimantan Selatan,-3.3186,114.5944
+Samarinda,Kalimantan Timur,-0.5022,117.1536
+Tanjung Selor,Kalimantan Utara,2.8375,117.3661
+Manado,Sulawesi Utara,1.4748,124.8421
+Palu,Sulawesi Tengah,-0.8917,119.8707
+Makassar,Sulawesi Selatan,-5.1477,119.4327
+Kendari,Sulawesi Tenggara,-3.9450,122.4989
+Gorontalo,Gorontalo,0.5435,123.0568
+Mamuju,Sulawesi Barat,-2.6748,118.8885
+Ambon,Maluku,-3.6954,128.1814
+Sofifi,Maluku Utara,0.7333,127.5667
+Jayapura,Papua,-2.5916,140.6690
+Manokwari,Papua Barat,-0.8615,134.0620
+Sorong,Papua Barat Daya,-0.8762,131.2558
+Nabire,Papua Tengah,-3.3500,135.4833
+Wamena,Papua Pegunungan,-4.0975,138.9500
+Merauke,Papua Selatan,-8.4932,140.4018

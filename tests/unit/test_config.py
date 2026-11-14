@@ -2,7 +2,37 @@ from __future__ import annotations
 
 import pytest
 
-from common.config import ConfigError, FirmsBronzeSettings, GarageSettings, Settings
+from common.config import (
+    ConfigError,
+    FirmsBronzeSettings,
+    GarageSettings,
+    OpenMeteoSettings,
+    Settings,
+)
+
+
+def test_location_level_defaults_to_provinces(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.delenv("OPENMETEO_LOCATION_LEVEL", raising=False)
+
+    settings = OpenMeteoSettings.from_env()
+
+    assert settings.location_level == "province"
+    assert settings.location_csv.name == "indonesia_provinces.csv"
+
+
+def test_location_level_city_switches_file(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("OPENMETEO_LOCATION_LEVEL", "city")
+
+    settings = OpenMeteoSettings.from_env()
+
+    assert settings.location_csv.name == "indonesia_cities.csv"
+
+
+def test_unknown_location_level_raises(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("OPENMETEO_LOCATION_LEVEL", "kabupaten")
+
+    with pytest.raises(ConfigError):
+        OpenMeteoSettings.from_env()
 
 
 def test_firms_bronze_prefix_defaults_to_bronze_firms(monkeypatch: pytest.MonkeyPatch) -> None:

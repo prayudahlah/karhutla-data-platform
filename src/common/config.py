@@ -133,9 +133,22 @@ class OpenMeteoSettings:
     timeout_seconds: float = 30.0
     max_retries: int = 3
     city_csv: Path = Path("resources/indonesia_cities.csv")
+    provinces_csv: Path = Path("resources/indonesia_provinces.csv")
+    # province = satu titik per provinsi (ibu kota), city = 98 kota
+    location_level: str = "province"
+
+    @property
+    def location_csv(self) -> Path:
+        """File referensi lokasi sesuai level yang dipilih."""
+        return self.provinces_csv if self.location_level == "province" else self.city_csv
 
     @classmethod
     def from_env(cls) -> OpenMeteoSettings:
+        level = _get("OPENMETEO_LOCATION_LEVEL", cls.location_level).lower()
+        if level not in {"province", "city"}:
+            raise ConfigError(
+                f"OPENMETEO_LOCATION_LEVEL must be 'province' or 'city', got {level!r}"
+            )
         return cls(
             weather_url=_get("OPENMETEO_WEATHER_URL", cls.weather_url),
             air_quality_url=_get("OPENMETEO_AIR_QUALITY_URL", cls.air_quality_url),
@@ -145,6 +158,8 @@ class OpenMeteoSettings:
             timeout_seconds=_get_float("OPENMETEO_TIMEOUT_SECONDS", cls.timeout_seconds),
             max_retries=_get_int("OPENMETEO_MAX_RETRIES", cls.max_retries),
             city_csv=Path(_get("OPENMETEO_CITY_CSV", str(cls.city_csv))),
+            provinces_csv=Path(_get("OPENMETEO_PROVINCES_CSV", str(cls.provinces_csv))),
+            location_level=level,
         )
 
 

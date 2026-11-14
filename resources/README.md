@@ -1,8 +1,19 @@
 # Reference Data
 
+## `indonesia_provinces.csv` (default)
+
+Satu titik per provinsi: **38 baris**, koordinat ibu kota provinsi. Dipakai
+sebagai titik request Open-Meteo saat `OPENMETEO_LOCATION_LEVEL=province`
+(nilai default).
+
+- Kolom: `city,province,latitude,longitude` — `city` berisi nama ibu kota.
+- Termasuk lima provinsi yang tidak punya kota: Sulawesi Barat, Papua Barat,
+  Papua Selatan, Papua Tengah, Papua Pegunungan.
+- Koordinat adalah pusat ibu kota, bukan centroid poligon provinsi.
+
 ## `indonesia_cities.csv`
 
-Daftar 98 kota di Indonesia yang dipakai sebagai titik request Open-Meteo.
+Daftar 98 kota di Indonesia, dipakai bila `OPENMETEO_LOCATION_LEVEL=city`.
 
 - Kolom: `city,province,latitude,longitude`.
 - Cakupan: 93 kota otonom di luar DKI Jakarta, ditambah 5 kota administrasi DKI Jakarta.

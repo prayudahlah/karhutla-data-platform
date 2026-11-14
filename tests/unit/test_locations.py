@@ -7,6 +7,27 @@ import pytest
 from ingest.openmeteo.locations import LocationError, load_cities, slugify
 
 CSV_PATH = Path(__file__).resolve().parents[2] / "resources" / "indonesia_cities.csv"
+PROVINCES_PATH = Path(__file__).resolve().parents[2] / "resources" / "indonesia_provinces.csv"
+
+
+def test_province_reference_has_38_unique_entries() -> None:
+    provinces = load_cities(PROVINCES_PATH)
+
+    assert len(provinces) == 38
+    assert len({province.province for province in provinces}) == 38
+    assert len({province.slug for province in provinces}) == 38
+    assert all(-11.5 <= province.latitude <= 6.5 for province in provinces)
+    assert all(94.0 <= province.longitude <= 142.0 for province in provinces)
+
+
+def test_province_reference_covers_former_missing_provinces() -> None:
+    names = {province.province for province in load_cities(PROVINCES_PATH)}
+
+    assert "Sulawesi Barat" in names
+    assert "Papua Barat" in names
+    assert "Papua Selatan" in names
+    assert "Papua Tengah" in names
+    assert "Papua Pegunungan" in names
 
 
 def test_reference_has_98_unique_indonesian_cities() -> None:
