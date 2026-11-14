@@ -7,7 +7,7 @@ Dua implementasi:
 Keduanya menerima key relatif yang sama, jadi pindah backend tidak mengubah
 layout data:
 
-    source=<SOURCE>/ingest_date=<YYYY-MM-DD>/
+    dataset=hotspot/source=<SOURCE>/ingest_date=<YYYY-MM-DD>/
         ingest_hour=<HH>/part-p<partition>-<offset_awal>-<offset_akhir>.jsonl
 
 Prefix "bronze/firms" ditambahkan oleh sink-nya masing-masing: Local memakai
@@ -21,7 +21,8 @@ from pathlib import Path
 def part_key(source, ingest_date, ingest_hour, partition, first_offset, last_offset):
     """Key relatif (tanpa prefix bronze/firms)."""
     return (
-        f"source={source}"
+        "dataset=hotspot"
+        f"/source={source}"
         f"/ingest_date={ingest_date}"
         f"/ingest_hour={ingest_hour}"
         f"/part-p{partition}-{first_offset:012d}-{last_offset:012d}.jsonl"

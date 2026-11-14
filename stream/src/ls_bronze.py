@@ -5,7 +5,7 @@ container consumer supaya boto3 dan kredensial sudah tersedia.
 
     python stream/src/ls_bronze.py
     python stream/src/ls_bronze.py --count
-    python stream/src/ls_bronze.py --prefix bronze/firms/source=SELFTEST
+    python stream/src/ls_bronze.py --prefix bronze/firms/dataset=hotspot/source=SELFTEST
 """
 import argparse
 import os

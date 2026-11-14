@@ -10,7 +10,7 @@ def test_part_key_is_relative_and_offset_scoped() -> None:
     key = part_key("MODIS_NRT", "2026-11-14", "05", 1, 7, 9)
 
     assert key == (
-        "source=MODIS_NRT/ingest_date=2026-11-14/ingest_hour=05/"
+        "dataset=hotspot/source=MODIS_NRT/ingest_date=2026-11-14/ingest_hour=05/"
         "part-p1-000000000007-000000000009.jsonl"
     )
 
