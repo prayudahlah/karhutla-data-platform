@@ -188,6 +188,11 @@ tasks:
       - 'python -m batch.silver.prepare'
       - 'dbt build --project-dir dbt --profiles-dir dbt'
 
+  firms-backfill:
+    desc: Tarik hotspot historis, mis. task firms-backfill -- 2026-09
+    cmds:
+      - 'python -m flows.firms_backfill --month {{.CLI_ARGS}}'
+
   silver-openmeteo:
     desc: Normalisasi Open-Meteo Bronze ke Silver
     cmds:
