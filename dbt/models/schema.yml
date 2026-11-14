@@ -1,0 +1,15 @@
+version: 2
+
+models:
+  - name: stg_silver_sample
+    description: Foundation smoke model over a committed Parquet fixture.
+    columns:
+      - name: sample_id
+        description: Stable sample key.
+        data_tests:
+          - unique
+          - not_null
+      - name: label
+        description: Sample label.
+        data_tests:
+          - not_null

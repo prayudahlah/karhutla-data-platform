@@ -181,6 +181,8 @@ tasks:
   # --------------------------------------------------------------- silver
   dbt-build:
     desc: Jalankan dbt build (salin dbt/profiles.yml.example dulu)
+    env:
+      SILVER_NORMALIZED_ROOT: data/silver/_normalized
     cmds:
       - 'dbt build --project-dir dbt --profiles-dir dbt'
 

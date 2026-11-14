@@ -42,6 +42,7 @@ jobs:
       - name: dbt build
         env:
           DBT_DUCKDB_PATH: ":memory:"
+          SILVER_NORMALIZED_ROOT: "tests/fixtures/silver/_normalized"
         run: |
           cp dbt/profiles.yml.example dbt/profiles.yml
           dbt build --project-dir dbt --profiles-dir dbt --target ci
