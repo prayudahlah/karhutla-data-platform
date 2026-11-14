@@ -33,3 +33,6 @@ htmlcov/
 .DS_Store
 .idea/
 .vscode/
+
+# artefak tooling lokal (.openchamber/screenshots)
+.openchamber/

@@ -1,3 +1,69 @@
-# VM batch.
-# TODO: add MinIO, consumer, Prefect worker, DuckDB, MLflow, and LightGBM.
-services: {}
+# Node batch: Garage (object storage) + garage-webui (browser).
+#
+# Kredensial diambil dari `.env` di root repo (gitignored). File itu hanya
+# berisi GARAGE_DEFAULT_ACCESS_KEY / GARAGE_DEFAULT_SECRET_KEY yang dipakai
+# Garage saat start dengan --default-bucket.
+#
+# Jalankan dari root repo:
+#   docker compose -f compose/base.yml -f compose/vps-batch.yml up -d
+#
+# Web UI: http://localhost:3909
+# S3 API: http://localhost:3900   (path-style, region "garage")
+
+services:
+  garage:
+    image: dxflrs/garage:v2.3.0
+    container_name: karhutla-garage
+    restart: unless-stopped
+    command: ["/garage", "server", "--single-node", "--default-bucket"]
+    env_file:
+      - path: ../.env
+        required: false
+    volumes:
+      - ../infra/garage/garage.toml:/etc/garage.toml:ro
+      - garage-meta:/var/lib/garage/meta
+      - garage-data:/var/lib/garage/data
+    ports:
+      - "3900:3900"   # S3 API
+      - "3901:3901"   # RPC (single node)
+      - "3902:3902"   # s3_web (website hosting, bukan browser)
+      - "3903:3903"   # admin API + metrics
+    healthcheck:
+      test: ["CMD", "/garage", "status"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 20s
+    networks:
+      - karhutla
+
+  garage-webui:
+    image: khairul169/garage-webui:latest
+    container_name: karhutla-garage-webui
+    restart: unless-stopped
+    depends_on:
+      garage:
+        condition: service_healthy
+    volumes:
+      # webui membaca admin_token dan rpc_public_addr dari file yang sama.
+      - ../infra/garage/garage.toml:/etc/garage.toml:ro
+    environment:
+      API_BASE_URL: http://garage:3903
+      S3_ENDPOINT_URL: http://garage:3900
+      S3_REGION: garage
+      AUTH_USER_PASS: ${GARAGE_WEBUI_AUTH:-}
+    ports:
+      - "3909:3909"
+    networks:
+      - karhutla
+
+volumes:
+  garage-meta:
+    name: karhutla-garage-meta
+  garage-data:
+    name: karhutla-garage-data
+
+# Dideklarasikan di sini supaya file ini tetap valid tanpa compose/base.yml.
+networks:
+  karhutla:
+    name: karhutla

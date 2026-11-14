@@ -47,6 +47,13 @@ python -m flows.openmeteo_ingestion --verify-only <run_id>
 Panduan lengkap, termasuk menjalankan Garage lokal, ada di
 `docs/runbooks/garage-bronze.md`.
 
+Garage dan browser bucket-nya jalan lewat Compose, lalu web UI ada di
+<http://localhost:3909>:
+
+```bash
+docker compose -f compose/base.yml -f compose/vps-batch.yml up -d
+```
+
 ## Struktur
 
 - `src/` kode aplikasi
