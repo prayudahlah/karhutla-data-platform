@@ -1,10 +1,11 @@
 name: ci
 
 on:
+  # dev adalah jalur integrasi: setiap PR ke sana harus diuji, bukan hanya main.
   pull_request:
-    branches: [main]
+    branches: [main, dev]
   push:
-    branches: [main]
+    branches: [main, dev]
   workflow_dispatch:
 
 permissions:
