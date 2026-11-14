@@ -346,3 +346,25 @@ def test_main_wires_normalize_month(monkeypatch) -> None:
     assert captured[0]["month"] == "2026-09"
     assert captured[0]["run_id"] == "r1"
     assert captured[0]["local_root"] is not None
+
+
+def test_normalize_twice_overwrites_without_failing(monkeypatch) -> None:
+    store = FakeStore()
+    bronze_key = "bronze/mcd64a1/dataset=burned_area/period=2026-09/tile=h28v09/a.hdf"
+    store.objects[bronze_key] = {"body": b"hdf", "content_type": "", "metadata": {}}
+    monkeypatch.setattr(
+        "batch.silver.mcd64a1.read_tile_bytes",
+        lambda payload, *, tile, month: _tile(month=month, tile=tile),
+    )
+    settings = BurnedAreaSettings(bronze_prefix="bronze/mcd64a1")
+
+    first = normalize_month(store, settings, month="2026-09", run_id="run-a")
+    second = normalize_month(store, settings, month="2026-09", run_id="run-b")
+
+    assert first["scar_rows"] == second["scar_rows"] == 2
+    scar_keys = [
+        key
+        for key in store.objects
+        if key.startswith("silver/_normalized/") and "/dataset=burn_scar/" in key
+    ]
+    assert len(scar_keys) == 2

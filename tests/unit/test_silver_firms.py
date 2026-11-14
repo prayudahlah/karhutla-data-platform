@@ -310,3 +310,15 @@ def test_main_can_disable_local_mirror(monkeypatch) -> None:
 
     assert firms.main(["normalize", "--run-id", "run-x", "--no-mirror"]) == 0
     assert captured["local_root"] is None
+
+
+def test_normalize_twice_overwrites_without_failing() -> None:
+    store = _store_with([_event(event_id="e1")])
+
+    first = normalize(store, _settings(), run_id="run-a")
+    second = normalize(store, _settings(), run_id="run-b")
+
+    assert first["rows_written"] == second["rows_written"] == 1
+    assert first["dq_status"] == second["dq_status"] == "passed"
+    parquet_keys = [k for k in store.objects if k.startswith("silver/_normalized/")]
+    assert len(parquet_keys) == 1

@@ -185,7 +185,7 @@ tasks:
       SILVER_NORMALIZED_ROOT: data/silver/_normalized
       SILVER_PUBLISH_ROOT: data/silver/published
     cmds:
-      - 'python -m batch.silver.prepare'
+      - 'python -m batch.silver.prepare --clean'
       - 'dbt build --project-dir dbt --profiles-dir dbt'
 
   firms-backfill:

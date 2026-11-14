@@ -276,7 +276,7 @@ def normalize(
     *,
     run_id: str,
     local_root: Path | None = None,
-    overwrite: bool = False,
+    overwrite: bool = True,
 ) -> dict[str, Any]:
     """Urai seluruh objek Bronze FIRMS menjadi Parquet Silver."""
     prefix = f"{settings.firms_bronze.prefix}/dataset={BRONZE_DATASET}"
@@ -403,6 +403,11 @@ def main(argv: Sequence[str] | None = None) -> int:
         action="store_true",
         help="jangan menulis salinan lokal, cukup ke Garage",
     )
+    normalize_parser.add_argument(
+        "--no-overwrite",
+        action="store_true",
+        help="gagal kalau objek sudah ada, bukan menimpanya",
+    )
 
     args = parser.parse_args(argv)
     settings = Settings.from_env()
@@ -412,6 +417,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         settings,
         run_id=args.run_id or new_run_id(),
         local_root=None if args.no_mirror else args.local_root,
+        overwrite=not args.no_overwrite,
     )
     print(json.dumps(result, indent=2, ensure_ascii=False))
     return 0
