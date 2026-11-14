@@ -61,6 +61,7 @@ Semua PR menuju `dev`. Nomor di depan adalah urutan merge.
 | 4 | `feat/silver-mcd64a1` | Yuda | `dev`, boleh paralel | belum |
 | 5 | `feat/silver-hotspot-label` | Yuda | `dev` setelah 2, 3, 4 | belum |
 | 6 | `docs/contracts-silver` | Aulia | `dev` setelah 2 sampai 5 | belum |
+| 7 | `feat/silver-align` | Yuda | `dev` | PR dibuka |
 
 Branch `3` dan `4` boleh mulai sebelum `1` merge, asalkan stub tiga fungsi di
 `src/batch/silver/` sudah disepakati. Yang ditunda hanya penyambungan ke writer
