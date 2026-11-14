@@ -107,6 +107,27 @@ def test_search_month_follows_pagination() -> None:
     assert len(granules) == 3
 
 
+def test_latest_month_reads_newest_granule() -> None:
+    entry = _entry("MCD64A1.A2026244.h28v09.061.2026314124402")
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        assert request.url.params["sort_key"] == "-start_date"
+        return httpx.Response(200, json={"feed": {"entry": [entry]}})
+
+    settings = BurnedAreaSettings(token="token")
+    with CmrClient(settings, client=httpx.Client(transport=httpx.MockTransport(handler))) as cmr:
+        assert cmr.latest_month() == "2026-09"
+
+
+def test_latest_month_returns_none_when_empty() -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(200, json={"feed": {"entry": []}})
+
+    settings = BurnedAreaSettings(token="token")
+    with CmrClient(settings, client=httpx.Client(transport=httpx.MockTransport(handler))) as cmr:
+        assert cmr.latest_month() is None
+
+
 def test_search_month_raises_on_error_status() -> None:
     def handler(request: httpx.Request) -> httpx.Response:
         return httpx.Response(400, text="bad request")

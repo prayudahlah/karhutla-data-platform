@@ -163,6 +163,28 @@ class CmrClient:
             )
         raise CmrError("CMR request failed")
 
+    def latest_month(self) -> str | None:
+        """Bulan terbaru yang sudah tersedia di CMR untuk bbox ini.
+
+        Dipakai penjadwalan bulanan, supaya tidak menebak lag rilis produk.
+        """
+        bbox = ",".join(f"{value:g}" for value in self.settings.bbox)
+        params: dict = {
+            "short_name": self.settings.short_name,
+            "version": self.settings.version,
+            "bounding_box": bbox,
+            "page_size": 5,
+            "sort_key": "-start_date",
+        }
+        payload = self._get_json(params)
+        feed = payload.get("feed")
+        if not isinstance(feed, dict):
+            raise CmrError("CMR response has no 'feed' object")
+        entries = feed.get("entry") or []
+        if not entries:
+            return None
+        return granule_id_to_month(str(entries[0].get("title", "")))
+
     def search_month(self, month: str) -> list[Granule]:
         """Cari semua granule yang menyentuh bbox untuk satu bulan."""
         start, end = month_window(month)
