@@ -34,8 +34,11 @@ import os
 import time
 from pathlib import Path
 
+import heartbeat
+import metrics
 import pandas as pd
 import requests
+import state
 from event_schema import SCHEMA_VERSION, event_id_from_key, make_key
 
 try:  # baca file .env otomatis (stream/.env) jika python-dotenv terpasang
@@ -58,6 +61,11 @@ if not DATA_DIR.is_absolute():
 
 SPOOL_DIR = DATA_DIR / "spool/firms"
 STATE_FILE = DATA_DIR / "state/firms_seen.json"
+HEARTBEAT_FILE = DATA_DIR / "state/producer_heartbeat.json"
+
+# State dedup dan spool hanya berguna sepanjang window lookback + margin.
+SEEN_RETENTION_DAYS = int(os.environ.get("SEEN_RETENTION_DAYS", "7"))
+SPOOL_RETENTION_DAYS = int(os.environ.get("SPOOL_RETENTION_DAYS", "7"))
 
 BROKERS = os.environ.get("REDPANDA_BROKERS", "stream:9092")
 TOPIC = os.environ.get("REDPANDA_TOPIC", "firms.hotspot.raw")
@@ -136,12 +144,40 @@ def fetch(map_key, source, bbox, day_range, timeout=60):
 
 
 def load_seen():
-    return set(json.loads(STATE_FILE.read_text())) if STATE_FILE.exists() else set()
+    """Baca state dedup. File rusak tidak boleh membuat proses crash-loop."""
+    seen, error = state.load_set(STATE_FILE)
+    if error:
+        backup_path = state.backup(STATE_FILE)
+        where = backup_path.name if backup_path else "(gagal dipindahkan)"
+        tg_send(
+            f"⚠️ State dedup FIRMS rusak dan diabaikan ({error}). "
+            f"File lama disimpan sebagai {where}. "
+            f"Kemungkinan ada duplikat pada polling berikutnya.",
+            "pipeline",
+        )
+    return seen
+
+
+def prune_seen(seen, days=SEEN_RETENTION_DAYS):
+    """Buang key yang tanggal akuisisinya lebih tua dari window retensi."""
+    kept = state.prune_by_date(seen, days)
+    dropped = len(seen) - len(kept)
+    if dropped:
+        print(f"    state dedup: {dropped} key lama dibuang (retensi {days} hari)")
+    return kept
 
 
 def save_seen(seen):
-    STATE_FILE.parent.mkdir(parents=True, exist_ok=True)
-    STATE_FILE.write_text(json.dumps(sorted(seen)))
+    """Tulis atomik: file lama tidak pernah dalam keadaan setengah jadi."""
+    state.save_set(STATE_FILE, seen)
+
+
+def prune_spool(days=SPOOL_RETENTION_DAYS):
+    """Hapus file spool yang sudah terkirim (*.jsonl.sent) dan sudah tua."""
+    removed = state.prune_spool_files(SPOOL_DIR, days)
+    if removed:
+        print(f"    spool: {removed} file .sent lama dihapus")
+    return removed
 
 
 def add_latency(df, now):
@@ -323,9 +359,15 @@ def poll_once(map_key, args, seen, first_run, source):
     save_seen(seen)  # state disimpan setelah spool ada di disk
     print(f"    -> spool {path} | latensi median {new['latency_min'].median()} menit")
 
+    # Data terbaru = latensi minimum; satuannya menit, metrik minta detik.
+    metrics.FRESHNESS.labels(source=source).set(float(new["latency_min"].min()) * 60)
+
     events = to_events(new)
     if args.publish:
         ok, failed = publish_batch(events, args.producer)
+        metrics.PRODUCED.labels(source=source).inc(len(ok))
+        if failed:
+            metrics.PUBLISH_ERRORS.inc(len(failed))
         if failed:
             print(
                 f"    -> Redpanda: {len(ok)} ok, {len(failed)} gagal; "
@@ -414,7 +456,7 @@ def main():
         help="satu atau beberapa sumber, dipisah koma",
     )
     p.add_argument("--bbox", default=INDONESIA_BBOX)
-    p.add_argument("--day-range", type=int, default=1)
+    p.add_argument("--day-range", type=int, default=2)
     p.add_argument("--interval", type=int, default=600, help="detik antar polling")
     p.add_argument("--min-conf", choices=["low", "nominal", "high"], default="nominal")
     p.add_argument("--min-frp", type=float, default=5.0, help="FRP minimum (MW) untuk alert")
@@ -477,7 +519,13 @@ def main():
             time.sleep(1)
 
     first_run = not STATE_FILE.exists()
-    seen = load_seen()
+    seen = prune_seen(load_seen())
+    save_seen(seen)
+    prune_spool()
+    port = metrics.start(9101)
+    if port:
+        print(f"[START] metrik Prometheus di :{port}/metrics")
+
     fails, backoff = 0, 30
     last_new_ts = time.time()
     stale_alerted = False
@@ -486,6 +534,7 @@ def main():
         try:
             n = poll_all(map_key, args, seen, first_run)
             first_run = False
+            heartbeat.beat(HEARTBEAT_FILE, sources=args.sources, new_events=n)
             if fails >= args.fail_alert_after:
                 tg_send(f"✅ FIRMS stream pulih setelah {fails} error beruntun.", "pipeline")
             fails, backoff = 0, 30

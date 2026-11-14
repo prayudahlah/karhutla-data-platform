@@ -102,8 +102,28 @@ services:
       REDPANDA_BROKERS: ${REDPANDA_BROKERS:-redpanda:9092}
       REDPANDA_TOPIC: ${REDPANDA_TOPIC:-firms.hotspot.raw}
       TZ: ${TZ:-Asia/Jakarta}
+      METRICS_PORT: "9101"
+    ports:
+      - "127.0.0.1:9101:9101"   # /metrics producer
     volumes:
       - ../stream/data:/app/data
     networks:
       - karhutla
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    healthcheck:
+      # Sehat kalau heartbeat diperbarui dalam 30 menit (interval poll 10 menit).
+      test:
+        - CMD-SHELL
+        - >-
+          python -c "import os,sys,time;
+          p='/app/data/state/producer_heartbeat.json';
+          sys.exit(0 if os.path.exists(p) and time.time()-os.path.getmtime(p) < 1800 else 1)"
+      interval: 60s
+      timeout: 10s
+      retries: 3
+      start_period: 120s
     command: ["python", "stream/src/firms_stream.py", "--interval", "600"]

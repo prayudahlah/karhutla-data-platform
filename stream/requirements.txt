@@ -3,3 +3,4 @@ pandas>=2.0
 python-dotenv>=1.0
 confluent-kafka>=2.5
 tzdata>=2024.1
+prometheus-client>=0.20

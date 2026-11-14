@@ -12,6 +12,7 @@ dependencies = [
     "confluent-kafka>=2.5",
     "httpx>=0.27",
     "prefect>=3.0,<4",
+    "prometheus-client>=0.20",
 ]
 
 [project.optional-dependencies]

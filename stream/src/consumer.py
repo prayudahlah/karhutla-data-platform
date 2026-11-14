@@ -29,6 +29,9 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 import event_schema
+import heartbeat
+import metrics
+import notify
 import watermark
 from confluent_kafka import Consumer, KafkaError, TopicPartition
 from dlq import DeadLetterPublisher
@@ -51,6 +54,44 @@ if not DATA_DIR.is_absolute():
     DATA_DIR = _REPO_ROOT / DATA_DIR
 
 WATERMARK_FILE = DATA_DIR / "state" / "watermark.json"
+HEARTBEAT_FILE = DATA_DIR / "state/consumer_heartbeat.json"
+
+DLQ_ALERT_INTERVAL = float(os.environ.get("DLQ_ALERT_INTERVAL_SECONDS", "1800"))
+_dlq_state = {"last_alert": 0.0, "pending": 0}
+
+
+def note_dlq(count=1):
+    """Catat pesan DLQ; kirim satu alert per interval supaya tidak spam."""
+    metrics.DLQ.inc(count)
+    _dlq_state["pending"] += count
+    now = time.time()
+    if now - _dlq_state["last_alert"] < DLQ_ALERT_INTERVAL:
+        return
+    _dlq_state["last_alert"] = now
+    pending = _dlq_state["pending"]
+    _dlq_state["pending"] = 0
+    notify.tg_send(
+        f"⚠️ Consumer FIRMS menolak {pending} pesan dalam "
+        f"{int(DLQ_ALERT_INTERVAL // 60)} menit terakhir.\n"
+        f"Cek topik {DLQ_TOPIC}: kemungkinan skema event berubah.\n"
+        f"Bronze mungkin berhenti bertambah meski lag tetap 0.",
+        "pipeline",
+    )
+
+
+def update_lag(consumer):
+    """Set gauge lag total dari partisi yang sedang dipegang consumer."""
+    try:
+        total = 0
+        for tp in consumer.assignment():
+            _low, high = consumer.get_watermark_offsets(tp, timeout=1.0, cached=False)
+            position = consumer.position([tp])[0].offset
+            if position >= 0 and high >= 0:
+                total += max(0, high - position)
+        metrics.CONSUMER_LAG.set(total)
+        return total
+    except Exception:  # noqa: BLE001 - metrik tidak boleh mematikan consumer
+        return None
 
 
 def build_sink():
@@ -150,6 +191,9 @@ def flush_buffer(consumer, sink, buffer, retries=3):
         for partition, offset in sorted(buffer.high.items())
     ]
     consumer.commit(offsets=offsets, asynchronous=False)
+    metrics.BRONZE_BATCHES.inc(len(buffer.groups))
+    lag = update_lag(consumer)
+    heartbeat.beat(HEARTBEAT_FILE, written=written, lag=lag)
     log(f"commit {len(offsets)} partisi | {written} event tertulis")
     buffer.clear()
     return written
@@ -226,6 +270,9 @@ def main():
     dlq = DeadLetterPublisher(BROKERS, DLQ_TOPIC)
     consumer = build_consumer()
     consumer.subscribe([TOPIC])
+    port = metrics.start(9102)
+    if port:
+        log(f"metrik Prometheus di :{port}/metrics")
 
     stop = {"flag": False}
 
@@ -239,6 +286,7 @@ def main():
     buffer = BatchBuffer()
     last_flush = time.time()
     last_message = time.time()
+    last_beat = time.time()
     in_dlq = 0
 
     log(f"mulai: {BROKERS} / {TOPIC} -> sink={BRONZE_SINK} (group={GROUP})")
@@ -251,6 +299,11 @@ def main():
                 if buffer and (now - last_flush) >= args.flush_seconds:
                     flush_buffer(consumer, sink, buffer)
                     last_flush = now
+                # Heartbeat tetap dikirim saat topik idle, supaya healthcheck
+                # tidak menganggap consumer mati hanya karena tidak ada data.
+                if now - last_beat >= 30:
+                    heartbeat.beat(HEARTBEAT_FILE, lag=update_lag(consumer))
+                    last_beat = now
                 if args.once and buffer and (now - last_message) >= 1.0:
                     flush_buffer(consumer, sink, buffer)
                     last_flush = now
@@ -269,10 +322,13 @@ def main():
 
             if not handle_message(msg, sink, buffer, dlq):
                 in_dlq += 1
+                note_dlq()
                 # Pesan rusak tidak boleh menahan commit: catat offsetnya.
                 buffer.high[msg.partition()] = max(
                     buffer.high.get(msg.partition(), msg.offset()), msg.offset()
                 )
+            else:
+                metrics.CONSUMED.inc()
 
             if buffer.count >= args.max_events or (time.time() - last_flush) >= args.flush_seconds:
                 flush_buffer(consumer, sink, buffer)
