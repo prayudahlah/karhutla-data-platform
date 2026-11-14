@@ -1,22 +1,22 @@
 """
-Consumer FIRMS: firms.hotspot.raw -> Bronze JSONL (node batch).
+Consumer FIRMS: firms.hotspot.raw -> Bronze (Garage atau disk lokal).
 
 Jalan sebagai service di node batch:
 
     const:
-        redpanda (stream node)  ->  consumer  ->  $DATA_DIR/bronze/firms/...
+        redpanda (stream node)  ->  consumer  ->  s3://lakehouse/bronze/firms/...
                                                      $DATA_DIR/state/watermark.json
 
 Prinsip:
-    - commit offset HANYA setelah file Bronze tertulis, jadi tidak ada data hilang
+    - commit offset HANYA setelah objek Bronze tertulis, jadi tidak ada data hilang
     - at-least-once: kalau crash sebelum commit, pesan dibaca ulang
     - pesan rusak dikirim ke DLQ lalu offset tetap di-commit (tidak looping)
-    - sink lokal sekarang; interface sink.py memudahkan pindah ke Garage/S3
+    - BRONZE_SINK=garage (default) memakai Garage, BRONZE_SINK=local memakai disk
 
 Pakai:
     python stream/src/consumer.py
     python stream/src/consumer.py --once
-    python stream/src/consumer.py --flush-seconds 60 --max-events 5000
+    BRONZE_SINK=local python stream/src/consumer.py
 """
 
 import argparse
@@ -32,7 +32,7 @@ import event_schema
 import watermark
 from confluent_kafka import Consumer, KafkaError, TopicPartition
 from dlq import DeadLetterPublisher
-from sink import LocalBronzeSink, part_key
+from sink import GarageBronzeSink, LocalBronzeSink, part_key
 
 _REPO_ROOT = Path(__file__).resolve().parents[2]
 _DEFAULT_DATA_DIR = _REPO_ROOT / "data" / "batch"
@@ -43,12 +43,29 @@ DLQ_TOPIC = os.environ.get("REDPANDA_DLQ_TOPIC", "firms.hotspot.dlq")
 GROUP = os.environ.get("CONSUMER_GROUP", "bronze-firms")
 FLUSH_SECONDS = float(os.environ.get("CONSUMER_FLUSH_SECONDS", "60"))
 MAX_EVENTS = int(os.environ.get("CONSUMER_MAX_EVENTS", "5000"))
+BRONZE_SINK = os.environ.get("BRONZE_SINK", "garage").strip().lower()
+BRONZE_PREFIX_FIRMS = os.environ.get("BRONZE_PREFIX_FIRMS", "bronze/firms").strip("/")
 
 DATA_DIR = Path(os.environ.get("DATA_DIR") or _DEFAULT_DATA_DIR)
 if not DATA_DIR.is_absolute():
     DATA_DIR = _REPO_ROOT / DATA_DIR
 
 WATERMARK_FILE = DATA_DIR / "state" / "watermark.json"
+
+
+def build_sink():
+    """Pilih backend Bronze dari BRONZE_SINK."""
+    if BRONZE_SINK == "local":
+        return LocalBronzeSink(DATA_DIR / "bronze" / "firms")
+    if BRONZE_SINK != "garage":
+        raise SystemExit(f"BRONZE_SINK harus 'garage' atau 'local', bukan {BRONZE_SINK!r}")
+
+    # Impor lokal supaya mode local tidak memerlukan boto3.
+    from common.config import GarageSettings
+    from common.storage import BronzeStore
+
+    store = BronzeStore(GarageSettings.from_env())
+    return GarageBronzeSink(store, BRONZE_PREFIX_FIRMS)
 
 
 def log(message):
@@ -109,9 +126,10 @@ def flush_buffer(consumer, sink, buffer, retries=3):
         lines = [raw for _, raw in items]
 
         last_error = None
+        location = key
         for attempt in range(1, retries + 1):
             try:
-                sink.write(key, lines)
+                location = sink.write(key, lines)
                 last_error = None
                 break
             except Exception as exc:  # noqa: BLE001 - dicatat, lalu dicoba lagi
@@ -122,7 +140,7 @@ def flush_buffer(consumer, sink, buffer, retries=3):
             raise RuntimeError(f"gagal menulis Bronze {key}: {last_error}") from last_error
 
         written += len(items)
-        log(f"  + {key} ({len(items)} event)")
+        log(f"  + {location} ({len(items)} event)")
 
     for source, acq in buffer.acq_max.items():
         watermark.update(WATERMARK_FILE, source, acq)
@@ -204,7 +222,7 @@ def main():
     )
     args = parser.parse_args()
 
-    sink = LocalBronzeSink(DATA_DIR)
+    sink = build_sink()
     dlq = DeadLetterPublisher(BROKERS, DLQ_TOPIC)
     consumer = build_consumer()
     consumer.subscribe([TOPIC])
@@ -223,8 +241,7 @@ def main():
     last_message = time.time()
     in_dlq = 0
 
-    log(f"mulai: {BROKERS} / {TOPIC} -> {DATA_DIR} (group={GROUP})")
-
+    log(f"mulai: {BROKERS} / {TOPIC} -> sink={BRONZE_SINK} (group={GROUP})")
     try:
         while not stop["flag"]:
             msg = consumer.poll(1.0)

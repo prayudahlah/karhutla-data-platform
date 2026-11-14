@@ -68,7 +68,7 @@ services:
   consumer:
     build:
       context: ..
-      dockerfile: docker/Dockerfile.stream
+      dockerfile: docker/Dockerfile.python
     image: karhutla/firms-consumer:local
     container_name: karhutla-firms-consumer
     restart: unless-stopped
@@ -76,8 +76,17 @@ services:
     depends_on:
       garage:
         condition: service_healthy
+    env_file:
+      - path: ../.env
+        required: false
     environment:
+      # Menimpa nilai .env yang berorientasi host.
       DATA_DIR: /app/data
+      BRONZE_SINK: ${BRONZE_SINK:-garage}
+      BRONZE_PREFIX_FIRMS: ${BRONZE_PREFIX_FIRMS:-bronze/firms}
+      GARAGE_ENDPOINT: http://garage:3900
+      GARAGE_BUCKET: lakehouse
+      GARAGE_FORCE_PATH_STYLE: "true"
       REDPANDA_BROKERS: ${REDPANDA_BROKERS:-redpanda:9092}
       REDPANDA_TOPIC: ${REDPANDA_TOPIC:-firms.hotspot.raw}
       REDPANDA_DLQ_TOPIC: ${REDPANDA_DLQ_TOPIC:-firms.hotspot.dlq}
@@ -86,6 +95,7 @@ services:
       CONSUMER_MAX_EVENTS: ${CONSUMER_MAX_EVENTS:-5000}
       TZ: ${TZ:-Asia/Jakarta}
     volumes:
+      # Hanya untuk state watermark dan fallback BRONZE_SINK=local.
       - ../data/batch:/app/data
     networks:
       - karhutla

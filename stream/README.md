@@ -28,25 +28,27 @@ FIRMS API --> firms_stream.py --> Redpanda --> consumer.py --> data/batch/bronze
 
 ## Jalankan
 
-Prasyarat: Docker Desktop menyala.
+Prasyarat: Docker Desktop menyala, dan `task` terpasang
+(`winget install Task.Task`).
 
 ```bash
-just dev              # node stream: redpanda + console + producer (+ port ke localhost)
-just up-batch         # node batch: consumer
-just ps
-just logs producer
-just logs-batch consumer
-just down
+task dev                    # node stream: redpanda + console + producer (+ port ke localhost)
+task up-batch               # node batch: garage + garage-webui + consumer
+task ps
+task logs SERVICE=producer
+task logs-batch SERVICE=consumer
+task down
 ```
 
-Tanpa `just`:
+Tanpa `task`:
 
 ```bash
 docker compose -f compose/base.yml -f compose/vps-stream.yml -f compose/dev.yml up -d --build
 docker compose -f compose/base.yml -f compose/vps-batch.yml up -d --build
 ```
 
-Console: http://localhost:8080 · Broker dari host: `localhost:19092`
+Console: http://localhost:8080 · Garage web UI: http://localhost:3909 ·
+Broker dari host: `localhost:19092`
 
 Kedua stack memakai network yang sama (`karhutla`) tapi bisa di-`up` terpisah. Consumer
 tidak punya `depends_on` ke redpanda, jadi aman kalau broker belum siap.
@@ -54,48 +56,56 @@ tidak punya `depends_on` ke redpanda, jadi aman kalau broker belum siap.
 ## Consumer
 
 ```bash
-just lag                  # lag per partisi (harus 0 saat idle)
-just bronze-files         # daftar file Bronze
-just consume-once         # konsumsi sisa pesan lalu keluar
-just dlq                  # offset topik DLQ
+task lag                  # lag per partisi (harus 0 saat idle)
+task bronze-files         # daftar objek Bronze di Garage
+task bronze-lines         # jumlah objek
+task consume-once         # konsumsi sisa pesan lalu keluar
+task dlq                  # offset topik DLQ
 ```
 
 Prinsip:
 
 - `group.id=bronze-firms`, `enable.auto.commit=false`, `auto.offset.reset=earliest`.
 - Flush tiap 60 detik (`CONSUMER_FLUSH_SECONDS`) atau 5.000 event (`CONSUMER_MAX_EVENTS`).
-- **Commit offset setelah file tertulis.** Crash sebelum commit = pesan dibaca ulang.
+- **Commit offset setelah objek tertulis.** Crash sebelum commit = pesan dibaca ulang.
 - Pesan gagal parse/validasi -> `firms.hotspot.dlq`, offset tetap di-commit (tidak looping).
 - `SIGTERM` -> buffer di-flush dan di-commit (`stop_grace_period: 30s`).
 
-Layout Bronze:
+Bronze ditulis ke **Garage** (`BRONZE_SINK=garage`, default) memakai
+`common.storage.BronzeStore.put_bytes`, atau ke disk lokal (`BRONZE_SINK=local`) untuk
+dev tanpa Garage. Layout sama di kedua mode:
 
 ```
-data/batch/bronze/firms/source=<SUMBER>/ingest_date=<YYYY-MM-DD>/
+s3://lakehouse/bronze/firms/source=<SUMBER>/ingest_date=<YYYY-MM-DD>/
     ingest_hour=<HH>/part-p<partisi>-<offset_awal>-<offset_akhir>.jsonl
 ```
 
-Nama file memuat rentang offset, jadi retry dengan offset yang sama menulis ke file yang
-sama dan `LocalBronzeSink` menganggapnya sukses (idempoten). Duplikat antar-replay tetap
-mungkin; dedup resmi pakai `event_id` di Silver.
+Nama objek memuat rentang offset, jadi retry dengan offset yang sama menulis ke key yang
+sama. `put_bytes` menolak overwrite, dan `ObjectAlreadyExistsError` diperlakukan sebagai
+sukses — itu yang membuat consumer idempoten saat commit gagal. Duplikat antar-replay
+tetap mungkin; dedup resmi pakai `event_id` di Silver.
 
 | Variabel | Default | Keterangan |
 |---|---|---|
+| `BRONZE_SINK` | `garage` | `garage` atau `local` |
+| `BRONZE_PREFIX_FIRMS` | `bronze/firms` | prefix objek di bucket |
+| `GARAGE_ENDPOINT` | `http://garage:3900` (compose) | |
+| `GARAGE_BUCKET` | `lakehouse` | |
 | `REDPANDA_BROKERS` | `redpanda:9092` (compose) | di VM batch pakai `stream:9092` |
 | `REDPANDA_TOPIC` | `firms.hotspot.raw` | |
 | `REDPANDA_DLQ_TOPIC` | `firms.hotspot.dlq` | |
 | `CONSUMER_GROUP` | `bronze-firms` | |
 | `CONSUMER_FLUSH_SECONDS` | `60` | naikkan ke 300-900 untuk mengurangi jumlah file |
-| `DATA_DIR` | `/app/data` (compose) | Bronze = `$DATA_DIR/bronze` |
+| `DATA_DIR` | `/app/data` (compose) | state watermark; juga tujuan `BRONZE_SINK=local` |
 
 ### Tanpa Docker (spool saja)
 
 ```bash
-pip install -r requirements.txt
-export $(grep -v '^#' .env | xargs)   # setelah menyalin .env.example -> .env dan diisi
-python src/firms_stream.py --once --test-telegram
-python src/firms_stream.py --no-publish --interval 600
-python src/firms_stream.py --selftest-publish   # tes broker tanpa memanggil API FIRMS
+pip install -r stream/requirements.txt
+export $(grep -v '^#' stream/.env | xargs)   # setelah menyalin .env.example -> .env dan diisi
+python stream/src/firms_stream.py --once --test-telegram
+python stream/src/firms_stream.py --no-publish --interval 600
+python stream/src/firms_stream.py --selftest-publish   # tes broker tanpa memanggil API FIRMS
 ```
 
 ## Topik
@@ -143,8 +153,8 @@ Flat, satu objek per hotspot. Key Kafka = `event_id`.
 - File `*.jsonl` yang tersisa artinya ada event yang belum terkirim. Kirim ulang:
 
 ```bash
-just replay                                          # atau: python src/replay_spool.py
-python src/replay_spool.py --dry-run                 # lihat dulu
+task replay                                          # atau: python stream/src/replay_spool.py
+python stream/src/replay_spool.py --dry-run          # lihat dulu
 ```
 
 - State dedup (`firms_seen.json`) disimpan setelah spool ada di disk, jadi data tidak hilang

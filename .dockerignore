@@ -1,0 +1,36 @@
+# Jangan kirim ke build context Docker.
+.git/
+.github/
+.venv/
+.vscode/
+.idea/
+.openchamber/
+
+# data dan artefak runtime
+data/
+stream/data/
+models/
+mlruns/
+logs/
+minio-data/
+postgres-data/
+redpanda-data/
+
+# rahasia
+.env
+.env.*
+!.env.example
+infra/garage/garage.toml
+
+# python
+**/__pycache__/
+**/*.py[cod]
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.coverage
+coverage.xml
+htmlcov/
+
+# notebook dan dokumen besar
+*.ipynb_checkpoints/
