@@ -115,6 +115,23 @@ def _city() -> City:
 RUN_ID = "20261114T010203Z-deadbeef"
 
 
+def test_object_key_prefixes_sequence_number() -> None:
+    numbered = City(
+        name="Banda Aceh",
+        province="Aceh",
+        latitude=5.5483,
+        longitude=95.3238,
+        number=1,
+    )
+
+    key = object_key("bronze/open_meteo", "weather", RUN_ID, numbered)
+
+    assert key == (
+        "bronze/open_meteo/weather/ingest_date=2026-11-14/"
+        f"run_id={RUN_ID}/01_banda_aceh_aceh.json"
+    )
+
+
 def test_ingest_cities_writes_both_datasets_and_manifest() -> None:
     store = FakeStore()
     settings = _settings()

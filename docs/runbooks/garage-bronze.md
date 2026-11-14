@@ -145,8 +145,8 @@ python -c "from common.config import Settings; from common.storage import Bronze
 
 ```text
 s3://lakehouse/bronze/open_meteo/
-├── weather/ingest_date=YYYY-MM-DD/run_id=<run_id>/<city_slug>.json
-├── air_quality/ingest_date=YYYY-MM-DD/run_id=<run_id>/<city_slug>.json
+├── weather/ingest_date=YYYY-MM-DD/run_id=<run_id>/<no>_<city_slug>.json
+├── air_quality/ingest_date=YYYY-MM-DD/run_id=<run_id>/<no>_<city_slug>.json
 └── manifests/ingest_date=YYYY-MM-DD/run_id=<run_id>.json
 ```
 
