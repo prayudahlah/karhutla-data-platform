@@ -1,0 +1,69 @@
+name: firms_hotspot_raw
+owner: Kelompok 8
+layer: bronze
+location:
+  storage: Garage (S3-compatible)
+  bucket: lakehouse
+  prefix: bronze/firms
+  pattern: >-
+    source=<SOURCE>/ingest_date=<YYYY-MM-DD>/ingest_hour=<HH>/
+    part-p<partition>-<offset_awal>-<offset_akhir>.jsonl
+format: JSON Lines (application/x-ndjson), satu objek per baris
+
+grain: >-
+  Satu baris = satu deteksi hotspot dari satu satelit pada satu waktu akuisisi.
+  Kunci alaminya adalah event_id.
+
+schema:
+  event_id: {type: string, description: sha1 dari lat|lon|acq_date|acq_time|satellite}
+  schema_version: {type: integer, const: 1}
+  source: {type: string, examples: [VIIRS_NOAA20_NRT, VIIRS_NOAA21_NRT, MODIS_NRT]}
+  satellite: {type: string, examples: [Terra, Aqua, N20, N21, SNPP]}
+  instrument: {type: string, examples: [MODIS, VIIRS]}
+  latitude: {type: number, unit: degrees, range: [-11.5, 6.5]}
+  longitude: {type: number, unit: degrees, range: [94.0, 142.0]}
+  brightness: {type: number, unit: Kelvin}
+  bright_t31: {type: number, unit: Kelvin, nullable: true}
+  scan: {type: number, nullable: true}
+  track: {type: number, nullable: true}
+  acq_date: {type: string, format: date}
+  acq_time: {type: integer, description: HHMM dalam UTC}
+  acq_ts_utc: {type: string, format: date-time}
+  acq_wib: {type: string, description: waktu akuisisi dalam WIB}
+  confidence: {type: "string|integer", description: VIIRS l/n/h, MODIS 0-100}
+  frp: {type: number, unit: MW, nullable: true}
+  daynight: {type: string, enum: [D, N]}
+  version: {type: string}
+  latency_min: {type: number, unit: minutes, description: ingested_at - acq_ts_utc}
+  ingested_at: {type: string, format: date-time}
+
+freshness:
+  expected: poll tiap 10 menit, latensi median 1-4 jam tergantung satelit
+  alert_threshold: tidak ada hotspot baru lebih dari 12 jam
+  measured_by: firms_freshness_seconds (Prometheus)
+
+retention:
+  topic: 7 hari di firms.hotspot.raw
+  bronze: tanpa batas, dikompaksi berkala di Silver
+
+classification: public
+  # Data NASA FIRMS terbuka; tidak ada data pribadi di dalamnya.
+
+quality_rules:
+  - latitude dan longitude berada di dalam bbox Indonesia
+  - frp tidak null pada minimal 99% baris
+  - frp >= 0
+  - confidence tidak null pada minimal 99% baris
+  - latency_min >= 0 (mendeteksi jam mesin yang tidak sinkron)
+  - event_id unik per run; duplikat antar-run diselesaikan di Silver
+
+consumers:
+  - silver_firms_hotspot (DuckDB, dedup per event_id)
+  - alerting hotspot (Telegram, filter confidence dan FRP)
+
+lineage:
+  upstream: NASA FIRMS area API (near real-time)
+  pipeline: firms_stream.py -> firms.hotspot.raw -> consumer.py -> bronze/firms
+  downstream: silver_firms_hotspot -> gold_risk_grid -> prediksi
+
+owner_contact: lihat README repository

@@ -5,8 +5,8 @@
 | F-01 | Compose, health check, deploy log | TBD | TBD | TBD |
 | F-02 | [Open-Meteo Bronze](F-02-openmeteo-bronze.md) | `pytest -q -m integration` | Done | Batch |
 | F-03 | Backfill report | TBD | TBD | TBD |
-| F-04 | Producer, consumer, lag | TBD | TBD | TBD |
-| F-05 | Dedup, DLQ, watermark | TBD | TBD | TBD |
+| F-04 | Producer, consumer, lag | `compose/vps-stream.yml` + `compose/vps-batch.yml`; `task lag` = 0; `stream/README.md` | `task selftest` lalu `task lag` | selesai | Kelompok 8 |
+| F-05 | Dedup, DLQ, watermark | dedup producer (`firms_seen.json`), DLQ `firms.hotspot.dlq`, watermark `data/batch/state/watermark.json` | `task dlq`, `task bronze-files` | selesai | Kelompok 8 |
 | F-06 | Bronze, Silver, Gold | TBD | TBD | TBD |
 | F-07 | Delta atau Iceberg snapshot | TBD | TBD | TBD |
 | F-08 | DQ report dan quarantine | TBD | TBD | TBD |
