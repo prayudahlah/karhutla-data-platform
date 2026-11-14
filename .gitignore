@@ -17,6 +17,13 @@ postgres-data/
 redpanda-data/
 infra/garage/garage.toml
 
+# dbt
+dbt/.user.yml
+dbt/profiles.yml
+dbt/target/
+dbt/logs/
+dbt/dbt_packages/
+
 # python
 __pycache__/
 *.py[cod]

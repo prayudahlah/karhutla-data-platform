@@ -1,0 +1,11 @@
+karhutla:
+  target: dev
+  outputs:
+    dev:
+      type: duckdb
+      path: "{{ env_var('DBT_DUCKDB_PATH', 'data/silver.duckdb') }}"
+      threads: 1
+    ci:
+      type: duckdb
+      path: ":memory:"
+      threads: 1

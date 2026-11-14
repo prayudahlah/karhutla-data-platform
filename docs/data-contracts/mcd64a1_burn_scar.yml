@@ -1,0 +1,32 @@
+name: mcd64a1_burn_scar
+owner: Kelompok 8 - Yuda
+layer: silver
+status: skeleton
+location:
+  storage: Garage (S3-compatible)
+  bucket: lakehouse
+  prefix: silver/mcd64a1/dataset=burn_scar
+  pattern: date=YYYY-MM-DD/part-00000.parquet
+grain: Satu baris per piksel terbakar per tile dan periode.
+schema:
+  tile: {type: string}
+  row: {type: integer}
+  col: {type: integer}
+  latitude: {type: double}
+  longitude: {type: double}
+  burn_date: {type: date}
+  burn_month: {type: string}
+  qa: {type: integer, nullable: true}
+  source_file: {type: string}
+freshness:
+  expected: bulanan
+  alert_threshold: belum ditetapkan
+retention: mengikuti kebijakan Silver
+classification: public
+quality_rules:
+  - burn_date berada di dalam periode tile
+  - koordinat berada di bbox Indonesia
+  - tile yang belum masuk tercatat di tabel coverage
+consumers:
+  - silver_hotspot_scar_label
+  - gold_risk_grid

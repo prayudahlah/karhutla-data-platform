@@ -54,12 +54,12 @@ Semua PR menuju `dev`. Nomor di depan adalah urutan merge.
 
 | # | Branch | Pemilik | Base | Status |
 |---|---|---|---|---|
-| 0 | `fix/ci-dev` | kamu | `dev` | PR dibuka, CI hijau |
-| 1 | `chore/silver-foundation` | Aulia | `dev` | belum |
+| 0 | `fix/ci-dev` | Yuda | `dev` | PR dibuka, CI hijau |
+| 1 | `chore/silver-foundation` | Aulia | `dev` | lokal selesai, belum PR |
 | 2 | `feat/silver-openmeteo` | Aulia | `dev` setelah 1 | belum |
-| 3 | `feat/silver-firms` | kamu | `dev` setelah 1 | belum |
-| 4 | `feat/silver-mcd64a1` | kamu | `dev`, boleh paralel | belum |
-| 5 | `feat/silver-hotspot-label` | kamu | `dev` setelah 2, 3, 4 | belum |
+| 3 | `feat/silver-firms` | Yuda | `dev` setelah 1 | belum |
+| 4 | `feat/silver-mcd64a1` | Yuda | `dev`, boleh paralel | belum |
+| 5 | `feat/silver-hotspot-label` | Yuda | `dev` setelah 2, 3, 4 | belum |
 | 6 | `docs/contracts-silver` | Aulia | `dev` setelah 2 sampai 5 | belum |
 
 Branch `3` dan `4` boleh mulai sebelum `1` merge, asalkan stub tiga fungsi di
@@ -70,7 +70,7 @@ dan laporan DQ.
 
 - Satu PR untuk satu dataset atau satu tujuan. Jangan gabungkan dua dataset.
 - CI harus hijau sebelum minta review.
-- Penulis tidak me-review PR-nya sendiri. Pasangan review: kamu dan Aulia.
+- Penulis tidak me-review PR-nya sendiri. Pasangan review: Yuda dan Aulia.
 - Jangan commit langsung ke `dev`. Selalu lewat PR.
 - Setiap PR yang menyentuh requirement F-xx memperbarui `evidence/README.md`.
 

@@ -1,0 +1,16 @@
+name: karhutla
+version: "1.0.0"
+config-version: 2
+
+profile: karhutla
+
+model-paths: ["models"]
+macro-paths: ["macros"]
+target-path: "target"
+clean-targets:
+  - target
+  - dbt_packages
+
+models:
+  karhutla:
+    +materialized: view
