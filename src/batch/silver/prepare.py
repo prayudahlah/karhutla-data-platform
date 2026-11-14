@@ -10,6 +10,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import shutil
 from collections.abc import Sequence
 from pathlib import Path
 
@@ -35,6 +36,22 @@ def prepare_publish_root(
     return created
 
 
+def ensure_profiles(project_dir: Path = Path("dbt")) -> Path | None:
+    """Salin profiles.yml.example kalau profiles.yml belum ada.
+
+    Tanpa ini, ``task dbt-build`` gagal dengan pesan dbt yang membingungkan
+    pada mesin yang baru di-clone.
+    """
+    target = project_dir / "profiles.yml"
+    if target.exists():
+        return None
+    example = project_dir / "profiles.yml.example"
+    if not example.is_file():
+        raise FileNotFoundError(f"Contoh profil dbt tidak ditemukan: {example}")
+    shutil.copyfile(example, target)
+    return target
+
+
 def main(argv: Sequence[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Siapkan folder hasil dbt")
     parser.add_argument(
@@ -45,7 +62,17 @@ def main(argv: Sequence[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     created = prepare_publish_root(Path(args.root))
-    print(json.dumps({"root": args.root, "folders": [str(p) for p in created]}, indent=2))
+    created_profiles = ensure_profiles()
+    print(
+        json.dumps(
+            {
+                "root": args.root,
+                "folders": [str(folder) for folder in created],
+                "profiles_created": str(created_profiles) if created_profiles else None,
+            },
+            indent=2,
+        )
+    )
     return 0
 
 

@@ -188,6 +188,21 @@ tasks:
       - 'python -m batch.silver.prepare'
       - 'dbt build --project-dir dbt --profiles-dir dbt'
 
+  silver-openmeteo:
+    desc: Normalisasi Open-Meteo Bronze ke Silver
+    cmds:
+      - 'python -m batch.silver.openmeteo normalize'
+
+  silver-firms:
+    desc: Normalisasi FIRMS Bronze ke Silver
+    cmds:
+      - 'python -m batch.silver.firms normalize'
+
+  silver-mcd64a1:
+    desc: Normalisasi MCD64A1, mis. task silver-mcd64a1 -- 2026-09
+    cmds:
+      - 'python -m batch.silver.mcd64a1 normalize --month {{.CLI_ARGS}}'
+
   silver-pull:
     desc: Turunkan parquet normalized dari Garage, mis. task silver-pull -- --month 2026-09
     cmds:

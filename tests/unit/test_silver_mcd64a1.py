@@ -319,3 +319,30 @@ def test_read_tile_bytes_cleans_up_temp_file(monkeypatch) -> None:
     from pathlib import Path
 
     assert not Path(created[0]).exists()
+
+
+def test_main_wires_normalize_month(monkeypatch) -> None:
+    from batch.silver import mcd64a1 as module
+
+    captured: list[dict[str, Any]] = []
+
+    def fake_normalize(store, settings, *, month, run_id, local_root=None, overwrite=False):
+        captured.append({"month": month, "run_id": run_id, "local_root": local_root})
+        return {"month": month}
+
+    class DummySettings:
+        garage = object()
+        burned_area = object()
+
+        @staticmethod
+        def from_env():
+            return DummySettings()
+
+    monkeypatch.setattr(module, "normalize_month", fake_normalize)
+    monkeypatch.setattr(module, "Settings", DummySettings)
+    monkeypatch.setattr(module, "BronzeStore", lambda settings: object())
+
+    assert module.main(["normalize", "--month", "2026-09", "--run-id", "r1"]) == 0
+    assert captured[0]["month"] == "2026-09"
+    assert captured[0]["run_id"] == "r1"
+    assert captured[0]["local_root"] is not None
