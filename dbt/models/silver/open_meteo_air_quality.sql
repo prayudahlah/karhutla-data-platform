@@ -1,4 +1,9 @@
-{{ config(materialized='table') }}
+{{ config(
+    materialized='external',
+    format='parquet',
+    location=var('silver_publish_root') ~ '/open_meteo/air_quality',
+    options={'partition_by': 'date'}
+) }}
 
 with ranked as (
     select
