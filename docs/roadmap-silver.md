@@ -54,7 +54,7 @@ Semua PR menuju `dev`. Nomor di depan adalah urutan merge.
 
 | # | Branch | Pemilik | Base | Status |
 |---|---|---|---|---|
-| 0 | `fix/ci-dev` | kamu | `dev` | PR dibuka |
+| 0 | `fix/ci-dev` | kamu | `dev` | PR dibuka, CI hijau |
 | 1 | `chore/silver-foundation` | Aulia | `dev` | belum |
 | 2 | `feat/silver-openmeteo` | Aulia | `dev` setelah 1 | belum |
 | 3 | `feat/silver-firms` | kamu | `dev` setelah 1 | belum |
