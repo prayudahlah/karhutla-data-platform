@@ -47,6 +47,8 @@ show_missing = true
 [tool.ruff]
 line-length = 100
 target-version = "py312"
+# Notebook tidak ikut lint: sel Colab berisi kode eksplorasi, bukan kode aplikasi.
+extend-exclude = ["stream/notebooks"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B"]

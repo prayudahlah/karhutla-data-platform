@@ -18,19 +18,19 @@ Pakai:
     python stream/src/consumer.py --once
     python stream/src/consumer.py --flush-seconds 60 --max-events 5000
 """
+
 import argparse
 import json
 import os
 import signal
 import sys
 import time
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
-
-from confluent_kafka import Consumer, KafkaError, TopicPartition
 
 import event_schema
 import watermark
+from confluent_kafka import Consumer, KafkaError, TopicPartition
 from dlq import DeadLetterPublisher
 from sink import LocalBronzeSink, part_key
 
@@ -52,7 +52,7 @@ WATERMARK_FILE = DATA_DIR / "state" / "watermark.json"
 
 
 def log(message):
-    print(f"[{datetime.now(timezone.utc):%H:%M:%S}] {message}", flush=True)
+    print(f"[{datetime.now(UTC):%H:%M:%S}] {message}", flush=True)
 
 
 def ingest_parts(event):
@@ -67,8 +67,8 @@ class BatchBuffer:
     """Menampung event sampai siap ditulis sebagai file per (sumber, partisi, jam)."""
 
     def __init__(self):
-        self.groups = {}   # (source, partition, date, hour) -> [(offset, raw)]
-        self.high = {}     # partition -> offset tertinggi
+        self.groups = {}  # (source, partition, date, hour) -> [(offset, raw)]
+        self.high = {}  # partition -> offset tertinggi
         self.acq_max = {}  # source -> acq_ts_utc tertinggi
         self.count = 0
 
@@ -166,28 +166,42 @@ def handle_message(msg, sink, buffer, dlq):
 
 
 def build_consumer():
-    return Consumer({
-        "bootstrap.servers": BROKERS,
-        "group.id": GROUP,
-        "client.id": "firms-consumer",
-        "enable.auto.commit": False,
-        "auto.offset.reset": "earliest",
-        "max.poll.records": 500,
-        "max.poll.interval.ms": 300000,
-        "session.timeout.ms": 30000,
-        "enable.partition.eof": True,
-    })
+    return Consumer(
+        {
+            "bootstrap.servers": BROKERS,
+            "group.id": GROUP,
+            "client.id": "firms-consumer",
+            "enable.auto.commit": False,
+            "auto.offset.reset": "earliest",
+            "max.poll.records": 500,
+            "max.poll.interval.ms": 300000,
+            "session.timeout.ms": 30000,
+            "enable.partition.eof": True,
+        }
+    )
 
 
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--once", action="store_true", help="konsumsi sampai kosong lalu keluar")
-    parser.add_argument("--idle-seconds", type=float, default=10.0,
-                        help="dengan --once: keluar setelah sekian detik tanpa pesan")
-    parser.add_argument("--flush-seconds", type=float, default=FLUSH_SECONDS,
-                        help="interval flush buffer (default dari CONSUMER_FLUSH_SECONDS)")
-    parser.add_argument("--max-events", type=int, default=MAX_EVENTS,
-                        help="flush lebih awal kalau buffer mencapai jumlah ini")
+    parser.add_argument(
+        "--idle-seconds",
+        type=float,
+        default=10.0,
+        help="dengan --once: keluar setelah sekian detik tanpa pesan",
+    )
+    parser.add_argument(
+        "--flush-seconds",
+        type=float,
+        default=FLUSH_SECONDS,
+        help="interval flush buffer (default dari CONSUMER_FLUSH_SECONDS)",
+    )
+    parser.add_argument(
+        "--max-events",
+        type=int,
+        default=MAX_EVENTS,
+        help="flush lebih awal kalau buffer mencapai jumlah ini",
+    )
     args = parser.parse_args()
 
     sink = LocalBronzeSink(DATA_DIR)

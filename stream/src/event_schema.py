@@ -3,6 +3,7 @@
 Satu sumber kebenaran untuk: versi skema, key dedup, event_id, dan field wajib.
 Jangan duplikasi aturan ini di tempat lain.
 """
+
 import hashlib
 
 SCHEMA_VERSION = 1
@@ -49,9 +50,7 @@ def validate_event(event):
         problems.append("field wajib kosong: " + ", ".join(missing))
 
     if event.get("schema_version") != SCHEMA_VERSION:
-        problems.append(
-            f"schema_version {event.get('schema_version')!r} bukan {SCHEMA_VERSION}"
-        )
+        problems.append(f"schema_version {event.get('schema_version')!r} bukan {SCHEMA_VERSION}")
 
     for field in NUMERIC_FIELDS:
         value = event.get(field)

@@ -26,6 +26,7 @@ Pakai:
     python stream/src/firms_stream.py --selftest-publish      # tes broker tanpa API FIRMS
     python stream/src/firms_stream.py --interval 600 --min-frp 10 --min-conf high
 """
+
 import argparse
 import io
 import json
@@ -33,13 +34,13 @@ import os
 import time
 from pathlib import Path
 
-from event_schema import SCHEMA_VERSION, event_id_from_key, make_key
-
 import pandas as pd
 import requests
+from event_schema import SCHEMA_VERSION, event_id_from_key, make_key
 
 try:  # baca file .env otomatis (stream/.env) jika python-dotenv terpasang
     from dotenv import load_dotenv
+
     load_dotenv()
 except ImportError:
     pass
@@ -82,7 +83,9 @@ def tg_send(text, topic="general"):
         payload["message_thread_id"] = int(thread)
     for attempt in range(1, 4):  # retry 3x: koneksi ke Telegram kadang lambat/putus
         try:
-            r = requests.post(f"https://api.telegram.org/bot{token}/sendMessage", json=payload, timeout=(10, 40))
+            r = requests.post(
+                f"https://api.telegram.org/bot{token}/sendMessage", json=payload, timeout=(10, 40)
+            )
             if r.status_code == 200:
                 return True
             if r.status_code == 429:  # kena rate limit, tunggu sesuai saran Telegram
@@ -165,23 +168,26 @@ def write_spool(df, source, now):
     return out
 
 
-def mark_sent(path):    path.replace(path.with_suffix(".jsonl.sent"))
+def mark_sent(path):
+    path.replace(path.with_suffix(".jsonl.sent"))
 
 
 # ---------------------------------------------------------------- Redpanda
 def make_producer():
     from confluent_kafka import Producer
 
-    return Producer({
-        "bootstrap.servers": BROKERS,
-        "client.id": "firms-producer",
-        "enable.idempotence": True,   # otomatis acks=all, retries>0, tanpa duplikat karena retry
-        "acks": "all",
-        "retries": 5,
-        "linger.ms": 50,
-        "compression.type": "gzip",
-        "message.timeout.ms": 30000,
-    })
+    return Producer(
+        {
+            "bootstrap.servers": BROKERS,
+            "client.id": "firms-producer",
+            "enable.idempotence": True,  # otomatis acks=all, retries>0, tanpa duplikat karena retry
+            "acks": "all",
+            "retries": 5,
+            "linger.ms": 50,
+            "compression.type": "gzip",
+            "message.timeout.ms": 30000,
+        }
+    )
 
 
 def to_events(df):
@@ -221,10 +227,17 @@ def publish_batch(events, producer):
 def quality_checks(new):
     """Return list (nama_cek, persen_lolos, ambang_min)."""
     n = len(new)
-    pct = lambda s: float(s.mean()) * 100
+
+    def pct(series):
+        return float(series.mean()) * 100
+
     return [
         ("Latitude dalam rentang Indonesia (-11..6)", pct(new["latitude"].between(-11, 6)), 100.0),
-        ("Longitude dalam rentang Indonesia (95..141)", pct(new["longitude"].between(95, 141)), 100.0),
+        (
+            "Longitude dalam rentang Indonesia (95..141)",
+            pct(new["longitude"].between(95, 141)),
+            100.0,
+        ),
         ("FRP tidak null", pct(new["frp"].notna()), 99.0),
         ("FRP >= 0", pct(new["frp"].fillna(0) >= 0), 100.0),
         ("Confidence tidak null", pct(new["confidence"].notna()), 99.0),
@@ -241,7 +254,11 @@ def send_dq_report(new, source, verbose):
             lines.append(f"• {name}: {p:.1f}% (min {thr:.0f}%)")
         tg_send("\n".join(lines), "dq")
     elif verbose:
-        tg_send(f"✅ Data Quality OK ({source}): {len(checks)}/{len(checks)} cek lolos, {n} baris diperiksa.", "dq")
+        tg_send(
+            f"✅ Data Quality OK ({source}): {len(checks)}/{len(checks)} cek lolos, "
+            f"{n} baris diperiksa.",
+            "dq",
+        )
 
 
 # ---------------------------------------------------------------- Filter alert
@@ -264,7 +281,8 @@ def build_alert(new, source, args, total_new):
     sel = sel.sort_values("frp", ascending=False)
     lines = [
         f"🔥 HOTSPOT BARU ({source})",
-        f"{len(sel)} titik lolos filter (dari {total_new} baru) | conf>={args.min_conf}, FRP>={args.min_frp}",
+        f"{len(sel)} titik lolos filter (dari {total_new} baru) "
+        f"| conf>={args.min_conf}, FRP>={args.min_frp}",
         "",
     ]
     for _, r in sel.head(args.top).iterrows():
@@ -309,7 +327,10 @@ def poll_once(map_key, args, seen, first_run, source):
     if args.publish:
         ok, failed = publish_batch(events, args.producer)
         if failed:
-            print(f"    -> Redpanda: {len(ok)} ok, {len(failed)} gagal; file tetap *.jsonl untuk replay")
+            print(
+                f"    -> Redpanda: {len(ok)} ok, {len(failed)} gagal; "
+                "file tetap *.jsonl untuk replay"
+            )
         else:
             mark_sent(path)
             print(f"    -> Redpanda: {len(ok)} event -> {BROKERS}/{TOPIC}")
@@ -320,8 +341,11 @@ def poll_once(map_key, args, seen, first_run, source):
 
     # Run pertama: jangan banjiri chat dengan semua data awal, cukup ringkasan
     if first_run:
-        tg_send(f"✅ FIRMS stream dimulai ({source}). Muat awal {len(new)} titik dikirim ke Redpanda. "
-                f"Alert hotspot detail aktif mulai polling berikutnya.", "general")
+        tg_send(
+            f"✅ FIRMS stream dimulai ({source}). Muat awal {len(new)} titik dikirim ke Redpanda. "
+            f"Alert hotspot detail aktif mulai polling berikutnya.",
+            "general",
+        )
     else:
         msg = build_alert(new, source, args, len(new))
         if msg:
@@ -351,14 +375,24 @@ def selftest_publish():
     rows = []
     for i, (lat, lon) in enumerate([(-0.5, 101.5), (-2.2, 114.0), (-6.9, 107.6)]):
         acq = now - pd.Timedelta(minutes=30 * (i + 1))
-        rows.append({
-            "latitude": lat, "longitude": lon, "brightness": 320.0 + i,
-            "scan": 1.0, "track": 1.0,
-            "acq_date": acq.strftime("%Y-%m-%d"), "acq_time": int(acq.strftime("%H%M")),
-            "satellite": "SELFTEST", "instrument": "VIIRS",
-            "confidence": 80, "version": "2.0NRT", "bright_t31": 295.0,
-            "frp": 10.0 + i, "daynight": "D",
-        })
+        rows.append(
+            {
+                "latitude": lat,
+                "longitude": lon,
+                "brightness": 320.0 + i,
+                "scan": 1.0,
+                "track": 1.0,
+                "acq_date": acq.strftime("%Y-%m-%d"),
+                "acq_time": int(acq.strftime("%H%M")),
+                "satellite": "SELFTEST",
+                "instrument": "VIIRS",
+                "confidence": 80,
+                "version": "2.0NRT",
+                "bright_t31": 295.0,
+                "frp": 10.0 + i,
+                "daynight": "D",
+            }
+        )
     df = add_latency(pd.DataFrame(rows), now)
     df["_key"] = df.apply(make_key, axis=1)
     df["ingested_at"] = now.strftime("%Y-%m-%dT%H:%M:%SZ")
@@ -374,8 +408,11 @@ def selftest_publish():
 
 def main():
     p = argparse.ArgumentParser()
-    p.add_argument("--source", default="VIIRS_NOAA20_NRT,VIIRS_NOAA21_NRT,MODIS_NRT",
-                   help="satu atau beberapa sumber, dipisah koma")
+    p.add_argument(
+        "--source",
+        default="VIIRS_NOAA20_NRT,VIIRS_NOAA21_NRT,MODIS_NRT",
+        help="satu atau beberapa sumber, dipisah koma",
+    )
     p.add_argument("--bbox", default=INDONESIA_BBOX)
     p.add_argument("--day-range", type=int, default=1)
     p.add_argument("--interval", type=int, default=600, help="detik antar polling")
@@ -383,10 +420,20 @@ def main():
     p.add_argument("--min-frp", type=float, default=5.0, help="FRP minimum (MW) untuk alert")
     p.add_argument("--top", type=int, default=8, help="jumlah titik ditampilkan per alert")
     p.add_argument("--fail-alert-after", type=int, default=3, help="alert setelah N error beruntun")
-    p.add_argument("--stale-hours", type=float, default=12, help="alert jika tak ada data baru selama X jam")
-    p.add_argument("--dq-verbose", action="store_true", help="kirim juga laporan DQ yang lolos (✅)")
-    p.add_argument("--no-publish", action="store_true", help="hanya tulis spool, jangan kirim ke Redpanda")
-    p.add_argument("--selftest-publish", action="store_true", help="kirim 3 event sintetis ke topik lalu keluar")
+    p.add_argument(
+        "--stale-hours", type=float, default=12, help="alert jika tak ada data baru selama X jam"
+    )
+    p.add_argument(
+        "--dq-verbose", action="store_true", help="kirim juga laporan DQ yang lolos (✅)"
+    )
+    p.add_argument(
+        "--no-publish", action="store_true", help="hanya tulis spool, jangan kirim ke Redpanda"
+    )
+    p.add_argument(
+        "--selftest-publish",
+        action="store_true",
+        help="kirim 3 event sintetis ke topik lalu keluar",
+    )
     p.add_argument("--once", action="store_true")
     p.add_argument("--test-telegram", action="store_true")
     p.add_argument("--discover-topics", action="store_true")
@@ -410,15 +457,21 @@ def main():
         try:
             args.producer = make_producer()
         except ImportError:
-            raise SystemExit("confluent-kafka belum terpasang: pip install -r stream/requirements.txt")
+            raise SystemExit(
+                "confluent-kafka belum terpasang: pip install -r stream/requirements.txt"
+            ) from None
         print(f"[START] publish aktif -> {BROKERS}/{TOPIC}")
     else:
         args.producer = None
         print("[START] publish dimatikan, hanya spool lokal")
 
     if args.test_telegram:
-        for t, label in [("general", "General"), ("hotspot", "Hotspot Alerts"),
-                         ("pipeline", "Pipeline Alerts"), ("dq", "Data Quality Alerts")]:
+        for t, label in [
+            ("general", "General"),
+            ("hotspot", "Hotspot Alerts"),
+            ("pipeline", "Pipeline Alerts"),
+            ("dq", "Data Quality Alerts"),
+        ]:
             ok = tg_send(f"✅ Tes alert FIRMS stream: topik {label} OK.", t)
             print(f"Telegram [{label}]:", "terkirim" if ok else "GAGAL")
             time.sleep(1)
@@ -440,8 +493,12 @@ def main():
             if n > 0:
                 last_new_ts, stale_alerted = time.time(), False
             elif (time.time() - last_new_ts) > args.stale_hours * 3600 and not stale_alerted:
-                tg_send(f"⚠️ Tidak ada hotspot baru dari {args.source} (semua sumber) selama >{args.stale_hours} jam. "
-                        f"Cek apakah API/satelit bermasalah.", "pipeline")
+                tg_send(
+                    f"⚠️ Tidak ada hotspot baru dari {args.source} (semua sumber) "
+                    f"selama >{args.stale_hours} jam. "
+                    f"Cek apakah API/satelit bermasalah.",
+                    "pipeline",
+                )
                 stale_alerted = True
         except Exception as e:
             fails += 1

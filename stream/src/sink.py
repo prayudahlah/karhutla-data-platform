@@ -9,6 +9,7 @@ Layout key (Hive, siap dibaca DuckDB dengan hive_partitioning=true):
     bronze/firms/source=<SOURCE>/ingest_date=<YYYY-MM-DD>/
         ingest_hour=<HH>/part-p<partition>-<offset_awal>-<offset_akhir>.jsonl
 """
+
 import os
 from pathlib import Path
 

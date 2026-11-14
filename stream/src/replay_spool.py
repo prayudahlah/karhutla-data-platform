@@ -9,6 +9,7 @@ Pakai:
     python stream/src/replay_spool.py             # kirim semua
     python stream/src/replay_spool.py --limit 5   # maksimal 5 file
 """
+
 import argparse
 import json
 
@@ -38,7 +39,9 @@ def main():
     total = sent = 0
     producer = None if args.dry_run else make_producer()
     for f in files:
-        events = [json.loads(line) for line in f.read_text(encoding="utf-8").splitlines() if line.strip()]
+        events = [
+            json.loads(line) for line in f.read_text(encoding="utf-8").splitlines() if line.strip()
+        ]
         total += len(events)
         if args.dry_run:
             print(f"[dry-run] {f} -> {len(events)} event")
