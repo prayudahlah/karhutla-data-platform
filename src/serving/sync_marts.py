@@ -1,7 +1,7 @@
-"""Salin tiga mart Gold Parquet ke Postgres.
+"""Salin tiga mart Gold dari Iceberg ke Postgres.
 
-Dipakai Metabase dan (nanti) serving yang membaca Postgres. DuckDB membaca
-Parquet lalu menulis lewat extension ``postgres``, jadi tidak perlu pandas.
+Sumbernya snapshot Iceberg aktif (``current.json``), bukan Parquet. DuckDB
+membaca Arrow hasil scan pyiceberg lalu menulis lewat extension ``postgres``.
 
 Contoh::
 
@@ -19,7 +19,9 @@ from pathlib import Path
 
 import duckdb
 
-GOLD_ROOT = Path(os.environ.get("GOLD_PUBLISH_ROOT", "data/gold/published"))
+from batch.gold.publish import NAMESPACE, load_catalog
+
+ICEBERG_ROOT = Path(os.environ.get("ICEBERG_ROOT", "data/gold/_iceberg"))
 
 # Nama tabel di Postgres -> nama tabel Gold.
 MART_TABLES: dict[str, str] = {
@@ -29,12 +31,31 @@ MART_TABLES: dict[str, str] = {
 }
 
 
+def _active_snapshots(iceberg_root: Path) -> dict[str, int]:
+    current = iceberg_root / "current.json"
+    if not current.is_file():
+        raise FileNotFoundError(
+            f"Pointer Iceberg tidak ditemukan: {current}. "
+            "Jalankan `gold-publish --strict` dulu."
+        )
+    payload = json.loads(current.read_text(encoding="utf-8"))
+    snapshots = payload.get("snapshots", {})
+    missing = [name for name in MART_TABLES.values() if name not in snapshots]
+    if missing:
+        raise ValueError(
+            "current.json belum memuat snapshot untuk: " + ", ".join(missing)
+        )
+    return {name: int(snapshot) for name, snapshot in snapshots.items()}
+
+
 def sync_marts(
-    gold_root: Path,
+    iceberg_root: Path,
     dsn: str,
     schema: str = "public",
 ) -> dict[str, int]:
-    """Tulis ulang tabel mart di Postgres, kembalikan jumlah barisnya."""
+    """Tulis ulang tabel mart di Postgres dari snapshot Iceberg aktif."""
+    snapshots = _active_snapshots(iceberg_root)
+    catalog = load_catalog(iceberg_root)
     connection = duckdb.connect()
     try:
         connection.execute("INSTALL postgres")
@@ -44,20 +65,21 @@ def sync_marts(
 
         counts: dict[str, int] = {}
         for target, source in MART_TABLES.items():
-            folder = gold_root / source
-            if not folder.is_dir() or not any(folder.rglob("*.parquet")):
-                raise FileNotFoundError(
-                    f"Parquet Gold untuk {source} belum ada di {folder}"
-                )
-            glob = (folder / "**" / "*.parquet").as_posix()
-            connection.execute(
-                f"CREATE OR REPLACE TABLE pg.{schema}.{target} AS "
-                f"SELECT * FROM read_parquet('{glob}', hive_partitioning = true)"
-            )
-            row = connection.execute(
-                f"SELECT count(*) FROM pg.{schema}.{target}"
-            ).fetchone()
-            counts[target] = int(row[0]) if row else 0
+            table = catalog.load_table(f"{NAMESPACE}.{source}")
+            arrow = table.scan(snapshot_id=snapshots[source]).to_arrow()
+            view = f"source_{source}"
+            connection.register(view, arrow)
+            try:
+                connection.execute(
+                    f"CREATE OR REPLACE TABLE pg.{schema}.{target} AS "
+                    f"SELECT * FROM {view}"
+                ).fetchall()
+                rows = connection.execute(
+                    f"SELECT count(*) FROM pg.{schema}.{target}"
+                ).fetchall()
+                counts[target] = int(rows[0][0]) if rows else 0
+            finally:
+                connection.unregister(view)
         connection.execute("DETACH pg")
         return counts
     finally:
@@ -65,11 +87,13 @@ def sync_marts(
 
 
 def main(argv: Sequence[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description="Salin mart Gold ke Postgres")
+    parser = argparse.ArgumentParser(
+        description="Salin mart Gold dari Iceberg ke Postgres"
+    )
     parser.add_argument(
-        "--gold-root",
-        default=str(GOLD_ROOT),
-        help="akar Parquet Gold",
+        "--iceberg-root",
+        default=str(ICEBERG_ROOT),
+        help="akar katalog + warehouse Iceberg",
     )
     parser.add_argument(
         "--dsn",
@@ -82,7 +106,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     if not args.dsn:
         parser.error("--dsn atau DATABASE_DSN wajib diisi")
 
-    counts = sync_marts(Path(args.gold_root), args.dsn, args.schema)
+    counts = sync_marts(Path(args.iceberg_root), args.dsn, args.schema)
     print(json.dumps({"schema": args.schema, "tables": counts}, indent=2))
     return 0
 

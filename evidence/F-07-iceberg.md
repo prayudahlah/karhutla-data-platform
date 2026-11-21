@@ -101,9 +101,9 @@ task gold-maintenance
 2. `--expire` dan `--backup` sudah bisa dijalankan dan diuji. Urutan
    operasionalnya ada di `docs/runbooks/gold.md` (`task gold-maintenance`);
    deployment cron/Prefect belum dipasang.
-3. Serving (`sync_marts`) dan ML masih membaca Parquet. Migrasi ke Iceberg
-   menyusul di branch serving/ML; sampai itu selesai, Iceberg baru canonical
-   untuk Gold, belum untuk konsumen.
+3. Serving sekarang membaca Postgres yang disalin dari Iceberg (`sync_marts`);
+   API memakai Postgres bila `DATABASE_DSN` diisi. ML masih membaca Parquet
+   sampai helper Iceberg dipakai.
 
 ## Kesimpulan
 

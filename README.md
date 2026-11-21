@@ -84,17 +84,19 @@ docker compose -f compose/base.yml -f compose/vps-batch.yml up -d
 
 ## Serving dan dashboard
 
-API read-only membaca Gold lewat DuckDB; Postgres menyimpan salinan mart untuk
-Metabase.
+API read-only membaca **Postgres** yang disalin dari Iceberg. Tanpa
+`DATABASE_DSN`, API memakai Parquet Gold untuk lokal/tes. Dashboard HTML
+menyusul; Metabase opsional.
 
 ```bash
 task serving-dev    # http://127.0.0.1:8000/docs
-task serving-sync   # salin 3 mart ke Postgres (butuh DATABASE_DSN)
-task up-core        # Prefect + Postgres + API + Metabase
+task serving-sync   # salin 3 mart dari Iceberg ke Postgres (butuh DATABASE_DSN)
+task up-core        # Prefect + Postgres + API + Metabase (opsional)
 ```
 
 10 endpoint: health, provinsi, hotspot harian/ringkasan, FRP, scar
 bulanan/kumulatif, cuaca, kualitas udara, dan peta sel 0,25°.
+`/health` menyertakan snapshot Iceberg dan status `stale`.
 `/predictions/daily` mengembalikan 503 sampai model ML tersedia. Detail ada di
 `docs/serving.md`.
 

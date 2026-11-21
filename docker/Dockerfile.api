@@ -11,6 +11,8 @@ COPY src /app/src
 RUN pip install --no-cache-dir \
     "duckdb>=1.1" \
     "fastapi>=0.115" \
+    "pyarrow>=17" \
+    "pyiceberg[s3fs,sql-sqlite]>=0.12" \
     "uvicorn[standard]>=0.30"
 
 EXPOSE 8000

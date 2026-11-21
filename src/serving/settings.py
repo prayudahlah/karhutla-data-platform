@@ -22,6 +22,12 @@ class Settings:
     gold_root: Path = field(
         default_factory=lambda: _env_path("GOLD_PUBLISH_ROOT", "data/gold/published")
     )
+    iceberg_root: Path = field(
+        default_factory=lambda: _env_path("ICEBERG_ROOT", "data/gold/_iceberg")
+    )
+    database_dsn: str | None = field(
+        default_factory=lambda: os.environ.get("DATABASE_DSN") or None
+    )
     title: str = "Karhutla Gold API"
     version: str = "0.1.0"
     max_limit: int = 1000

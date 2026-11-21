@@ -71,10 +71,10 @@ Katalog memuat 4 tabel Gold (3 `implemented`, `risk_prediction_daily` masih
 ## Berikutnya (di luar ML)
 
 Kontrak Gold (3 tabel `implemented`), `catalog.json`/`lineage.json`, Iceberg v2
-(ADR-002), serving read-only, dan mart Postgres sudah ada. Yang belum:
+(ADR-002), serving read-only, dan mart Postgres sudah ada. Serving membaca
+Postgres yang disalin dari Iceberg. Yang belum:
 
-1. G2: `sync_marts` membaca Iceberg (sekarang Parquet); API membaca
-   Postgres/Iceberg.
-2. Dashboard HTML (bukan Metabase) + info freshness; panel prediksi menunggu ML.
+1. Dashboard HTML (bukan Metabase) + info freshness; panel prediksi menunggu ML.
+2. ML membaca `cell_daily` dari Iceberg; helper menyusul.
 
 ML (`F-11`, `F-12`) ditunda atas permintaan pemilik project.

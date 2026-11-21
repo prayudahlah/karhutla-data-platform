@@ -1,39 +1,45 @@
 # Serving dan Dashboard Gold
 
-Status: **API read-only dan mart Postgres jalan**; dashboard Metabase disiapkan
-sebagai service, panelnya dibuat manual di UI. Panel prediksi menunggu ML.
+Status: **API read-only dan mart Postgres jalan**. API membaca Postgres yang
+disalin dari Iceberg; dashboard HTML menyusul, Metabase opsional. Panel prediksi
+menunggu ML.
 
 ## Alur
 
 ```text
 dbt build --select tag:gold
         │
-        ├── data/gold/published/{cell_daily,province_daily,burn_scar_monthly}
-        │        │
-        │        └── FastAPI (DuckDB read-only) ── 10 endpoint + OpenAPI
-        │
-        └── serving.sync_marts ── Postgres (gold_*) ── Metabase
+        └── Parquet staging
+                 │
+                 └── gold-publish --strict ── Iceberg canonical + current.json
+                          │
+                          ├── sync_marts ── Postgres (gold_*) ── FastAPI ── HTML portal
+                          └── ML membaca cell_daily dari Iceberg
 ```
 
-API membaca Parquet Gold langsung lewat DuckDB, jadi bisa jalan tanpa Postgres.
-Postgres adalah salinan mart untuk Metabase dan konsumen SQL lain.
+`sync_marts` membaca snapshot Iceberg aktif (`current.json`), bukan Parquet.
+FastAPI membaca Postgres bila `DATABASE_DSN` diisi; tanpa DSN, ia memakai
+Parquet untuk tes lokal.
 
 ## Perintah
 
 | Perintah | Fungsi |
 |---|---|
-| `task gold-build` | bangun Gold + katalog |
+| `task gold-refresh` | build Gold + publish Iceberg strict |
 | `task serving-dev` | jalankan API di `http://127.0.0.1:8000` |
-| `task serving-sync` | salin 3 mart ke Postgres (butuh `DATABASE_DSN`) |
-| `task up-core` | nyalakan Prefect, Postgres, API, Metabase |
+| `task serving-sync` | salin 3 mart dari Iceberg ke Postgres (butuh `DATABASE_DSN`) |
+| `task up-core` | nyalakan Prefect, Postgres, API, Metabase (opsional) |
 
 Contoh lokal:
 
 ```bash
-task gold-build
+task gold-refresh
 task serving-dev
 # buka http://127.0.0.1:8000/docs
 ```
+
+Tanpa `DATABASE_DSN`, API memakai Parquet Gold lokal. Untuk jalur Postgres,
+jalankan `serving-sync` dan set `DATABASE_DSN` (lihat bawah).
 
 Dengan Compose:
 
@@ -53,7 +59,7 @@ dbname=karhutla user=karhutla password=karhutla host=127.0.0.1 port=5432
 
 | # | Endpoint | Isi |
 |---|---|---|
-| 1 | `GET /health` | jumlah baris, tanggal terbaru, `freshness_at` |
+| 1 | `GET /health` | jumlah baris, `freshness_at`, snapshot Iceberg + `stale` |
 | 2 | `GET /meta/provinces` | daftar provinsi |
 | 3 | `GET /hotspots/daily` | hotspot per tier per provinsi per hari |
 | 4 | `GET /hotspots/summary` | total tier + FRP untuk rentang tanggal |
@@ -83,17 +89,23 @@ OpenAPI otomatis di `/openapi.json`.
 | Freshness | `province_daily` | `max(freshness_at)` |
 | Prediksi | `risk_prediction_daily` | menunggu ML |
 
-### Metabase
+### Dashboard HTML
 
-1. Buka `http://localhost:3000`, selesaikan setup awal.
-2. Tambah database Postgres: host `postgres`, port `5432`, database/user/password
-   dari `POSTGRES_*` di `.env`.
-3. Buat pertanyaan dari tabel `gold_province_daily`, `gold_burn_scar_monthly`,
-   dan `gold_cell_daily`.
-4. Tambah filter `province` dan rentang `date`; tampilkan kartu freshness dari
-   `max(freshness_at)`.
-5. Panel prediksi: placeholder "menunggu model ML" sampai
+Dashboard akan berupa portal HTML dari pemilik UI, bukan Metabase.
+
+1. File HTML ditaruh di `src/serving/portal/` dan disajikan FastAPI
+   (`/portal`).
+2. Portal memanggil endpoint API (`/hotspots/...`, `/burn-scar/...`, `/frp/...`,
+   `/weather/...`, `/air-quality/...`, `/cells/hotspots`, `/health`).
+3. Metrik minimum: tren hotspot per tier, FRP, luas terbakar bulanan, scar
+   kumulatif.
+4. Filter: pulau/provinsi dan rentang tanggal.
+5. Freshness: dari `/health` (`freshness_at` + `iceberg.stale`).
+6. Panel prediksi: placeholder "menunggu model ML" sampai
    `risk_prediction_daily` terisi.
+
+Metabase tetap opsional; service-nya ada di compose, tetapi bukan dashboard
+utama.
 
 ## Batasan
 
@@ -101,5 +113,6 @@ OpenAPI otomatis di `/openapi.json`.
   bukan prediksi. Jangan dipakai sebagai "risiko sekarang" di dashboard.
 - Cuaca hanya 38 titik (satu kota per provinsi), jadi berlaku tingkat provinsi.
 - Sebagian hari punya `weather_complete = false` bila jam teramati < 20.
-- API memakai DuckDB read-only; untuk data besar, arahkan konsumen ke Postgres.
+- API membaca Postgres bila `DATABASE_DSN` diisi; Parquet hanya fallback lokal
+  dan tes.
 - `risk_prediction_daily` dan panel prediksi diserahkan ke pemilik ML.

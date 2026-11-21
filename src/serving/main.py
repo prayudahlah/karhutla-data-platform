@@ -23,7 +23,7 @@ from serving.settings import Settings
 
 def create_app(settings: Settings | None = None) -> FastAPI:
     resolved = settings or Settings()
-    store = GoldStore(resolved.gold_root)
+    store = GoldStore(resolved.gold_root, resolved.database_dsn)
 
     @asynccontextmanager
     async def lifespan(_: FastAPI) -> AsyncIterator[None]:

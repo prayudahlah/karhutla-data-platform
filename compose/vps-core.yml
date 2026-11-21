@@ -75,6 +75,7 @@ services:
         condition: service_healthy
     environment:
       GOLD_PUBLISH_ROOT: /app/data/gold/published
+      ICEBERG_ROOT: /app/data/gold/_iceberg
       DATABASE_DSN: dbname=${POSTGRES_DB:-karhutla} user=${POSTGRES_USER:-karhutla} password=${POSTGRES_PASSWORD:-karhutla} host=postgres port=5432
       TZ: ${TZ:-Asia/Jakarta}
     ports:

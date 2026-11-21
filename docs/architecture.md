@@ -80,7 +80,7 @@ flowchart LR
 | Bronze | JSON/JSONL/HDF + manifest + checksum, prefix `bronze/` | jalan |
 | Silver | 6 tabel Parquet, dedup, DQ, karantina, prefix `silver/` | jalan |
 | Gold | 3 tabel Parquet, prefix `gold/` | jalan |
-| Serving | 3 mart Postgres + FastAPI 10 endpoint | jalan (API); Metabase manual |
+| Serving | 3 mart Postgres + FastAPI 10 endpoint | jalan (API); dashboard HTML menyusul |
 
 ### Gold
 
@@ -125,8 +125,8 @@ dashboard ada di `docs/serving.md`.
 
 - Table format Gold: Iceberg canonical; Parquet staging; Postgres cache
   (ADR-002), snapshot 30 hari, katalog SQLite.
-- Serving: `sync_marts` masih membaca Parquet; migrasi ke Iceberg menyusul di
-  branch serving.
+- Serving: FastAPI membaca Postgres dari Iceberg; dashboard HTML menyusul;
+  Metabase opsional.
 - Dashboard: HTML portal (bukan Metabase) menyusul; Metabase service opsional.
 - ML: dataset, training, MLflow, dan inference belum dikerjakan.
 - Batas resource per service: usulan ada di ADR-03, belum dipasang di Compose.

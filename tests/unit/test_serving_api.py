@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from datetime import date
+import json
+from datetime import UTC, date, datetime
 from pathlib import Path
 
 import duckdb
@@ -83,7 +84,14 @@ def gold_root(tmp_path: Path) -> Path:
 
 @pytest.fixture()
 def client(gold_root: Path) -> TestClient:
-    return TestClient(create_app(Settings(gold_root=gold_root)))
+    return TestClient(
+        create_app(
+            Settings(
+                gold_root=gold_root,
+                iceberg_root=gold_root / "iceberg",
+            )
+        )
+    )
 
 
 def test_health_reports_rows(client: TestClient) -> None:
@@ -225,3 +233,75 @@ def test_partition_columns_are_read_from_folder_names(tmp_path: Path) -> None:
 
     assert [row["date"] for row in date_rows] == [date(2026, 9, 1)]
     assert [row["burn_month"] for row in month_rows] == ["2026-09"]
+
+
+def test_health_reports_iceberg_state(
+    gold_root: Path,
+    tmp_path: Path,
+) -> None:
+    iceberg_root = tmp_path / "ice"
+    iceberg_root.mkdir()
+    published_at = datetime.now(UTC).isoformat()
+    (iceberg_root / "current.json").write_text(
+        json.dumps(
+            {
+                "published_at": published_at,
+                "snapshots": {
+                    "cell_daily": 1,
+                    "province_daily": 2,
+                    "burn_scar_monthly": 3,
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+    client = TestClient(
+        create_app(
+            Settings(gold_root=gold_root, iceberg_root=iceberg_root)
+        )
+    )
+
+    payload = client.get("/health").json()
+
+    assert payload["iceberg"]["status"] == "ok"
+    assert payload["iceberg"]["stale"] is False
+    assert payload["iceberg"]["snapshots"]["cell_daily"] == 1
+
+
+def test_health_marks_stale_iceberg(
+    gold_root: Path,
+    tmp_path: Path,
+) -> None:
+    iceberg_root = tmp_path / "ice"
+    iceberg_root.mkdir()
+    (iceberg_root / "current.json").write_text(
+        json.dumps(
+            {
+                "published_at": "2020-01-01T00:00:00+00:00",
+                "snapshots": {},
+            }
+        ),
+        encoding="utf-8",
+    )
+    client = TestClient(
+        create_app(
+            Settings(gold_root=gold_root, iceberg_root=iceberg_root)
+        )
+    )
+
+    payload = client.get("/health").json()
+
+    assert payload["iceberg"]["stale"] is True
+
+
+def test_health_marks_missing_iceberg(gold_root: Path) -> None:
+    client = TestClient(
+        create_app(
+            Settings(gold_root=gold_root, iceberg_root=gold_root / "missing")
+        )
+    )
+
+    payload = client.get("/health").json()
+
+    assert payload["iceberg"]["status"] == "missing"
+    assert payload["iceberg"]["stale"] is True

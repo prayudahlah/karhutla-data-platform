@@ -1,9 +1,13 @@
 """Akses read-only ke tabel Gold.
 
-Serving memakai DuckDB untuk membaca Parquet Gold langsung. Dengan begitu API
-bisa jalan tanpa Postgres, dan isi yang dibaca selalu sama dengan hasil
-``dbt build --select tag:gold``. ``sync_marts.py`` menyediakan jalur Postgres
-untuk Metabase.
+Dua backend:
+
+- **Postgres** (default bila ``DATABASE_DSN`` diisi): DuckDB attach Postgres,
+  lalu view ``province_daily``/``burn_scar_monthly``/``cell_daily`` dibaca dari
+  tabel ``gold_*``. Ini jalur serving sesuai ADR-002.
+- **Parquet** (fallback lokal/tes): DuckDB membaca Gold Parquet langsung.
+
+Postgres diisi oleh ``sync_marts.py`` dari snapshot Iceberg aktif.
 """
 
 from __future__ import annotations
@@ -26,14 +30,15 @@ def _json_scalar(value: Any) -> Any:
 
 
 class GoldUnavailable(RuntimeError):
-    """Dilempar bila parquet Gold belum dibangun."""
+    """Dilempar bila Parquet/Postgres Gold belum siap."""
 
 
 class GoldStore:
     """Koneksi DuckDB dengan satu view per tabel Gold."""
 
-    def __init__(self, root: Path) -> None:
+    def __init__(self, root: Path, dsn: str | None = None) -> None:
         self.root = root
+        self.dsn = dsn or None
         self._con: duckdb.DuckDBPyConnection | None = None
 
     @property
@@ -43,6 +48,32 @@ class GoldStore:
         return self._con
 
     def _connect(self) -> duckdb.DuckDBPyConnection:
+        if self.dsn:
+            return self._connect_postgres()
+        return self._connect_parquet()
+
+    def _connect_postgres(self) -> duckdb.DuckDBPyConnection:
+        con = duckdb.connect()
+        try:
+            con.execute("INSTALL postgres")
+            con.execute("LOAD postgres")
+            escaped = self.dsn.replace("'", "''")  # type: ignore[union-attr]
+            con.execute(f"ATTACH '{escaped}' AS pg (TYPE postgres)")
+            for table, remote in (
+                ("province_daily", "gold_province_daily"),
+                ("burn_scar_monthly", "gold_burn_scar_monthly"),
+                ("cell_daily", "gold_cell_daily"),
+            ):
+                con.execute(
+                    f"CREATE OR REPLACE VIEW {table} AS "
+                    f"SELECT * FROM pg.public.{remote}"
+                )
+        except Exception as exc:  # noqa: BLE001 - diteruskan sebagai 503
+            con.close()
+            raise GoldUnavailable(f"Gagal membaca Postgres: {exc}") from exc
+        return con
+
+    def _connect_parquet(self) -> duckdb.DuckDBPyConnection:
         con = duckdb.connect()
         for table in ("province_daily", "burn_scar_monthly", "cell_daily"):
             folder = self.root / table
