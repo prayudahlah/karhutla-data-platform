@@ -105,17 +105,21 @@ portal), lalu `src/serving/static/dashboard.css` dan `dashboard.js`.
    `/cells/hotspots`, `/meta/provinces`, dan `/health`.
 2. KPI: total hotspot, hotspot kuat, FRP total, luas terbakar, dengan sparkline
    harian.
-3. Insight strip: provinsi dominan, puncak harian, pangsa hotspot kuat, dan
-   luas terbakar pada bulan terpilih.
+3. Insight strip: provinsi dominan, puncak harian, puncak FRP, dan luas
+   terbakar pada bulan terpilih.
 4. Peta: sel hotspot pada tanggal akhir filter, diwarnai menurut tier dan
-   diskalakan menurut `hotspot_count`.
-5. Grafik: tren hotspot mingguan per tier, tren FRP harian, top 5 provinsi,
+   diskalakan menurut `hotspot_count`; filter provinsi ikut diteruskan.
+5. Tiga tab: **Ikhtisar** (peta, top 5, komposisi tier), **Tren** (hotspot per
+   tier, FRP, luas terbakar), **Prediksi** (placeholder ML dan checklist).
+6. Grafik: tren hotspot mingguan per tier, tren FRP harian, top 5 provinsi,
    komposisi tier, dan top 5 luas terbakar.
-6. Filter bar: provinsi dan rentang tanggal. Tombol pulau disiapkan tetapi
+7. Kanvas dashboard memakai lebar sampai 1720 px, lebih lebar dari portal,
+   supaya tidak menyisakan gutter besar di monitor desktop.
+8. Filter bar: provinsi dan rentang tanggal. Filter pulau disiapkan tetapi
    belum aktif sampai kolom `island` di-merge dan `serving-sync` dijalankan.
-7. Freshness: `/health` (`latest_date`, `iceberg.stale`, `age_hours`).
-8. Panel prediksi: placeholder "menunggu model ML" sampai
-   `risk_prediction_daily` terisi.
+9. Freshness: `/health` (`latest_date`, `iceberg.stale`, `age_hours`).
+10. Panel prediksi: placeholder "menunggu model ML" sampai
+    `risk_prediction_daily` terisi.
 
 Data scar saat ini hanya tersedia untuk September 2026; dashboard mengambil
 bulan dari tanggal mulai filter. Metabase tetap opsional; service-nya ada di

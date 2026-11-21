@@ -149,11 +149,15 @@
       : "Tidak ada hotspot pada rentang ini";
 
     $("kpi-frp").textContent = decimal.format(frp / 1_000_000) + " jt";
-    $("kpi-frp-sub").textContent = "MW · puncak " + number.format(frpMax) + " MW";
+    $("kpi-frp-sub").textContent =
+      "Σ MW · puncak " + number.format(frpMax) + " MW";
 
     $("kpi-scar").textContent = number.format(Math.round(scar));
     $("kpi-scar-sub").textContent =
-      "km² · " + number.format(scarPixels) + " piksel MCD64A1";
+      "km² · " +
+      number.format(scarPixels) +
+      " piksel · " +
+      monthLong(state.start.slice(0, 7));
 
     $("period-label").textContent = "Dashboard · " + periodLabel();
     $("filter-period").textContent = periodLabel();
@@ -163,7 +167,6 @@
 
   function renderInsights(summaryRows, dailyRows, monthlyRows) {
     const total = sum(summaryRows, "hotspot_count");
-    const kuat = sum(summaryRows, "hotspot_kuat");
     const scar = sum(monthlyRows, "scar_area_km2");
     const scarPixels = sum(monthlyRows, "scar_pixels");
     const top = [...(summaryRows || [])].sort(
@@ -171,6 +174,9 @@
     )[0];
     const peak = [...(dailyRows || [])].sort(
       (a, b) => Number(b.hotspot_count) - Number(a.hotspot_count),
+    )[0];
+    const frpPeak = [...(dailyRows || [])].sort(
+      (a, b) => Number(b.frp_sum) - Number(a.frp_sum),
     )[0];
 
     $("insight-province").textContent = top ? top.province : "—";
@@ -189,10 +195,12 @@
       ? "hotspot pada " + dateLong(peak.date)
       : "Belum ada data harian";
 
-    $("insight-strong").textContent = number.format(Math.round(kuat));
-    $("insight-strong-sub").textContent = total
-      ? decimal.format((kuat / total) * 100) + "% dari total hotspot"
-      : "Tidak ada hotspot pada rentang ini";
+    $("insight-frp").textContent = frpPeak
+      ? compact(frpPeak.frp_sum)
+      : "—";
+    $("insight-frp-sub").textContent = frpPeak
+      ? "MW pada " + dateLong(frpPeak.date)
+      : "Belum ada data FRP";
 
     $("insight-scar").textContent =
       number.format(Math.round(scar)) + " km²";
@@ -397,7 +405,7 @@
           (padL - 10) +
           '" y="' +
           (y + 4).toFixed(1) +
-          '" text-anchor="end" fill="var(--label)" font-size="12">' +
+          '" text-anchor="end" fill="var(--label)" font-size="10">' +
           compact(yMax * fraction) +
           "</text>"
         );
@@ -416,7 +424,7 @@
           (height - 10) +
           '" text-anchor="' +
           anchor +
-          '" fill="var(--label)" font-size="12">' +
+          '" fill="var(--label)" font-size="10">' +
           dateShort(domain[index]) +
           "</text>"
         );
@@ -468,13 +476,16 @@
       (peakY - 9).toFixed(1) +
       '" text-anchor="' +
       peakAnchor +
-      '" fill="var(--text)" font-size="12">' +
+      '" fill="var(--text)" font-size="10">' +
       compact(peak.value) +
       "</text>" +
       xLabels;
 
     badge.textContent =
-      "Puncak " + compact(peak.value) + " · " + dateShort(domain[peak.index]);
+      "Puncak hari · " +
+      compact(peak.value) +
+      " · " +
+      dateShort(domain[peak.index]);
   }
 
   function renderTierChart(rows) {
@@ -551,7 +562,7 @@
           (padL - 10) +
           '" y="' +
           (y + 4).toFixed(1) +
-          '" text-anchor="end" fill="var(--label)" font-size="12">' +
+          '" text-anchor="end" fill="var(--label)" font-size="10">' +
           compact(yMax * fraction) +
           "</text>"
         );
@@ -609,7 +620,7 @@
           center.toFixed(1) +
           '" y="' +
           (height - 10) +
-          '" text-anchor="middle" fill="var(--label)" font-size="12">' +
+          '" text-anchor="middle" fill="var(--label)" font-size="10">' +
           dateShort(isoDate(bucket.start)) +
           "</text>"
         );
@@ -618,7 +629,7 @@
 
     svg.innerHTML = grid + bars + labels;
     badge.textContent =
-      "Puncak " +
+      "Puncak minggu · " +
       compact(peakValue) +
       " · " +
       dateShort(isoDate(buckets[peakIndex].start));
@@ -843,10 +854,34 @@
           '"></i>' +
           segment.label +
           "<b>" +
+          number.format(segment.value) +
+          "<small>" +
           decimal.format((segment.value / total) * 100) +
-          "%</b></div>",
+          "%</small></b></div>",
       )
       .join("");
+  }
+
+  function renderScarSummary(rows) {
+    const km2 = sum(rows, "scar_area_km2");
+    const pixels = sum(rows, "scar_pixels");
+    const provinces = new Set(
+      (rows || []).map((row) => row.province).filter(Boolean),
+    ).size;
+    const hasData = (rows || []).length > 0;
+
+    $("scar-total-km2").textContent = hasData
+      ? number.format(Math.round(km2))
+      : "—";
+    $("scar-total-pixels").textContent = hasData
+      ? number.format(Math.round(pixels))
+      : "—";
+    $("scar-provinces").textContent = provinces || "—";
+    $("scar-total-badge").textContent = hasData
+      ? number.format(Math.round(km2)) + " km²"
+      : "Belum ada";
+    $("scar-summary-period").textContent =
+      monthLong(state.start.slice(0, 7)) + " · km²";
   }
 
   function renderFreshness(health) {
@@ -875,10 +910,12 @@
     hideError();
     setLoading(true);
     try {
-      const cellsUrl =
-        "/cells/hotspots?date=" +
-        encodeURIComponent(state.end) +
-        "&limit=500";
+      const cellParams = new URLSearchParams({
+        date: state.end,
+        limit: "500",
+      });
+      if (state.province) cellParams.set("province", state.province);
+      const cellsUrl = "/cells/hotspots?" + cellParams.toString();
       const [summary, daily, monthly, health, cells] = await Promise.all([
         getJson("/hotspots/summary?" + query()),
         getJson("/hotspots/daily/total?" + query({ limit: "1000" })),
@@ -920,6 +957,7 @@
         sum(monthlyRows, "scar_area_km2"),
       );
       renderDonut(summaryRows);
+      renderScarSummary(monthlyRows);
 
       const hotspotTotal = sum(summaryRows, "hotspot_count");
       const scarTotal = sum(monthlyRows, "scar_area_km2");
@@ -980,14 +1018,23 @@
   }
 
   function bindFilters() {
-    $("dash-filter").addEventListener("submit", (event) => {
+    const form = $("dash-filter");
+    form.addEventListener("submit", (event) => {
       event.preventDefault();
       applyFilters();
     });
 
-    document.querySelectorAll("[data-range]").forEach((button) => {
+    ["dash-start", "dash-end", "dash-province"].forEach((id) => {
+      $(id).addEventListener("change", () => {
+        form
+          .querySelectorAll("[data-range]")
+          .forEach((item) => item.classList.remove("on"));
+      });
+    });
+
+    form.querySelectorAll("[data-range]").forEach((button) => {
       button.addEventListener("click", () => {
-        document
+        form
           .querySelectorAll("[data-range]")
           .forEach((item) => item.classList.toggle("on", item === button));
         $("dash-start").value = button.dataset.start;
@@ -1000,7 +1047,49 @@
     });
   }
 
+  const TABS = ["ikhtisar", "tren", "prediksi"];
+
+  function activateTab(id, focus, updateHash) {
+    const next = TABS.includes(id) ? id : "ikhtisar";
+    TABS.forEach((key) => {
+      const tab = $("tab-" + key);
+      const panel = $("panel-" + key);
+      const active = key === next;
+      tab.setAttribute("aria-selected", String(active));
+      tab.tabIndex = active ? 0 : -1;
+      panel.hidden = !active;
+    });
+    if (focus) $("tab-" + next).focus();
+    if (updateHash) history.replaceState(null, "", "#" + next);
+  }
+
+  function bindTabs() {
+    const tabs = [...document.querySelectorAll(".dash-tab")];
+    tabs.forEach((tab) => {
+      tab.addEventListener("click", () => {
+        activateTab(tab.dataset.tab, false, true);
+      });
+      tab.addEventListener("keydown", (event) => {
+        const index = TABS.indexOf(tab.dataset.tab);
+        let next = null;
+        if (event.key === "ArrowRight") next = (index + 1) % TABS.length;
+        if (event.key === "ArrowLeft")
+          next = (index - 1 + TABS.length) % TABS.length;
+        if (event.key === "Home") next = 0;
+        if (event.key === "End") next = TABS.length - 1;
+        if (next === null) return;
+        event.preventDefault();
+        activateTab(TABS[next], true, true);
+      });
+    });
+    window.addEventListener("hashchange", () => {
+      activateTab(location.hash.slice(1), false, false);
+    });
+    activateTab(location.hash.slice(1), false, false);
+  }
+
   document.addEventListener("DOMContentLoaded", () => {
+    bindTabs();
     bindFilters();
     loadProvinces();
     load();
