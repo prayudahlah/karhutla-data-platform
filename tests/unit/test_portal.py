@@ -132,7 +132,10 @@ def test_dashboard_placeholder_returns_404(tmp_path):
 
 def test_header_shows_logged_in_user(tmp_path):
     _write(tmp_path, _catalog())
-    client = TestClient(create_app(_settings(tmp_path)))
+    settings = Settings(
+        gold_root=tmp_path, catalog_root=tmp_path, auth_url="https://auth.contoh"
+    )
+    client = TestClient(create_app(settings))
 
     response = client.get("/", headers={"Remote-User": "viewer"})
 
@@ -275,3 +278,20 @@ def test_dataset_schema_lists_columns_with_type(tmp_path):
     assert "2 kolom" in html
     assert '<span class="type-badge mono">string</span>' in html
     assert "indeks sel" in html
+
+
+def test_nav_uses_avatar_with_role(tmp_path):
+    _write(tmp_path, _catalog())
+    settings = Settings(
+        gold_root=tmp_path, catalog_root=tmp_path, auth_url="https://auth.contoh"
+    )
+    client = TestClient(create_app(settings))
+
+    html = client.get("/", headers={"Remote-User": "viewer", "Remote-Groups": "admin"}).text
+
+    assert '<details class="nav-account">' in html
+    assert 'class="nav-avatar is-admin"' in html
+    assert 'aria-label="Menu akun viewer, peran admin"' in html
+    assert ">V</span>" in html
+    assert 'class="account-item" href=' in html
+    assert ">Keluar</a>" in html

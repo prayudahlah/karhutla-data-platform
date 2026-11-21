@@ -117,15 +117,50 @@ a { color: inherit; text-decoration: none; }
   color: #ffd2ad;
 }
 .navbtn-strong:hover { background: rgba(255, 138, 61, 0.22); }
-.nav-user {
-  font-size: 0.78rem;
-  color: var(--body);
-  padding: 5px 10px;
-  border: 1px solid var(--line);
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.04);
+.nav-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 1px solid #3b6150;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text);
+  font-family: "Inter", sans-serif;
+  font-size: 0.9rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
   line-height: 1;
 }
+.nav-avatar.is-admin {
+  border-color: rgba(255, 138, 61, 0.6);
+  background: rgba(255, 138, 61, 0.1);
+  color: #ffd2ad;
+}
+.nav-account { position: relative; }
+.nav-account summary { list-style: none; cursor: pointer; }
+.nav-account summary::-webkit-details-marker { display: none; }
+.nav-account[open] .nav-avatar { border-color: var(--amber); background: rgba(255, 138, 61, 0.12); }
+.account-menu {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  z-index: 30;
+  min-width: 204px;
+  padding: 8px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.45);
+  text-align: left;
+}
+.account-head { padding: 8px 12px 12px; margin-bottom: 6px; border-bottom: 1px solid var(--line-soft); }
+.account-name { display: block; font-size: 0.88rem; color: var(--text); }
+.account-role { display: block; margin-top: 4px; font-size: 0.64rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--label); }
+.account-item { display: flex; align-items: center; min-height: 40px; padding: 0 12px; border-radius: 8px; font-size: 0.86rem; color: var(--body); }
+.account-item:hover { background: rgba(255, 255, 255, 0.05); color: var(--text); }
 
 /* ------------------------------------------------------------------ hero */
 
@@ -769,10 +804,3 @@ details.raw pre.code { margin: 8px 0 0; max-height: 320px; }
 .table-wrap { width: 100%; overflow-x: auto; }
 .table-wrap table.data { min-width: 860px; }
 
-.nav-role {
-  margin-left: 6px;
-  font-size: 0.66rem;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--label);
-}
