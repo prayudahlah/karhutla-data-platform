@@ -36,9 +36,15 @@ class GoldUnavailable(RuntimeError):
 class GoldStore:
     """Koneksi DuckDB dengan satu view per tabel Gold."""
 
-    def __init__(self, root: Path, dsn: str | None = None) -> None:
+    def __init__(
+        self,
+        root: Path,
+        dsn: str | None = None,
+        schema: str = "public",
+    ) -> None:
         self.root = root
         self.dsn = dsn or None
+        self.schema = schema
         self._con: duckdb.DuckDBPyConnection | None = None
 
     @property
@@ -66,7 +72,7 @@ class GoldStore:
             ):
                 con.execute(
                     f"CREATE OR REPLACE VIEW {table} AS "
-                    f"SELECT * FROM pg.public.{remote}"
+                    f"SELECT * FROM pg.{self.schema}.{remote}"
                 )
         except Exception as exc:  # noqa: BLE001 - diteruskan sebagai 503
             con.close()

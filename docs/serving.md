@@ -55,6 +55,10 @@ docker compose -f compose/base.yml -f compose/vps-core.yml exec api \
 dbname=karhutla user=karhutla password=karhutla host=127.0.0.1 port=5432
 ```
 
+`DATABASE_SCHEMA` default `public`. `sync_marts` membuat schema bila belum ada;
+API membaca `gold_*` dari schema itu. Ini dipakai tes integrasi Postgres dengan
+schema sementara.
+
 ## Endpoint
 
 | # | Endpoint | Isi |
@@ -94,9 +98,10 @@ OpenAPI otomatis di `/openapi.json`.
 Dashboard akan berupa portal HTML dari pemilik UI, bukan Metabase.
 
 1. File HTML ditaruh di `src/serving/portal/` dan disajikan FastAPI
-   (`/portal`).
+   (`/portal`) bila `index.html` ada.
 2. Portal memanggil endpoint API (`/hotspots/...`, `/burn-scar/...`, `/frp/...`,
-   `/weather/...`, `/air-quality/...`, `/cells/hotspots`, `/health`).
+   `/weather/...`, `/air-quality/...`, `/cells/hotspots`, `/health`). CORS GET
+   sudah diaktifkan untuk portal.
 3. Metrik minimum: tren hotspot per tier, FRP, luas terbakar bulanan, scar
    kumulatif.
 4. Filter: pulau/provinsi dan rentang tanggal.
@@ -106,6 +111,14 @@ Dashboard akan berupa portal HTML dari pemilik UI, bukan Metabase.
 
 Metabase tetap opsional; service-nya ada di compose, tetapi bukan dashboard
 utama.
+
+## Verifikasi
+
+```bash
+pytest -m "not integration"
+# butuh Postgres; memakai schema sementara
+DATABASE_DSN="dbname=... host=..." pytest tests/integration/test_serving_postgres.py -m integration
+```
 
 ## Batasan
 

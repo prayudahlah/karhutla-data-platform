@@ -28,6 +28,9 @@ class Settings:
     database_dsn: str | None = field(
         default_factory=lambda: os.environ.get("DATABASE_DSN") or None
     )
+    database_schema: str = field(
+        default_factory=lambda: os.environ.get("DATABASE_SCHEMA", "public")
+    )
     title: str = "Karhutla Gold API"
     version: str = "0.1.0"
     max_limit: int = 1000

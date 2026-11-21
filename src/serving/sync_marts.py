@@ -62,6 +62,9 @@ def sync_marts(
         connection.execute("LOAD postgres")
         escaped = dsn.replace("'", "''")
         connection.execute(f"ATTACH '{escaped}' AS pg (TYPE postgres)")
+        connection.execute(
+            f"CREATE SCHEMA IF NOT EXISTS pg.{schema}"
+        ).fetchall()
 
         counts: dict[str, int] = {}
         for target, source in MART_TABLES.items():

@@ -97,8 +97,9 @@ task up-core        # Prefect + Postgres + API + Metabase (opsional)
 10 endpoint: health, provinsi, hotspot harian/ringkasan, FRP, scar
 bulanan/kumulatif, cuaca, kualitas udara, dan peta sel 0,25°.
 `/health` menyertakan snapshot Iceberg dan status `stale`.
-`/predictions/daily` mengembalikan 503 sampai model ML tersedia. Detail ada di
-`docs/serving.md`.
+`/predictions/daily` mengembalikan 503 sampai model ML tersedia.
+Portal HTML disajikan di `/portal` bila `src/serving/portal/index.html` ada.
+Detail ada di `docs/serving.md`.
 
 ## Struktur
 
