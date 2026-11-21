@@ -252,13 +252,19 @@ tasks:
       - 'python -m batch.gold.catalog'
 
   gold-publish:
-    desc: Publish Gold Parquet ke Iceberg v2
+    desc: Publish Gold Parquet ke Iceberg v2 + parity + pointer
     env:
       GOLD_PUBLISH_ROOT: data/gold/published
       ICEBERG_ROOT: data/gold/_iceberg
       PYTHONUTF8: "1"
     cmds:
-      - 'python -m batch.gold.publish --table all --mode full'
+      - 'python -m batch.gold.publish --table all --mode full --strict'
+
+  gold-refresh:
+    desc: Build Gold lalu publish Iceberg dengan parity
+    cmds:
+      - task: gold-build
+      - task: gold-publish
 
   gold-test:
     desc: Jalankan uji model Gold saja
@@ -268,12 +274,11 @@ tasks:
       - 'dbt test --project-dir dbt --profiles-dir dbt --select tag:gold'
 
   gold-check:
-    desc: Lint, unit test, bangun Gold, lalu publish Iceberg
+    desc: Lint, unit test, lalu refresh Gold + Iceberg
     cmds:
       - task: lint
       - task: test
-      - task: gold-build
-      - task: gold-publish
+      - task: gold-refresh
 
   # ------------------------------------------------------------- kualitas
   test:

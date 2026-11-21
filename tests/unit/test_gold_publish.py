@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import shutil
 from datetime import date
 from pathlib import Path
@@ -8,7 +9,9 @@ import duckdb
 import pytest
 
 from batch.gold.publish import (
+    ParityError,
     backup_iceberg,
+    check_all,
     load_catalog,
     publish_all,
     publish_table,
@@ -40,7 +43,8 @@ def gold_root(tmp_path: Path) -> Path:
                 connection,
                 root / "province_daily" / f"date={day}",
                 f"select 'Aceh' as province, 'Sumatera' as island, "
-                f"{count} as hotspot_count, cast(1.5 as decimal(18,3)) as frp_sum",
+                f"{count} as hotspot_count, 5 as scar_pixels_cum, "
+                f"cast(1.5 as decimal(18,3)) as frp_sum",
             )
         _write_parquet(
             connection,
@@ -119,7 +123,7 @@ def test_upsert_replaces_one_partition(
             connection,
             gold_root / "province_daily" / "date=2026-09-01",
             "select 'Aceh' as province, 'Sumatera' as island, "
-            "99 as hotspot_count, cast(1.5 as decimal(18,3)) as frp_sum",
+            "99 as hotspot_count, 5 as scar_pixels_cum, cast(1.5 as decimal(18,3)) as frp_sum",
         )
         summary = publish_table(
             catalog,
@@ -154,14 +158,14 @@ def test_schema_evolution_adds_new_column(
             connection,
             gold_root / "province_daily" / "date=2026-09-01",
             "select 'Aceh' as province, 'Sumatera' as island, "
-            "10 as hotspot_count, cast(1.5 as decimal(18,3)) as frp_sum, "
+            "10 as hotspot_count, 5 as scar_pixels_cum, cast(1.5 as decimal(18,3)) as frp_sum, "
             "'catatan' as extra_note",
         )
         _write_parquet(
             connection,
             gold_root / "province_daily" / "date=2026-09-02",
             "select 'Aceh' as province, 'Sumatera' as island, "
-            "4 as hotspot_count, cast(1.5 as decimal(18,3)) as frp_sum, "
+            "4 as hotspot_count, 7 as scar_pixels_cum, cast(1.5 as decimal(18,3)) as frp_sum, "
             "'catatan' as extra_note",
         )
         summary = publish_table(
@@ -209,3 +213,118 @@ def test_backup_and_restore_catalog(
     summaries = verify_all(restored_catalog, tables=("province_daily",))
     assert summaries[0]["rows"] == 2
     assert summaries[0]["exists"] is True
+
+
+def test_strict_publish_writes_state_and_current(
+    gold_root: Path,
+    iceberg_root: Path,
+) -> None:
+    catalog = load_catalog(iceberg_root)
+    connection = duckdb.connect()
+    try:
+        publish_all(
+            catalog,
+            connection,
+            gold_root,
+            strict=True,
+            iceberg_root=iceberg_root,
+            run_id="test-run",
+        )
+    finally:
+        connection.close()
+
+    state = json.loads(
+        (iceberg_root / "publish_state.json").read_text(encoding="utf-8")
+    )
+    current = json.loads(
+        (iceberg_root / "current.json").read_text(encoding="utf-8")
+    )
+    assert state["run_id"] == "test-run"
+    assert set(state["tables"]) == {
+        "cell_daily",
+        "province_daily",
+        "burn_scar_monthly",
+    }
+    for name, info in state["tables"].items():
+        assert info["parquet"] == info["iceberg"]
+        assert info["snapshot_id"] == current["snapshots"][name]
+
+
+def test_check_passes_after_publish(
+    gold_root: Path,
+    iceberg_root: Path,
+) -> None:
+    catalog = load_catalog(iceberg_root)
+    connection = duckdb.connect()
+    try:
+        publish_all(catalog, connection, gold_root)
+        checks = check_all(catalog, connection, gold_root)
+    finally:
+        connection.close()
+
+    assert all(check["ok"] for check in checks)
+
+
+def test_check_detects_mismatch(
+    gold_root: Path,
+    iceberg_root: Path,
+) -> None:
+    catalog = load_catalog(iceberg_root)
+    connection = duckdb.connect()
+    try:
+        publish_all(catalog, connection, gold_root)
+        _write_parquet(
+            connection,
+            gold_root / "province_daily" / "date=2026-09-01",
+            "select 'Aceh' as province, 'Sumatera' as island, "
+            "999 as hotspot_count, 5 as scar_pixels_cum, "
+            "cast(1.5 as decimal(18,3)) as frp_sum",
+        )
+        checks = check_all(
+            catalog,
+            connection,
+            gold_root,
+            tables=("province_daily",),
+        )
+    finally:
+        connection.close()
+
+    assert checks[0]["ok"] is False
+    assert (
+        checks[0]["parquet"]["hotspot_sum"]
+        != checks[0]["iceberg"]["hotspot_sum"]
+    )
+
+
+def test_strict_does_not_write_pointer_on_mismatch(
+    gold_root: Path,
+    iceberg_root: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    catalog = load_catalog(iceberg_root)
+    connection = duckdb.connect()
+    try:
+        monkeypatch.setattr(
+            "batch.gold.publish.check_all",
+            lambda *args, **kwargs: [
+                {
+                    "table": "gold.cell_daily",
+                    "ok": False,
+                    "parquet": {"row_count": 1},
+                    "iceberg": {"row_count": 0},
+                }
+            ],
+        )
+        with pytest.raises(ParityError):
+            publish_all(
+                catalog,
+                connection,
+                gold_root,
+                strict=True,
+                iceberg_root=iceberg_root,
+            )
+    finally:
+        connection.close()
+
+    assert not (iceberg_root / "publish_state.json").exists()
+    assert not (iceberg_root / "current.json").exists()

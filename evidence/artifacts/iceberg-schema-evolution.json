@@ -1,0 +1,13 @@
+﻿{
+  "table": "gold.schema_evolution_demo",
+  "columns_before": [
+    "id",
+    "label"
+  ],
+  "columns_after": [
+    "id",
+    "label",
+    "note"
+  ],
+  "snapshot_count": 2
+}

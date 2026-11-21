@@ -14,6 +14,10 @@ location:
     table_format: Iceberg v2
     iceberg_prefix: gold/iceberg/cell_daily
     publish_command: python -m batch.gold.publish --table cell_daily
+    role: canonical
+    staging: parquet
+    serving_reads: postgres (synced from Iceberg active snapshot)
+    ml_reads: iceberg
   partition_note: >-
     Partisi memakai tanggal fitur (acq_date hotspot). dbt menulis seluruh tabel
     setiap build, jadi rerun menimpa partisi dan tidak menumpuk baris ganda.

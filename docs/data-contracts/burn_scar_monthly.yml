@@ -14,6 +14,10 @@ location:
     table_format: Iceberg v2
     iceberg_prefix: gold/iceberg/burn_scar_monthly
     publish_command: python -m batch.gold.publish --table burn_scar_monthly
+    role: canonical
+    staging: parquet
+    serving_reads: postgres (synced from Iceberg active snapshot)
+    ml_reads: iceberg
   partition_note: Satu partisi per bulan terbakar, memakai burn_month dari MCD64A1.
 source_models:
   - mcd64a1_burn_scar

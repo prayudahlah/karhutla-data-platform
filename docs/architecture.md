@@ -36,7 +36,7 @@ flowchart LR
     PF["Prefect worker"]
     D["dbt + DuckDB"]
     GD["Gold Parquet"]
-    ICE["Iceberg v2 (snapshot)"]
+    ICE["Iceberg v2 (canonical)"]
   end
 
   subgraph CO["core"]
@@ -52,9 +52,9 @@ flowchart LR
   M --> PF --> G
   G --> D --> GD
   GD -->|publish| ICE
-  GD -.-> PG
-  PG -.-> API
-  PG -.-> MB
+  ICE -->|sync_marts| PG
+  PG --> API
+  PG --> MB
   C --> OBS
   PF --> OBS
 ```
@@ -66,11 +66,11 @@ flowchart LR
 2. Prefect worker menarik Open-Meteo (harian) dan MCD64A1 (bulanan) ke Bronze.
 3. Normalizer Python menulis Silver `_normalized`; dbt/DuckDB melakukan dedup,
    uji kualitas, dan menulis Silver final Parquet.
-4. dbt membangun Gold Parquet dari Silver (`tag:gold`).
-5. `task gold-publish` menulis Gold Parquet ke **Iceberg v2** (snapshot,
-   upsert, schema evolution).
-6. (Rencana) Gold disalin ke Postgres, lalu dibaca FastAPI dan Metabase.
-7. (Rencana) Model ML membaca `cell_daily`, menulis `risk_prediction_daily`.
+4. dbt membangun Gold Parquet dari Silver (`tag:gold`). Parquet = staging.
+5. `task gold-publish` menulis **Iceberg v2 canonical** + parity +
+   `current.json` (snapshot aktif).
+6. `sync_marts` membaca snapshot Iceberg aktif → Postgres → FastAPI/Metabase.
+7. ML membaca `cell_daily` dari Iceberg; menulis `risk_prediction_daily`.
 
 ## Layer data
 
@@ -104,8 +104,9 @@ Perintah: `task gold-build` (bangun + katalog), `task gold-test` (uji),
 
 ## Keputusan yang masih terbuka
 
-- Table format Gold: Parquet dari dbt + publish Iceberg v2 (ADR-002), snapshot
-  30 hari, katalog SQLite.
-- Serving: Postgres, FastAPI, Metabase belum ada di Compose.
+- Table format Gold: Iceberg canonical; Parquet staging; Postgres cache
+  (ADR-002), snapshot 30 hari, katalog SQLite.
+- Serving: `sync_marts` masih membaca Parquet; migrasi ke Iceberg menyusul di
+  branch serving.
 - ML: dataset, training, MLflow, dan inference belum dikerjakan.
 - Batas resource per service: usulan ada di ADR-03, belum dipasang di Compose.

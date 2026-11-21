@@ -30,7 +30,8 @@ Rekonsiliasi yang diuji otomatis:
 | `task gold-build` | bersihkan tabel Gold dbt, `dbt build --select tag:gold`, lalu hasilkan katalog |
 | `task gold-test` | jalankan uji model Gold saja |
 | `task gold-catalog` | hasilkan `catalog.json` + `lineage.json` di `data/gold/_catalog/` |
-| `task gold-publish` | publish 3 tabel Gold Parquet ke Iceberg v2 |
+| `task gold-publish` | publish Iceberg canonical + parity + pointer |
+| `task gold-refresh` | `gold-build` lalu `gold-publish` |
 | `task gold-check` | lint, unit test, lalu build Gold |
 
 Katalog memuat 4 tabel Gold (3 `implemented`, `risk_prediction_daily` masih
@@ -50,7 +51,7 @@ Katalog memuat 4 tabel Gold (3 `implemented`, `risk_prediction_daily` masih
 | Label | tier `kuat`/`sedang` pada D..D+2; `lemah`/`kandidat` bukan positif |
 | Fitur model | jendela D-7..D-1, dihitung di `src/ml/features.py` (belum ada) |
 | Partisi | `date=` untuk harian, `burn_month=` untuk scar bulanan |
-| Format Gold | Parquet dari dbt + Iceberg v2 lewat `task gold-publish` (snapshot 30 hari) |
+| Format Gold | Iceberg v2 canonical; Parquet staging dbt; Postgres serving cache |
 | Determinisme | agregat uang/float memakai `decimal(18,3)` agar tidak berubah antar run |
 
 ## Batasan yang harus ditulis di laporan
