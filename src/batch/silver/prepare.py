@@ -30,10 +30,17 @@ GOLD_DB_TABLES: tuple[tuple[str, ...], ...] = (
     ("cell_daily",),
     ("province_daily",),
     ("burn_scar_monthly",),
+    # Tabel Gold khusus pipeline ML temporal.
+    ("hotspot_cell_day",),
+    ("hotspot_cell_day_labeled",),
 )
 
-# Gold: tabel yang ditulis proses lain (inference ML), jadi tidak ikut dibersihkan.
-GOLD_EXTERNAL_TABLES: tuple[tuple[str, ...], ...] = (("risk_prediction_daily",),)
+# Gold: tabel yang ditulis proses lain (inference ML/Feast), jadi tidak ikut dibersihkan.
+GOLD_EXTERNAL_TABLES: tuple[tuple[str, ...], ...] = (
+    ("risk_prediction_daily",),
+    ("ml_feature_cell_day",),
+    ("ml_feature_province_day",),
+)
 
 GOLD_DATASETS: tuple[tuple[str, ...], ...] = GOLD_DB_TABLES + GOLD_EXTERNAL_TABLES
 
