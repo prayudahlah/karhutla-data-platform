@@ -31,7 +31,15 @@ class Settings:
     database_schema: str = field(
         default_factory=lambda: os.environ.get("DATABASE_SCHEMA", "public")
     )
-    title: str = "Karhutla Gold API"
+    catalog_root: Path = field(
+        default_factory=lambda: _env_path("GOLD_CATALOG_ROOT", "data/gold/_catalog")
+    )
+    auth_url: str = os.environ.get("AUTH_URL", "")
+    grafana_url: str = os.environ.get("GRAFANA_URL", "")
+    metabase_url: str = os.environ.get("METABASE_URL", "")
+    metabase_dashboard_url: str = os.environ.get("METABASE_DASHBOARD_URL", "")
+    prefect_url: str = os.environ.get("PREFECT_URL", "")
+    title: str = "JAGAHUTAN Gold API"
     version: str = "0.1.0"
     max_limit: int = 1000
     default_limit: int = 200

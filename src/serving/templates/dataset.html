@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block title %}{{ table.name }} | JAGAHUTAN{% endblock %}
+{% block content %}
+<div class="shell">
+  <div class="page-head">
+    <div class="breadcrumb"><a href="/catalog">Katalog</a> / {{ table.name }}</div>
+    <h1 class="serif">{{ table.name }} <span class="badge {{ 'ok' if table.status == 'implemented' else 'plan' }}">{{ "Terpasang" if table.status == "implemented" else "Direncanakan" }}</span></h1>
+    <p class="lead">{{ table.grain }}</p>
+  </div>
+
+  <dl class="kv">
+    <dt>Owner</dt><dd>{{ table.owner }}</dd>
+    <dt>Layer</dt><dd>{{ table.layer }}</dd>
+    <dt>Klasifikasi</dt><dd>{{ table.classification }}</dd>
+    <dt>Retensi</dt><dd>{{ table.retention }}</dd>
+    <dt>Business key</dt><dd class="mono">{{ (table.business_key or [])|join(", ") or "-" }}</dd>
+    <dt>Sumber</dt><dd class="mono">{{ (table.source_models or [])|join(", ") or "-" }}</dd>
+    <dt>Konsumen</dt><dd>{{ (table.consumers or [])|join(", ") or "-" }}</dd>
+  </dl>
+
+  <div class="kicker" style="margin-bottom:12px">Lokasi</div>
+  <pre class="code">{{ table.location | pretty }}</pre>
+
+  <div class="kicker" style="margin:32px 0 12px">Freshness</div>
+  <pre class="code">{{ table.freshness | pretty }}</pre>
+
+  {% if table.quality_rules %}
+  <div class="kicker" style="margin:32px 0 12px">Aturan kualitas</div>
+  <ul style="color:var(--body);font-size:.95rem;line-height:1.7;margin:0 0 32px;padding-left:1.1rem">
+    {% for rule in table.quality_rules %}<li>{{ rule }}</li>{% endfor %}
+  </ul>
+  {% endif %}
+
+  <div class="kicker" style="margin-bottom:12px">Skema</div>
+  <table class="data">
+    <thead><tr><th scope="col">Kolom</th><th scope="col">Tipe</th><th scope="col">Keterangan</th></tr></thead>
+    <tbody>
+    {% for name, spec in (table.schema or {}).items() %}
+      <tr>
+        <td class="mono">{{ name }}</td>
+        <td class="mono" style="color:var(--label)">{{ spec.type if spec is mapping else spec }}</td>
+        <td style="color:var(--body)">{{ spec.description if spec is mapping and spec.description else "" }}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}
