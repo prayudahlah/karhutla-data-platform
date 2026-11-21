@@ -6,6 +6,8 @@ vars:
   STREAM_COMPOSE: docker compose -f compose/base.yml -f compose/vps-stream.yml
   DEV_COMPOSE: docker compose -f compose/base.yml -f compose/vps-stream.yml -f compose/dev.yml
   BATCH_COMPOSE: docker compose -f compose/base.yml -f compose/vps-batch.yml
+  CORE_COMPOSE: docker compose --env-file .env -f compose/base.yml -f compose/vps-core.yml
+  PORTAL_COMPOSE: docker compose --env-file .env -f compose/base.yml -f compose/vps-core.yml -f compose/vps-portal.yml --profile sso
   RPK: docker compose -f compose/base.yml -f compose/vps-stream.yml exec -T redpanda rpk -X brokers=redpanda:9092
 
 tasks:
@@ -174,9 +176,41 @@ tasks:
 
   # ----------------------------------------------------------- node lain
   up-core:
-    desc: Nyalakan node core
+    desc: Nyalakan node core lengkap (Prefect, Postgres, API, Metabase)
     cmds:
-      - 'docker compose -f compose/base.yml -f compose/vps-core.yml up -d'
+      - '{{.CORE_COMPOSE}} --profile full up -d'
+
+  up-ui:
+    desc: Nyalakan API dan portal saja, tanpa Postgres dan Metabase
+    cmds:
+      - '{{.CORE_COMPOSE}} up -d --build api'
+
+  down-ui:
+    desc: Matikan API dan portal
+    cmds:
+      - '{{.CORE_COMPOSE}} stop api'
+
+  sso-config:
+    desc: Render infra/authelia/configuration.yml dari .env
+    cmds:
+      - 'python scripts/render_authelia.py'
+
+  up-sso:
+    desc: Nyalakan Caddy, Authelia, Grafana, dan API untuk uji SSO
+    deps: [sso-config]
+    cmds:
+      - '{{.PORTAL_COMPOSE}} up -d --build'
+
+  up-demo:
+    desc: SSO plus Grafana, Metabase, dan Prefect kosong untuk demo
+    deps: [sso-config]
+    cmds:
+      - '{{.PORTAL_COMPOSE}} --profile demo up -d --build'
+
+  down-demo:
+    desc: Matikan layanan demo
+    cmds:
+      - '{{.PORTAL_COMPOSE}} --profile demo stop'
 
   # --------------------------------------------------------------- silver
   dbt-build:

@@ -1,0 +1,176 @@
+"""Halaman portal: katalog, lineage, dan ringkasan.
+
+Semua rute read-only dan tidak memanggil database. Kalau ``catalog.json`` belum
+dihasilkan, halaman tetap 200 dan menampilkan perintah yang harus dijalankan,
+bukan error.
+"""
+
+from __future__ import annotations
+
+import json
+from pathlib import Path
+from typing import Any
+
+from fastapi import APIRouter, HTTPException, Request
+from fastapi.responses import HTMLResponse
+from fastapi.templating import Jinja2Templates
+
+from serving.portal.loader import PortalData
+
+TEMPLATE_DIR = Path(__file__).resolve().parents[1] / "templates"
+
+templates = Jinja2Templates(directory=str(TEMPLATE_DIR))
+
+
+def _pretty(value: Any) -> str:
+    if isinstance(value, str):
+        return value
+    return json.dumps(value, ensure_ascii=False, indent=2)
+
+
+templates.env.filters["pretty"] = _pretty
+
+router = APIRouter(tags=["portal"])
+
+
+def _portal(request: Request) -> PortalData:
+    return request.app.state.portal
+
+
+def _render(
+    request: Request,
+    template: str,
+    context: dict[str, Any],
+    *,
+    status_code: int = 200,
+):
+    """Render dengan identitas SSO dari header proxy."""
+    settings = request.app.state.settings
+    auth_url = (settings.auth_url or "").rstrip("/")
+    user = request.headers.get("Remote-User", "")
+    groups = request.headers.get("Remote-Groups", "")
+    role = "admin" if "admin" in groups else ("viewer" if user else "")
+    services = [
+        {"name": name, "url": url, "note": note}
+        for name, url, note in (
+            ("Grafana", settings.grafana_url, "Metrik dan log operasional"),
+            ("Metabase", settings.metabase_url, "Dashboard mart Gold"),
+            ("Prefect", settings.prefect_url, "Jadwal dan riwayat job"),
+        )
+        if url
+    ]
+    dashboard_url = (
+        settings.metabase_dashboard_url
+        or settings.metabase_url
+        or "/dashboard"
+    )
+    payload = {
+        "user": user,
+        "role": role,
+        "dashboard_url": dashboard_url,
+        "services": services,
+        "auth_url": auth_url,
+        "logout_url": f"{auth_url}/logout?rd=/" if auth_url and user else "",
+        **context,
+    }
+    return templates.TemplateResponse(
+        request, template, payload, status_code=status_code
+    )
+
+
+@router.get("/dashboard", response_class=HTMLResponse)
+def dashboard(request: Request):
+    """Placeholder dashboard. Belum diimplementasikan, sengaja 404."""
+    return _render(
+        request,
+        "dashboard.html",
+        {"active": "", "catalog_root": _portal(request).root},
+        status_code=404,
+    )
+
+
+@router.get("/", response_class=HTMLResponse)
+def index(request: Request) -> HTMLResponse:
+    portal = _portal(request)
+    catalog = portal.catalog
+    lineage = portal.lineage
+    return _render(
+        request,
+        "index.html",
+        {
+            "active": "ringkasan",
+            "catalog": catalog,
+            "lineage": lineage,
+            "tables": portal.tables,
+            "catalog_root": portal.root,
+        },
+    )
+
+
+@router.get("/catalog", response_class=HTMLResponse)
+def catalog_page(request: Request) -> HTMLResponse:
+    portal = _portal(request)
+    return _render(
+        request,
+        "catalog.html",
+        {
+            "active": "katalog",
+            "catalog": portal.catalog,
+            "tables": portal.tables,
+            "catalog_root": portal.root,
+        },
+    )
+
+
+@router.get("/catalog/{name}", response_class=HTMLResponse)
+def dataset_page(request: Request, name: str) -> HTMLResponse:
+    portal = _portal(request)
+    table = portal.table(name)
+    if table is None:
+        raise HTTPException(status_code=404, detail=f"Dataset tidak ditemukan: {name}")
+    return _render(
+        request,
+        "dataset.html",
+        {
+            "active": "katalog",
+            "catalog": portal.catalog,
+            "table": table,
+            "catalog_root": portal.root,
+        },
+    )
+
+
+@router.get("/admin", response_class=HTMLResponse)
+def admin_page(request: Request) -> HTMLResponse:
+    """Halaman khusus admin.
+
+    Akses dijaga Caddy dan Authelia. Halaman ini hanya menampilkan identitas
+    yang dikirim proxy, supaya uji 403 bisa dibedakan dari 404.
+    """
+    return _render(
+        request,
+        "admin.html",
+        {
+            "active": "admin",
+            "user": request.headers.get("Remote-User", ""),
+            "groups": request.headers.get("Remote-Groups", ""),
+        },
+    )
+
+
+@router.get("/lineage", response_class=HTMLResponse)
+def lineage_page(request: Request) -> HTMLResponse:
+    portal = _portal(request)
+    lineage = portal.lineage
+    edges = (lineage or {}).get("edges") or []
+    return _render(
+        request,
+        "lineage.html",
+        {
+            "active": "lineage",
+            "lineage": lineage,
+            "grouped": portal.nodes_by_layer(),
+            "edges": [edge for edge in edges if isinstance(edge, dict)],
+            "catalog_root": portal.root,
+        },
+    )

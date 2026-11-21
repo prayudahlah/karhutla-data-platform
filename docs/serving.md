@@ -129,3 +129,80 @@ DATABASE_DSN="dbname=... host=..." pytest tests/integration/test_serving_postgre
 - API membaca Postgres bila `DATABASE_DSN` diisi; Parquet hanya fallback lokal
   dan tes.
 - `risk_prediction_daily` dan panel prediksi diserahkan ke pemilik ML.
+
+## Portal statis
+
+Halaman HTML tanpa database, membaca `catalog.json` dan `lineage.json` dari
+`GOLD_CATALOG_ROOT` (bawaan `data/gold/_catalog`).
+
+| Rute | Isi |
+|---|---|
+| `/` | ringkasan tabel dan lineage |
+| `/catalog` | daftar tabel Gold, owner, retensi, sumber |
+| `/catalog/<nama>` | detail satu tabel dan skemanya |
+| `/lineage` | node per layer dan daftar edge |
+
+Kalau katalog belum ada, halaman tetap 200 dan menampilkan perintah yang harus
+dijalankan, bukan error.
+
+```bash
+task gold-catalog      # hasilkan catalog.json dan lineage.json
+task serving-dev       # buka http://127.0.0.1:8000
+```
+
+## Compose ringan
+
+`compose/vps-core.yml` memberi profil `full` pada Prefect, Postgres, dan
+Metabase. Tanpa profil itu, hanya API yang naik.
+
+| Perintah | Yang naik |
+|---|---|
+| `task up-ui` | API dan portal saja |
+| `task up-core` | core lengkap, termasuk Postgres dan Metabase |
+| `task up-sso` | API, Caddy, Authelia, dan Grafana |
+
+## Uji SSO lokal
+
+Authelia 4.39 menolak skema http, jadi uji lokal memakai HTTPS dengan CA
+internal Caddy (`local_certs`). Domain uji memakai `nip.io` agar tidak perlu
+mengubah `/etc/hosts`.
+
+1. Isi `.env`: `BASE_DOMAIN=127.0.0.1.nip.io`, `SCHEME=https`,
+   `AUTH_URL=https://auth.127.0.0.1.nip.io`,
+   `AUTHELIA_SESSION_SECRET=<acak minimal 32 karakter>`.
+2. `task up-sso`.
+3. Buka `https://app.127.0.0.1.nip.io` dan terima peringatan sertifikat
+   internal sekali, atau pakai `curl -k` untuk uji.
+
+Akun demo ada di `infra/authelia/users.yml` (viewer dan admin; kata sandi
+`<nama>-demo`).
+
+Yang diharapkan:
+
+| Uji | Hasil |
+|---|---|
+| Buka portal tanpa login | redirect ke `auth.localhost` |
+| Login viewer, buka portal | 200 |
+| Viewer buka `/admin` | 403 |
+| Grafana setelah login portal | langsung masuk, tanpa login kedua |
+| Metabase | tidak termasuk compose ringan, dan OSS tidak menerima header SSO |
+
+`/admin` sengaja belum punya halaman; rutenya disediakan untuk menguji 403.
+
+## Demo layanan kosong
+
+`task up-demo` menyalakan SSO plus Grafana, Metabase, dan Prefect. Postgres tidak
+ikut karena Metabase memakai H2 dan Prefect memakai SQLite.
+
+| Host | viewer | admin | Catatan |
+|---|---|---|---|
+| `app.*` | 200 | 200 | portal |
+| `grafana.*` | 200 | 200 | masuk otomatis lewat `auth.proxy` |
+| `metabase.*` | 200 | 200 | masih minta login sendiri, OSS tidak menerima header |
+| `prefect.*` | 403 | 200 | hanya admin, karena bisa menjalankan job |
+
+Start pertama Metabase memakan waktu beberapa menit karena harus menyiapkan H2.
+Batasan memorinya 1500 MB, dan pada mesin ini terpakai sekitar 900 MB saat
+inisialisasi.
+
+`task down-demo` menghentikan layanan demo tanpa menghapus volume.

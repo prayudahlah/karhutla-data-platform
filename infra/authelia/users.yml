@@ -1,0 +1,21 @@
+# Akun demo untuk mencoba SSO. Kata sandinya sengaja sederhana.
+#
+#   viewer / viewer-demo
+#   admin  / admin-demo
+#
+# Ganti hash sebelum dipakai di luar demo. Hash dibuat dengan:
+#   python -c "from argon2 import PasswordHasher; print(PasswordHasher().hash('sandi-baru'))"
+users:
+  viewer:
+    displayname: 'Viewer'
+    password: '$argon2id$v=19$m=65536,t=3,p=4$YeUzU1Pe28Zlw02tgd+0Cg$RcQpDv7TXjPfGASFL9j92JNjYnCJ4HmwKkZ365BR1hs'
+    email: 'viewer@karhutla.test'
+    groups:
+      - 'viewer'
+
+  admin:
+    displayname: 'Admin'
+    password: '$argon2id$v=19$m=65536,t=3,p=4$VvaDz87U1ysT1vvJlcqNvw$Gl/BnD8i6FvU2IyCbn2U9GoAkfD36SzZZgUpCPsqoHg'
+    email: 'admin@karhutla.test'
+    groups:
+      - 'admin'

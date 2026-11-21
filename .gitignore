@@ -43,3 +43,5 @@ htmlcov/
 
 # artefak tooling lokal (.openchamber/screenshots)
 .openchamber/
+infra/authelia/configuration.yml
+.coverage

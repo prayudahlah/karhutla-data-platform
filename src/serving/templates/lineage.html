@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}Lineage | JAGAHUTAN{% endblock %}
+{% block content %}
+<div class="shell">
+  <div class="page-head">
+    <div class="breadcrumb"><a href="/">Ringkasan</a> / Lineage</div>
+    <div class="kicker">Lineage</div>
+    <h1 class="serif">Jalur Bronze ke Silver ke Gold.</h1>
+    <p class="lead">Dihasilkan dari kontrak dan model dbt. Setiap edge menandai ketergantungan yang bisa diaudit.</p>
+  </div>
+
+  {% if lineage is none %}
+    <div class="notice"><strong>Lineage belum ada.</strong> Jalankan <code>task gold-catalog</code>, lalu muat ulang halaman ini.</div>
+  {% else %}
+    <div class="stats" style="margin:0 0 40px;padding:0;grid-template-columns:repeat(3,1fr)">
+      <div class="stat"><div class="kicker">Node</div><div class="mono num">{{ lineage.node_count }}</div><div class="sub">dataset dan tabel</div></div>
+      <div class="stat"><div class="kicker">Edge</div><div class="mono num">{{ lineage.edge_count }}</div><div class="sub">ketergantungan</div></div>
+      <div class="stat"><div class="kicker">Run</div><div class="mono num" style="font-size:1.4rem">{{ lineage.run_id or "-" }}</div><div class="sub">build terakhir</div></div>
+    </div>
+
+    <div class="layers">
+      {% for layer, label in [("bronze", "Bronze"), ("silver", "Silver"), ("gold", "Gold")] %}
+        <div class="layer">
+          <h2>{{ label }} ({{ grouped[layer]|length }})</h2>
+          {% for node in grouped[layer] %}<span class="chip">{{ node.id }}</span>{% endfor %}
+        </div>
+      {% endfor %}
+    </div>
+
+    <div class="kicker" style="margin-bottom:12px">Edge</div>
+    <div class="table-wrap">
+    <table class="data">
+      <thead><tr><th scope="col">Dari</th><th scope="col">Ke</th><th scope="col">Catatan</th></tr></thead>
+      <tbody>
+      {% for edge in edges %}
+        <tr>
+          <td class="mono">{{ edge["from"] }}</td>
+          <td class="mono">{{ edge.to }}</td>
+          <td style="color:var(--label)">{{ edge.note }}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

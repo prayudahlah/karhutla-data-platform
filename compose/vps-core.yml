@@ -3,6 +3,7 @@
 # Prometheus, Grafana, Loki, Caddy, dan Authelia belum ditambahkan.
 services:
   prefect-server:
+    profiles: ["full", "demo"]
     image: prefecthq/prefect:3-latest
     container_name: karhutla-prefect-server
     restart: unless-stopped
@@ -38,6 +39,7 @@ services:
         max-file: "3"
 
   postgres:
+    profiles: ["full"]
     image: postgres:16-alpine
     container_name: karhutla-postgres
     restart: unless-stopped
@@ -70,12 +72,15 @@ services:
       dockerfile: docker/Dockerfile.api
     container_name: karhutla-api
     restart: unless-stopped
-    depends_on:
-      postgres:
-        condition: service_healthy
     environment:
       GOLD_PUBLISH_ROOT: /app/data/gold/published
       ICEBERG_ROOT: /app/data/gold/_iceberg
+      GOLD_CATALOG_ROOT: /app/data/gold/_catalog
+      AUTH_URL: ${AUTH_URL:-}
+      GRAFANA_URL: ${GRAFANA_URL:-}
+      METABASE_URL: ${METABASE_URL:-}
+      PREFECT_URL: ${PREFECT_URL:-}
+      METABASE_DASHBOARD_URL: ${METABASE_DASHBOARD_URL:-}
       DATABASE_DSN: dbname=${POSTGRES_DB:-karhutla} user=${POSTGRES_USER:-karhutla} password=${POSTGRES_PASSWORD:-karhutla} host=postgres port=5432
       TZ: ${TZ:-Asia/Jakarta}
     ports:
@@ -91,12 +96,11 @@ services:
         max-file: "3"
 
   metabase:
+    profiles: ["full", "demo"]
+    mem_limit: 1500m
     image: metabase/metabase:latest
     container_name: karhutla-metabase
     restart: unless-stopped
-    depends_on:
-      postgres:
-        condition: service_healthy
     environment:
       MB_DB_TYPE: h2
       MB_DB_FILE: /metabase-data/metabase.db

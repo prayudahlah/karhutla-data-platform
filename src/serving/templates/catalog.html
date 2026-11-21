@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}Katalog | JAGAHUTAN{% endblock %}
+{% block content %}
+<div class="shell">
+  <div class="page-head">
+    <div class="breadcrumb"><a href="/">Ringkasan</a> / Katalog</div>
+    <div class="kicker">Katalog data</div>
+    <h1 class="serif">Tabel Gold dan pemiliknya.</h1>
+    <p class="lead">Owner, retensi, dan klasifikasi berasal dari kontrak di <span class="mono">docs/data-contracts</span>. Klik nama tabel untuk melihat skema lengkap.</p>
+  </div>
+
+  {% if catalog is none %}
+    <div class="notice"><strong>Katalog belum ada.</strong> Jalankan <code>task gold-catalog</code>, lalu muat ulang halaman ini.</div>
+  {% else %}
+    <div class="table-wrap">
+    <table class="data">
+      <thead><tr><th scope="col">Nama</th><th scope="col">Status</th><th scope="col">Owner</th><th scope="col">Grain</th><th scope="col">Retensi</th><th scope="col">Sumber</th></tr></thead>
+      <tbody>
+      {% for table in tables %}
+        <tr>
+          <td><a class="mono" href="/catalog/{{ table.name }}">{{ table.name }}</a></td>
+          <td><span class="badge {{ 'ok' if table.status == 'implemented' else 'plan' }}">{{ "Terpasang" if table.status == "implemented" else "Direncanakan" }}</span></td>
+          <td>{{ table.owner }}</td>
+          <td style="color:var(--body)">{{ table.grain }}</td>
+          <td style="color:var(--body)">{{ table.retention }}</td>
+          <td class="mono" style="color:var(--label)">{{ (table.source_models or [])|join(", ") or "-" }}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

@@ -20,6 +20,8 @@ from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 
 from serving.db import GoldStore, GoldUnavailable
+from serving.portal import routes as portal_routes
+from serving.portal.loader import PortalData
 from serving.routers import include_routers
 from serving.settings import Settings
 
@@ -48,6 +50,13 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     )
     app.state.settings = resolved
     app.state.store = store
+    app.state.portal = PortalData(resolved.catalog_root)
+    app.mount(
+        "/static",
+        StaticFiles(directory=str(Path(__file__).resolve().parent / "static")),
+        name="static",
+    )
+    app.include_router(portal_routes.router)
     include_routers(app)
     app.add_middleware(
         CORSMiddleware,
@@ -81,15 +90,6 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         exc: GoldUnavailable,
     ) -> JSONResponse:
         return JSONResponse(status_code=503, content={"detail": str(exc)})
-
-    @app.get("/", tags=["meta"])
-    def root() -> dict[str, str]:
-        return {
-            "service": resolved.title,
-            "version": resolved.version,
-            "docs": "/docs",
-            "openapi": "/openapi.json",
-        }
 
     return app
 
