@@ -57,7 +57,8 @@ punya kontrak sampai modelnya ada.
 Gold memakai **Iceberg v2 sebagai jalur resmi** lewat `task gold-publish`
 (ADR-002): snapshot 30 hari, partisi `date`/`burn_month`, katalog SQLite.
 Parquet hanya staging dbt; Postgres adalah serving cache dari snapshot Iceberg
-aktif.
+aktif. Bukti F-07 memakai warehouse lokal; jalur Garage untuk Iceberg belum
+diuji.
 
 ## Tata letak Silver
 

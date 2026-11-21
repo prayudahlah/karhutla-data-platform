@@ -13,6 +13,7 @@ location:
     uploader: null
     table_format: Iceberg v2
     iceberg_prefix: gold/iceberg/province_daily
+    iceberg_warehouse: local (Garage path untested)
     publish_command: python -m batch.gold.publish --table province_daily
     role: canonical
     staging: parquet
