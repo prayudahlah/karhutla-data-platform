@@ -102,14 +102,21 @@ def catalog_settings(iceberg_root: Path) -> dict[str, Any]:
         settings.update(
             {
                 "s3.endpoint": os.environ.get(
-                    "GARAGE_S3_ENDPOINT", "http://localhost:3900"
+                    "GARAGE_ENDPOINT",
+                    os.environ.get("GARAGE_S3_ENDPOINT", "http://localhost:3900"),
                 ),
-                "s3.access-key-id": os.environ.get("GARAGE_ACCESS_KEY", ""),
+                "s3.access-key-id": os.environ.get(
+                    "GARAGE_ACCESS_KEY_ID",
+                    os.environ.get("GARAGE_ACCESS_KEY", ""),
+                ),
                 "s3.secret-access-key": os.environ.get(
-                    "GARAGE_SECRET_KEY", ""
+                    "GARAGE_SECRET_ACCESS_KEY",
+                    os.environ.get("GARAGE_SECRET_KEY", ""),
                 ),
                 "s3.region": os.environ.get("GARAGE_REGION", "garage"),
-                "s3.path-style-access": "true",
+                "s3.path-style-access": os.environ.get(
+                    "GARAGE_FORCE_PATH_STYLE", "true"
+                ),
             }
         )
     return settings

@@ -94,11 +94,13 @@ task gold-maintenance
 ## Batasan yang masih terbuka
 
 1. Warehouse yang dipakai bukti ini adalah **lokal**
-   (`data/gold/_iceberg_evidence`). Jalur Garage `s3://` belum diuji; kontrak
-   dan ADR harus menyebut ini sampai integration test Garage ada.
-2. `--expire` dan `--backup` sudah bisa dijalankan dan diuji, tetapi belum
-   dijadwalkan lewat Prefect/cron. `task gold-maintenance` adalah urutan
-   operasionalnya; penjadwalan menyusul.
+   (`data/gold/_iceberg_evidence`). Integration test
+   `tests/integration/test_iceberg_garage.py` tersedia, tetapi belum dijalankan
+   karena Garage belum dikonfigurasi. Kontrak dan ADR menyebut warehouse lokal
+   sampai test itu lolos.
+2. `--expire` dan `--backup` sudah bisa dijalankan dan diuji. Urutan
+   operasionalnya ada di `docs/runbooks/gold.md` (`task gold-maintenance`);
+   deployment cron/Prefect belum dipasang.
 3. Serving (`sync_marts`) dan ML masih membaca Parquet. Migrasi ke Iceberg
    menyusul di branch serving/ML; sampai itu selesai, Iceberg baru canonical
    untuk Gold, belum untuk konsumen.
