@@ -76,6 +76,7 @@ SCAR_SCHEMA = pa.schema(
         ("first_day", pa.int16()),
         ("last_day", pa.int16()),
         ("in_bbox", pa.bool_()),
+        ("footprint_intersects_bbox", pa.bool_()),
         ("source_file", pa.string()),
     ]
 )
@@ -221,6 +222,116 @@ def in_bbox(latitude: float, longitude: float, bbox: tuple[float, ...]) -> bool:
     return west <= longitude <= east and south <= latitude <= north
 
 
+Point = tuple[float, float]
+
+
+def pixel_footprint(
+    grid: TileGrid,
+    row: int,
+    col: int,
+) -> tuple[Point, Point, Point, Point]:
+    """Empat sudut footprint pixel dalam (longitude, latitude)."""
+    x0 = grid.ulx + grid.px * col
+    x1 = x0 + grid.px
+    y1 = grid.uly - grid.py * row
+    y0 = y1 - grid.py
+    xs = np.array([x0, x1, x1, x0], dtype=float)
+    ys = np.array([y0, y0, y1, y1], dtype=float)
+    latitude, longitude = sinusoidal_to_latlon(xs, ys)
+    return (
+        (float(longitude[0]), float(latitude[0])),
+        (float(longitude[1]), float(latitude[1])),
+        (float(longitude[2]), float(latitude[2])),
+        (float(longitude[3]), float(latitude[3])),
+    )
+
+
+def _point_in_rectangle(point: Point, bbox: tuple[float, ...]) -> bool:
+    west, south, east, north = bbox
+    longitude, latitude = point
+    return west <= longitude <= east and south <= latitude <= north
+
+
+def _point_in_polygon(point: Point, polygon: Sequence[Point]) -> bool:
+    longitude, latitude = point
+    inside = False
+    count = len(polygon)
+    for index in range(count):
+        x1, y1 = polygon[index]
+        x2, y2 = polygon[(index + 1) % count]
+        if (y1 > latitude) != (y2 > latitude):
+            crossing = (x2 - x1) * (latitude - y1) / (y2 - y1) + x1
+            if longitude < crossing:
+                inside = not inside
+    return inside
+
+
+def _orientation(a: Point, b: Point, c: Point) -> float:
+    return (b[0] - a[0]) * (c[1] - a[1]) - (b[1] - a[1]) * (c[0] - a[0])
+
+
+def _on_segment(a: Point, b: Point, point: Point) -> bool:
+    return (
+        min(a[0], b[0]) <= point[0] <= max(a[0], b[0])
+        and min(a[1], b[1]) <= point[1] <= max(a[1], b[1])
+    )
+
+
+def _segments_intersect(a: Point, b: Point, c: Point, d: Point) -> bool:
+    o1 = _orientation(a, b, c)
+    o2 = _orientation(a, b, d)
+    o3 = _orientation(c, d, a)
+    o4 = _orientation(c, d, b)
+    if ((o1 > 0 > o2) or (o1 < 0 < o2)) and (
+        (o3 > 0 > o4) or (o3 < 0 < o4)
+    ):
+        return True
+    if o1 == 0 and _on_segment(a, b, c):
+        return True
+    if o2 == 0 and _on_segment(a, b, d):
+        return True
+    if o3 == 0 and _on_segment(c, d, a):
+        return True
+    return o4 == 0 and _on_segment(c, d, b)
+
+
+def polygon_intersects_bbox(
+    polygon: Sequence[Point],
+    bbox: tuple[float, ...],
+) -> bool:
+    """Closed intersection antara polygon dan bbox persegi panjang."""
+    west, south, east, north = bbox
+    rectangle = (
+        (west, south),
+        (east, south),
+        (east, north),
+        (west, north),
+    )
+    if any(_point_in_rectangle(vertex, bbox) for vertex in polygon):
+        return True
+    if any(_point_in_polygon(corner, polygon) for corner in rectangle):
+        return True
+    for index in range(len(polygon)):
+        a = polygon[index]
+        b = polygon[(index + 1) % len(polygon)]
+        for rect_index in range(4):
+            c = rectangle[rect_index]
+            d = rectangle[(rect_index + 1) % 4]
+            if _segments_intersect(a, b, c, d):
+                return True
+    return False
+
+
+def footprint_intersects_bbox(
+    grid: TileGrid,
+    row: int,
+    col: int,
+    bbox: tuple[float, ...],
+) -> bool:
+    """True jika footprint native pixel beririsan dengan bbox lat/lon."""
+    return polygon_intersects_bbox(pixel_footprint(grid, row, col), bbox)
+
+
 def tile_from_key(key: str) -> str:
     match = _TILE.search(key)
     if not match:
@@ -295,6 +406,10 @@ def parse_tile(
     if rows.size:
         x, y = pixel_centers(data.grid, rows, cols)
         latitude, longitude = sinusoidal_to_latlon(x, y)
+        footprint_flags = [
+            footprint_intersects_bbox(data.grid, int(row_index), int(col_index), bbox)
+            for row_index, col_index in zip(rows, cols, strict=True)
+        ]
         for index in range(rows.size):
             row_index = int(rows[index])
             col_index = int(cols[index])
@@ -316,6 +431,7 @@ def parse_tile(
                     "first_day": int(data.first_day[row_index, col_index]),
                     "last_day": int(data.last_day[row_index, col_index]),
                     "in_bbox": in_bbox(lat, lon, bbox),
+                    "footprint_intersects_bbox": bool(footprint_flags[index]),
                     "source_file": source_file,
                 }
             )

@@ -308,11 +308,52 @@ def _git_commit() -> str | None:
     return result.stdout.strip() or None if result.returncode == 0 else None
 
 
-def _resolve_tracking_uri() -> str:
+def resolve_tracking_uri() -> str:
+    """URI MLflow aktif; fallback ke folder ``mlruns`` lokal."""
     configured = (os.getenv("MLFLOW_TRACKING_URI") or "").strip()
     if configured:
         return configured
     return (Path.cwd() / "mlruns").resolve().as_uri()
+
+
+# Nama lama dipertahankan supaya pemanggil internal tidak patah.
+_resolve_tracking_uri = resolve_tracking_uri
+
+
+def _latest_model_version(client: Any, registered_model_name: str) -> Any | None:
+    versions = client.search_model_versions(f"name='{registered_model_name}'")
+    if not versions:
+        return None
+    return max(versions, key=lambda item: int(item.version))
+
+
+def set_model_alias(
+    registered_model_name: str,
+    alias: str,
+    version: str | int,
+    *,
+    tracking_uri: str | None = None,
+) -> None:
+    """Set alias MLflow (mis. ``champion``) pada versi model tertentu."""
+    import mlflow
+
+    mlflow.set_tracking_uri(tracking_uri or resolve_tracking_uri())
+    client = mlflow.tracking.MlflowClient()
+    client.set_registered_model_alias(registered_model_name, alias, str(version))
+
+
+def latest_model_version(
+    registered_model_name: str,
+    *,
+    tracking_uri: str | None = None,
+) -> str | None:
+    """Versi terbaru sebuah registered model, atau ``None`` bila belum ada."""
+    import mlflow
+
+    mlflow.set_tracking_uri(tracking_uri or resolve_tracking_uri())
+    client = mlflow.tracking.MlflowClient()
+    latest = _latest_model_version(client, registered_model_name)
+    return None if latest is None else str(latest.version)
 
 
 def log_to_mlflow(
@@ -321,12 +362,25 @@ def log_to_mlflow(
     artifacts: Sequence[Path],
     *,
     tracking_uri: str | None = None,
+    model: Any | None = None,
+    model_flavor: str | None = None,
+    registered_model_name: str | None = None,
+    parent_run_id: str | None = None,
+    tags: Mapping[str, str] | None = None,
+    input_example: pd.DataFrame | None = None,
+    signature_input: pd.DataFrame | None = None,
+    strict: bool = False,
 ) -> str | None:
-    """Catat run ke MLflow; kembalikan run id atau ``None`` bila dilewati."""
+    """Catat run ke MLflow; kembalikan run id atau ``None`` bila dilewati.
+
+    ``parent_run_id`` membuat run ini nested di bawah pipeline run. Bila
+    ``model`` diisi, model dicatat dengan flavor yang sesuai dan opsional
+    didaftarkan ke model registry dengan alias ``candidate``.
+    """
     try:
         import mlflow
 
-        mlflow.set_tracking_uri(tracking_uri or _resolve_tracking_uri())
+        mlflow.set_tracking_uri(tracking_uri or resolve_tracking_uri())
         mlflow.set_experiment(settings.experiment)
         run_name = payload.get("run_name")
         if not run_name:
@@ -336,7 +390,11 @@ def log_to_mlflow(
                 run_name += f"-c{float(payload['c']):g}"
             if payload.get("drop_location_features"):
                 run_name += "-noloc"
-        with mlflow.start_run(run_name=run_name) as run:
+        with mlflow.start_run(
+            run_name=run_name,
+            nested=parent_run_id is not None,
+            parent_run_id=parent_run_id,
+        ) as run:
             params = {
                 "model": payload["model"],
                 "features": payload["features"],
@@ -345,6 +403,12 @@ def log_to_mlflow(
                 "grid_deg": payload["grid_deg"],
                 "label_rule": payload["label_rule"],
                 "label_horizon_days": payload["label_horizon_days"],
+                "dataset_rows": (
+                    payload["train_rows"] + payload["valid_rows"] + payload["test_rows"]
+                ),
+                "train_rows": payload["train_rows"],
+                "valid_rows": payload["valid_rows"],
+                "test_rows": payload["test_rows"],
             }
             for key in (
                 "c",
@@ -354,6 +418,10 @@ def log_to_mlflow(
                 "min_child_samples",
                 "feature_fraction",
                 "best_iteration",
+                "feature_source",
+                "feature_service",
+                "feast_registry_hash",
+                "feature_table_hash",
             ):
                 if payload.get(key) is not None:
                     params[key] = str(payload[key])
@@ -368,20 +436,69 @@ def log_to_mlflow(
                     mlflow.log_metric(f"{split}_{name}", float(value))
             if payload.get("precision_at_100_test") is not None:
                 mlflow.log_metric("precision_at_100_test", payload["precision_at_100_test"])
-            mlflow.set_tags(
-                {
-                    "git_commit": payload.get("git_commit") or "unknown",
-                    "label_fingerprint": payload["label_fingerprint"],
-                    "manifest_hash": payload["manifest_hash"],
-                    "freeze_id": payload.get("freeze_id") or "unfrozen",
-                    "config_hash": payload.get("config_hash") or "none",
-                    "test_status": payload.get("test_status") or "evaluated",
-                }
-            )
+            run_tags = {
+                "git_commit": payload.get("git_commit") or "unknown",
+                "label_fingerprint": payload["label_fingerprint"],
+                "manifest_hash": payload["manifest_hash"],
+                "freeze_id": payload.get("freeze_id") or "unfrozen",
+                "config_hash": payload.get("config_hash") or "none",
+                "test_status": payload.get("test_status") or "evaluated",
+                "feature_source": str(payload.get("feature_source") or "gold"),
+                "feature_service": str(payload.get("feature_service") or ""),
+                "feast_registry_hash": str(payload.get("feast_registry_hash") or ""),
+                "feature_table_hash": str(payload.get("feature_table_hash") or ""),
+            }
+            if tags:
+                run_tags.update({str(key): str(value) for key, value in tags.items()})
+            mlflow.set_tags(run_tags)
+
             for artifact in artifacts:
                 mlflow.log_artifact(str(artifact))
+
+            if model is not None:
+                signature = None
+                signature_source = (
+                    signature_input if signature_input is not None else input_example
+                )
+                if signature_source is not None:
+                    try:
+                        signature = mlflow.models.infer_signature(signature_source)
+                    except Exception:  # noqa: BLE001 - signature opsional
+                        signature = None
+                if model_flavor == "sklearn":
+                    model_info = mlflow.sklearn.log_model(
+                        model,
+                        artifact_path="model",
+                        signature=signature,
+                        input_example=input_example,
+                        registered_model_name=registered_model_name,
+                    )
+                elif model_flavor == "lightgbm":
+                    model_info = mlflow.lightgbm.log_model(
+                        model,
+                        artifact_path="model",
+                        signature=signature,
+                        input_example=input_example,
+                        registered_model_name=registered_model_name,
+                    )
+                else:
+                    raise TrainingError(f"model_flavor tidak dikenal: {model_flavor}")
+                mlflow.set_tag("model_uri", model_info.model_uri)
+                if registered_model_name:
+                    client = mlflow.tracking.MlflowClient()
+                    latest = _latest_model_version(client, registered_model_name)
+                    if latest is not None:
+                        client.set_registered_model_alias(
+                            registered_model_name,
+                            "candidate",
+                            str(latest.version),
+                        )
+                        mlflow.set_tag("registered_model_name", registered_model_name)
+                        mlflow.set_tag("registered_model_version", str(latest.version))
             return run.info.run_id
     except Exception as exc:  # noqa: BLE001 - MLflow opsional, jangan gagalkan training
+        if strict:
+            raise TrainingError(f"MLflow gagal: {exc}") from exc
         print(f"PERINGATAN: MLflow dilewati: {exc}", file=sys.stderr)
         return None
 
@@ -548,8 +665,18 @@ def run_training(
     freeze_config: str | Path | None = None,
     holdout_region: str | None = None,
     drop_location_features: bool = False,
+    feature_source: str = "gold",
+    dataset: PreparedDataset | None = None,
+    params: Mapping[str, Any] | None = None,
+    register_model: bool = False,
+    registered_model_name: str | None = None,
+    mlflow_parent_run_id: str | None = None,
+    mlflow_tags: Mapping[str, str] | None = None,
+    mlflow_strict: bool = False,
 ) -> dict[str, Any]:
     """Latih satu konfigurasi dan tulis seluruh artefaknya."""
+    if feature_source not in {"gold", "feast"}:
+        raise TrainingError(f"feature_source tidak dikenal: {feature_source}")
     if model == "lgbm":
         return run_lgbm_training(
             settings,
@@ -562,6 +689,15 @@ def run_training(
             registry_path=registry_path,
             family=family,
             freeze_config=freeze_config,
+            feature_source=feature_source,
+            dataset=dataset,
+            params=params,
+            register_model=register_model,
+            registered_model_name=registered_model_name,
+            mlflow_parent_run_id=mlflow_parent_run_id,
+            mlflow_tags=mlflow_tags,
+            mlflow_strict=mlflow_strict,
+            tracking_uri=tracking_uri,
         )
     if model != "lr":
         raise TrainingError(f"model belum didukung: {model}")
@@ -572,11 +708,18 @@ def run_training(
 
     include_history = features == "t3h"
     region_grouping = features == "t3r"
-    dataset = prepare_from_settings(
-        settings,
-        include_history=include_history,
-        region_grouping=region_grouping,
-    )
+    if feature_source == "feast" and (include_history or region_grouping):
+        raise TrainingError(
+            "feature_source=feast belum mendukung grup t3h/t3r; pakai Gold atau perluas "
+            "feature view Feast"
+        )
+    if dataset is None:
+        dataset = prepare_from_settings(
+            settings,
+            include_history=include_history,
+            region_grouping=region_grouping,
+            feature_source=feature_source,
+        )
     if include_history and not any(
         column in dataset.feature_columns for column in CELL_HISTORY_COLUMNS
     ):
@@ -672,6 +815,17 @@ def run_training(
     coefficients_path = output / "coefficients.csv"
     coefficients.to_csv(coefficients_path, index=False)
 
+    valid_predictions = pd.DataFrame(
+        {
+            "cell_id": dataset.valid.keys["cell_id"].to_numpy(),
+            "date": dataset.valid.keys["date"].to_numpy(),
+            "label": dataset.valid.y.to_numpy(),
+            "proba": valid_proba,
+        }
+    )
+    valid_predictions_path = output / "valid_predictions.parquet"
+    valid_predictions.to_parquet(valid_predictions_path, index=False)
+
     payload: dict[str, Any] = {
         "generated_at": utc_now_iso(),
         "model": model,
@@ -691,6 +845,10 @@ def run_training(
         "drop_location_features": drop_location_features,
         "include_history": include_history,
         "region_grouping": region_grouping,
+        "feature_source": feature_source,
+        "feature_service": dataset.manifest.get("feature_service"),
+        "feast_registry_hash": dataset.manifest.get("feast_registry_hash"),
+        "feature_table_hash": dataset.manifest.get("feature_table_hash"),
         "label_rule": dataset.manifest["label_rule"],
         "label_horizon_days": dataset.manifest["label_horizon_days"],
         "label_fingerprint": dataset.manifest["label_fingerprint"],
@@ -742,10 +900,32 @@ def run_training(
         coefficients_path,
         output / "threshold.json",
         output / "calibration.json",
+        valid_predictions_path,
     ]
 
+    mlflow_run_id: str | None = None
     if use_mlflow:
-        log_to_mlflow(settings, payload, artifacts, tracking_uri=tracking_uri)
+        mlflow_run_id = log_to_mlflow(
+            settings,
+            payload,
+            artifacts,
+            tracking_uri=tracking_uri,
+            model=pipeline if register_model else None,
+            model_flavor="sklearn" if register_model else None,
+            registered_model_name=registered_model_name if register_model else None,
+            parent_run_id=mlflow_parent_run_id,
+            tags=mlflow_tags,
+            input_example=(
+                dataset.train.X[feature_columns].head(5) if register_model else None
+            ),
+            strict=mlflow_strict,
+        )
+        if mlflow_run_id:
+            payload["mlflow_run_id"] = mlflow_run_id
+            (output / "metrics.json").write_text(
+                json.dumps(payload, indent=2, ensure_ascii=False) + "\n",
+                encoding="utf-8",
+            )
 
     if registry_path is not None:
         record_run(
@@ -765,11 +945,21 @@ def run_training(
                 "test_reason": test_reason,
                 "holdout_region": holdout_region,
                 "drop_location_features": drop_location_features,
+                "feature_source": feature_source,
+                "feature_service": payload.get("feature_service"),
+                "mlflow_run_id": mlflow_run_id,
                 "output": str(output),
             },
         )
 
-    return {"payload": payload, "output": output}
+    return {
+        "payload": payload,
+        "output": output,
+        "valid_predictions": valid_predictions,
+        "valid_keys": dataset.valid.keys,
+        "valid_y": dataset.valid.y,
+        "mlflow_run_id": mlflow_run_id,
+    }
 
 
 def run_lgbm_training(
@@ -785,14 +975,31 @@ def run_lgbm_training(
     family: str = "lgbm-baseline",
     freeze_config: str | Path | None = None,
     grid: Sequence[Mapping[str, Any]] | None = None,
+    feature_source: str = "gold",
+    dataset: PreparedDataset | None = None,
+    params: Mapping[str, Any] | None = None,
+    register_model: bool = False,
+    registered_model_name: str | None = None,
+    mlflow_parent_run_id: str | None = None,
+    mlflow_tags: Mapping[str, str] | None = None,
+    mlflow_strict: bool = False,
+    tracking_uri: str | None = None,
 ) -> dict[str, Any]:
     """Latih LightGBM dengan protokol yang sama seperti LR."""
+    if feature_source not in {"gold", "feast"}:
+        raise TrainingError(f"feature_source tidak dikenal: {feature_source}")
     if test_policy not in TEST_POLICIES:
         raise TrainingError(f"test_policy tidak dikenal: {test_policy}")
     if test_policy == "seen" and not (test_reason or "").strip():
         raise TrainingError("--allow-seen-test memerlukan alasan tertulis")
 
-    dataset = prepare_from_settings(settings)
+    if feature_source == "feast" and features in {"t3h", "t3r"}:
+        raise TrainingError(
+            "feature_source=feast belum mendukung grup t3h/t3r; pakai Gold atau perluas "
+            "feature view Feast"
+        )
+    if dataset is None:
+        dataset = prepare_from_settings(settings, feature_source=feature_source)
     selected = select_features(dataset.feature_columns, features)
     categorical = [column for column in dataset.categorical_columns if column in selected]
     numeric = [column for column in selected if column not in categorical]
@@ -806,14 +1013,17 @@ def run_lgbm_training(
     else:
         feature_columns = list(selected)
 
-    best_params, tuning = tune_lgbm(
-        dataset.train.X[feature_columns],
-        dataset.train.y,
-        dataset.valid.X[feature_columns],
-        dataset.valid.y,
-        categorical,
-        grid=grid or DEFAULT_GRID,
-    )
+    if params is None:
+        best_params, tuning = tune_lgbm(
+            dataset.train.X[feature_columns],
+            dataset.train.y,
+            dataset.valid.X[feature_columns],
+            dataset.valid.y,
+            categorical,
+            grid=grid or DEFAULT_GRID,
+        )
+    else:
+        best_params, tuning = dict(params), []
 
     frozen: dict[str, Any] | None = None
     if freeze_config is not None:
@@ -882,6 +1092,17 @@ def run_lgbm_training(
     importance.to_csv(importance_path, index=False)
 
     best_iteration = int(model.best_iteration_ or model.n_estimators)
+    valid_predictions = pd.DataFrame(
+        {
+            "cell_id": dataset.valid.keys["cell_id"].to_numpy(),
+            "date": dataset.valid.keys["date"].to_numpy(),
+            "label": dataset.valid.y.to_numpy(),
+            "proba": valid_proba,
+        }
+    )
+    valid_predictions_path = output / "valid_predictions.parquet"
+    valid_predictions.to_parquet(valid_predictions_path, index=False)
+
     payload: dict[str, Any] = {
         "generated_at": utc_now_iso(),
         "model": "lgbm",
@@ -895,6 +1116,10 @@ def run_lgbm_training(
         "feature_fraction": best_params.get("feature_fraction"),
         "best_iteration": best_iteration,
         "tuning": tuning,
+        "feature_source": feature_source,
+        "feature_service": dataset.manifest.get("feature_service"),
+        "feast_registry_hash": dataset.manifest.get("feast_registry_hash"),
+        "feature_table_hash": dataset.manifest.get("feature_table_hash"),
         "label_rule": dataset.manifest["label_rule"],
         "label_horizon_days": dataset.manifest["label_horizon_days"],
         "label_fingerprint": dataset.manifest["label_fingerprint"],
@@ -949,10 +1174,36 @@ def run_lgbm_training(
         importance_path,
         output / "threshold.json",
         output / "calibration.json",
+        valid_predictions_path,
     ]
 
+    mlflow_run_id: str | None = None
     if use_mlflow:
-        log_to_mlflow(settings, payload, artifacts, tracking_uri=None)
+        signature_input = None
+        if register_model:
+            signature_input = dataset.train.X[feature_columns].head(5).copy()
+            for column in categorical:
+                if column in signature_input.columns:
+                    signature_input[column] = signature_input[column].astype(str)
+        mlflow_run_id = log_to_mlflow(
+            settings,
+            payload,
+            artifacts,
+            tracking_uri=tracking_uri,
+            model=model if register_model else None,
+            model_flavor="lightgbm" if register_model else None,
+            registered_model_name=registered_model_name if register_model else None,
+            parent_run_id=mlflow_parent_run_id,
+            tags=mlflow_tags,
+            signature_input=signature_input,
+            strict=mlflow_strict,
+        )
+        if mlflow_run_id:
+            payload["mlflow_run_id"] = mlflow_run_id
+            (output / "metrics.json").write_text(
+                json.dumps(payload, indent=2, ensure_ascii=False) + "\n",
+                encoding="utf-8",
+            )
 
     if registry_path is not None:
         record_run(
@@ -970,11 +1221,21 @@ def run_lgbm_training(
                 "test_pr_auc": (test_metrics or {}).get("pr_auc"),
                 "test_status": payload["test_status"],
                 "test_reason": test_reason,
+                "feature_source": feature_source,
+                "feature_service": payload.get("feature_service"),
+                "mlflow_run_id": mlflow_run_id,
                 "output": str(output),
             },
         )
 
-    return {"payload": payload, "output": output}
+    return {
+        "payload": payload,
+        "output": output,
+        "valid_predictions": valid_predictions,
+        "valid_keys": dataset.valid.keys,
+        "valid_y": dataset.valid.y,
+        "mlflow_run_id": mlflow_run_id,
+    }
 
 
 def _parse_c_grid(raw: str | None) -> tuple[float, ...]:
@@ -993,9 +1254,30 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Latih baseline LR dari Gold sel-hari")
     parser.add_argument("--model", choices=["lr", "lgbm"], default="lr")
     parser.add_argument("--features", choices=sorted(SELECTION_GROUPS), default="t3")
+    parser.add_argument(
+        "--feature-source",
+        choices=["gold", "feast"],
+        default="gold",
+        help="gold = hitung fitur langsung; feast = ambil point-in-time dari Feast",
+    )
     parser.add_argument("--out", default=None, help="folder artefak")
     parser.add_argument("--no-mlflow", action="store_true", help="jangan catat ke MLflow")
     parser.add_argument("--tracking-uri", default=None, help="override MLFLOW_TRACKING_URI")
+    parser.add_argument(
+        "--register-model",
+        action="store_true",
+        help="catat model ke MLflow Model Registry",
+    )
+    parser.add_argument(
+        "--registered-model-name",
+        default=None,
+        help="nama registered model (default: ML_MODEL_NAME)",
+    )
+    parser.add_argument(
+        "--mlflow-strict",
+        action="store_true",
+        help="gagalkan training kalau MLflow tidak bisa dihubungi",
+    )
     parser.add_argument(
         "--class-weight",
         choices=["none", "balanced"],
@@ -1091,6 +1373,14 @@ def main(argv: Sequence[str] | None = None) -> int:
             freeze_config=Path(args.freeze_config) if args.freeze_config else None,
             holdout_region=args.holdout_region,
             drop_location_features=args.drop_location_features,
+            feature_source=args.feature_source,
+            register_model=args.register_model,
+            registered_model_name=(
+                args.registered_model_name or settings.model_name
+                if args.register_model
+                else None
+            ),
+            mlflow_strict=args.mlflow_strict,
         )
     except (
         DatasetError,
@@ -1110,6 +1400,8 @@ def main(argv: Sequence[str] | None = None) -> int:
             {
                 "model": payload["model"],
                 "features": payload["features"],
+                "feature_source": payload.get("feature_source"),
+                "feature_count": len(payload["feature_columns"]),
                 "c": payload.get("c"),
                 "vif": payload.get("vif"),
                 "threshold": payload["threshold"],
@@ -1121,6 +1413,7 @@ def main(argv: Sequence[str] | None = None) -> int:
                 "test_roc_auc": test.get("roc_auc"),
                 "test_f1": test.get("f1"),
                 "precision_at_100_test": payload["precision_at_100_test"],
+                "mlflow_run_id": payload.get("mlflow_run_id"),
                 "output": str(result["output"]),
             },
             indent=2,

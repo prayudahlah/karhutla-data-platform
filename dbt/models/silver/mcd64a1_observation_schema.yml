@@ -1,0 +1,68 @@
+version: 2
+
+models:
+  - name: mcd64a1_granule_inventory
+    description: Kandidat granule MCD64A1 dengan identity, hash, dan provenance.
+    columns:
+      - name: tile
+        data_tests: [not_null]
+      - name: period
+        data_tests: [not_null]
+      - name: granule_identity
+        data_tests: [not_null]
+      - name: read_status
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ['ok', 'error']
+
+  - name: mcd64a1_granule_status
+    description: Status tile-period MCD64A1.
+    columns:
+      - name: tile
+        data_tests: [not_null]
+      - name: period
+        data_tests: [not_null]
+      - name: source_status
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ['available', 'identical_duplicate', 'conflict', 'missing', 'metadata_incomplete', 'unknown']
+
+  - name: mcd64a1_pixel_period_required
+    description: Required pixel-period dari window hotspot dan periode scar.
+    columns:
+      - name: tile
+        data_tests: [not_null]
+      - name: pixel_row
+        data_tests: [not_null]
+      - name: pixel_col
+        data_tests: [not_null]
+      - name: period
+        data_tests: [not_null]
+
+  - name: mcd64a1_pixel_observation
+    description: Nilai raster MCD64A1 untuk pixel-period yang berhasil diekstrak.
+    columns:
+      - name: tile
+        data_tests: [not_null]
+      - name: pixel_row
+        data_tests: [not_null]
+      - name: pixel_col
+        data_tests: [not_null]
+      - name: period
+        data_tests: [not_null]
+      - name: raw_pixel_status
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ['burned', 'unburned', 'unburned_special', 'missing', 'water', 'qa_insufficient', 'unknown']
+
+  - name: mcd64a1_pixel_period_reconciliation
+    description: Klasifikasi mutually exclusive required pixel-period.
+    columns:
+      - name: reconciliation_category
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ['observed_usable', 'observed_unusable', 'missing_granule', 'granule_conflict', 'metadata_incomplete', 'source_unknown', 'extraction_error', 'other_explained']

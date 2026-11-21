@@ -258,3 +258,39 @@ def test_dataset_cli_writes_manifest(cell_factory, tmp_path: Path) -> None:
     assert payload["splits"]["train"]["rows"] > 0
     assert payload["splits"]["test"]["rows"] > 0
     assert "per_day_positive_share" in payload
+
+
+def test_load_cell_day_allows_null_label_only_for_incomplete(
+    cell_factory, tmp_path: Path
+) -> None:
+    frame = cell_factory(days=4, cells=2)
+    frame["label"] = frame["label"].astype("Int64")
+    frame.loc[0, "label"] = pd.NA
+    frame.loc[0, "label_complete"] = False
+    pq.write_table(
+        pa.Table.from_pandas(frame, preserve_index=False),
+        tmp_path / "part-0.parquet",
+    )
+
+    everything = load_cell_day(tmp_path, require_complete=False)
+    assert len(everything) == len(frame)
+    assert everything.loc[0, "label"] is pd.NA or pd.isna(everything.loc[0, "label"])
+
+    complete = load_cell_day(tmp_path, require_complete=True)
+    assert len(complete) == len(frame) - 1
+    assert complete["label"].notna().all()
+
+
+def test_load_cell_day_rejects_null_label_when_complete(
+    cell_factory, tmp_path: Path
+) -> None:
+    frame = cell_factory(days=2, cells=1)
+    frame["label"] = frame["label"].astype("Int64")
+    frame.loc[0, "label"] = pd.NA
+    pq.write_table(
+        pa.Table.from_pandas(frame, preserve_index=False),
+        tmp_path / "part-0.parquet",
+    )
+
+    with pytest.raises(DatasetError, match="label bukan 0/1"):
+        load_cell_day(tmp_path, require_complete=False)

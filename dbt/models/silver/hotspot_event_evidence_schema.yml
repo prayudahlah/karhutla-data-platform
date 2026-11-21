@@ -1,0 +1,81 @@
+version: 2
+
+models:
+  - name: hotspot_event_required_period
+    description: Required period per event dari window dan scar candidate.
+    columns:
+      - name: event_id
+        data_tests: [not_null]
+      - name: period
+        data_tests: [not_null]
+      - name: required_reason
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ['window', 'scar_candidate', 'window+scar']
+
+  - name: hotspot_event_scar_candidate
+    description: Semua scar candidate per event dan hasil validasinya.
+    columns:
+      - name: event_id
+        data_tests: [not_null]
+      - name: burn_scar_key
+        data_tests: [not_null]
+      - name: validation_status
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ['valid', 'invalid', 'insufficient']
+
+  - name: hotspot_event_evidence
+    description: Satu baris evidence per hotspot event.
+    columns:
+      - name: event_id
+        data_tests: [unique, not_null]
+      - name: evidence_status
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ['valid', 'insufficient', 'incomplete']
+      - name: label_status
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ['positive', 'negative', 'incomplete']
+      - name: burned_without_scar_candidate
+        description: Audit flag; burned usable observation tanpa matching Burn Scar.
+      - name: label_rule_version
+        data_tests: [not_null]
+
+  - name: hotspot_event_evidence_reason
+    description: Reason bridge event evidence.
+    columns:
+      - name: event_id
+        data_tests: [not_null]
+      - name: reason_code
+        data_tests: [not_null]
+
+  - name: hotspot_event_evidence_source
+    description: Provenance source per event-period.
+    columns:
+      - name: event_id
+        data_tests: [not_null]
+      - name: period
+        data_tests: [not_null]
+
+  - name: gold_hotspot_cell_day_labeled
+    description: Agregasi label cell-day dari event evidence.
+    columns:
+      - name: label_status
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ['positive', 'negative', 'incomplete']
+      - name: audit_tier_max
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['strong', 'medium', 'weak', 'candidate']
+      - name: label_rule_version
+        data_tests: [not_null]

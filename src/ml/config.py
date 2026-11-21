@@ -11,6 +11,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 FEATURE_VERSION = "v2-cell"
+FEATURE_SERVICE = "hotspot_training_v1"
 GRID_DEG = 0.25
 LABEL_HORIZON_DAYS = 7
 POSITIVE_TIERS: tuple[str, ...] = ("kuat", "sedang")
@@ -48,6 +49,13 @@ class MLSettings:
     gold_cell_root: Path = Path("data/gold/published/hotspot_cell_day")
     gold_root: Path = Path("data/gold")
     gold_prefix: str = "gold"
+    feature_cell_root: Path = Path("data/gold/published/ml_feature_cell_day")
+    feature_province_root: Path = Path("data/gold/published/ml_feature_province_day")
+    temporal_model_root: Path = Path("data/gold/models/temporal")
+    feast_repo: Path = Path("feature_repo")
+    feast_registry: Path = Path("data/feast/registry.db")
+    feast_online_store: Path = Path("data/feast/online_store.db")
+    feature_service: str = FEATURE_SERVICE
     experiment: str = "karhutla-hotspot-risk"
     model_name: str = "karhutla-hotspot-cell-fire"
     binary_model_name: str = "karhutla-hotspot-cell-fire"
@@ -69,6 +77,24 @@ class MLSettings:
             ),
             gold_root=Path(_get("GOLD_ROOT", "data/gold")),
             gold_prefix=_get("GOLD_PREFIX", "gold").strip("/"),
+            feature_cell_root=Path(
+                _get("ML_FEATURE_CELL_ROOT", "data/gold/published/ml_feature_cell_day")
+            ),
+            feature_province_root=Path(
+                _get(
+                    "ML_FEATURE_PROVINCE_ROOT",
+                    "data/gold/published/ml_feature_province_day",
+                )
+            ),
+            temporal_model_root=Path(
+                _get("ML_TEMPORAL_MODEL_ROOT", "data/gold/models/temporal")
+            ),
+            feast_repo=Path(_get("FEAST_REPO_PATH", "feature_repo")),
+            feast_registry=Path(_get("FEAST_REGISTRY_PATH", "data/feast/registry.db")),
+            feast_online_store=Path(
+                _get("FEAST_ONLINE_STORE_PATH", "data/feast/online_store.db")
+            ),
+            feature_service=_get("ML_FEATURE_SERVICE", FEATURE_SERVICE),
             experiment=_get("ML_EXPERIMENT", "karhutla-hotspot-risk"),
             model_name=_get("ML_MODEL_NAME", "karhutla-hotspot-cell-fire"),
             binary_model_name=_get("ML_BINARY_MODEL_NAME", "karhutla-hotspot-cell-fire"),
@@ -99,3 +125,7 @@ class MLSettings:
     @property
     def audit_root(self) -> Path:
         return self.gold_root / "audit"
+
+    @property
+    def manifest_root(self) -> Path:
+        return self.gold_root / "manifests"

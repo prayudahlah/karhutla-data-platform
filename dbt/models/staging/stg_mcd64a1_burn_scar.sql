@@ -14,6 +14,7 @@ select
     cast(first_day as smallint) as first_day,
     cast(last_day as smallint) as last_day,
     cast(in_bbox as boolean) as in_bbox,
+    cast(footprint_intersects_bbox as boolean) as footprint_intersects_bbox,
     cast(source_file as varchar) as source_file
 from read_parquet(
     '{{ normalized_root }}/mcd64a1/dataset=burn_scar/date=*/part-*.parquet',

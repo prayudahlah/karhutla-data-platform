@@ -23,7 +23,7 @@ import pyarrow.dataset as ds
 
 from common.config import load_dotenv
 from common.run import utc_now_iso
-from ml.config import FEATURE_VERSION, GRID_DEG, LABEL_HORIZON_DAYS, POSITIVE_TIERS, MLSettings
+from ml.config import GRID_DEG, LABEL_HORIZON_DAYS, POSITIVE_TIERS, MLSettings
 from ml.features import FeatureSet, build_daily_context, cell_features
 from ml.province import Province, load_provinces
 
@@ -114,11 +114,15 @@ def load_cell_day(root: str | Path, *, require_complete: bool = True) -> pd.Data
         raise DatasetError("Tabel Gold memiliki date yang tidak valid")
 
     frame["label"] = pd.to_numeric(frame["label"], errors="coerce")
-    invalid = frame["label"].isna() | ~frame["label"].isin([0, 1])
+    frame["label_complete"] = frame["label_complete"].astype("boolean").fillna(False).astype(bool)
+    # Baris yang jendela labelnya belum lengkap boleh punya label kosong. Kontrak
+    # label baru (ADR-008) memakai NULL untuk incomplete; baris lengkap tetap
+    # wajib 0/1 supaya tidak ada negatif palsu yang masuk training.
+    invalid = (frame["label_complete"] & ~frame["label"].isin([0, 1])) | (
+        ~frame["label_complete"] & frame["label"].notna() & ~frame["label"].isin([0, 1])
+    )
     if invalid.any():
         raise DatasetError(f"Ada {int(invalid.sum())} baris dengan label bukan 0/1")
-
-    frame["label_complete"] = frame["label_complete"].astype("boolean").fillna(False).astype(bool)
     if require_complete:
         frame = frame.loc[frame["label_complete"]].copy()
         if frame.empty:
@@ -130,7 +134,11 @@ def load_cell_day(root: str | Path, *, require_complete: bool = True) -> pd.Data
     if (frame["n_hotspot"] < 1).any():
         raise DatasetError("Tabel Gold memiliki n_hotspot < 1")
 
-    frame["label"] = frame["label"].astype("int8")
+    if frame["label"].notna().all():
+        frame["label"] = frame["label"].astype("int8")
+    else:
+        # Baris incomplete boleh NULL (ADR-008); jangan paksa menjadi int.
+        frame["label"] = frame["label"].astype("Int64")
     return frame.reset_index(drop=True)
 
 
@@ -289,6 +297,92 @@ def _select_split(
     )
 
 
+def assemble_prepared_dataset(
+    *,
+    feature_set: FeatureSet,
+    target: pd.Series,
+    dates: pd.Series,
+    split: SplitDates,
+    label_frame: pd.DataFrame,
+    rows_total: int,
+    min_train_rows: int = 0,
+    extra_manifest: Mapping[str, Any] | None = None,
+) -> PreparedDataset:
+    """Bentuk split dan manifest dari matriks fitur yang sudah siap.
+
+    Dipakai dua jalur: fitur yang dihitung langsung dari Gold, dan fitur yang
+    diambil dari Feast. Keduanya wajib menghasilkan kontrak manifest yang sama
+    supaya perbandingan eksperimen tetap sah.
+    """
+    train = _select_split(feature_set, target, dates, split.train)
+    valid = _select_split(feature_set, target, dates, split.valid)
+    test = _select_split(feature_set, target, dates, split.test)
+
+    if len(train.X) < min_train_rows:
+        raise DatasetError(
+            f"Train hanya {len(train.X)} baris; minimum {min_train_rows}. "
+            "Tambah data atau turunkan ML_MIN_TRAIN_ROWS."
+        )
+
+    all_dates = sorted(set(dates.tolist()))
+    rows_split = train.rows + valid.rows + test.rows
+    rows_complete = len(target)
+    per_day = (
+        pd.DataFrame({"date": dates.to_numpy(), "label": target.to_numpy()})
+        .groupby("date")["label"]
+        .mean()
+        .sort_index()
+    )
+
+    manifest: dict[str, Any] = {
+        "generated_at": utc_now_iso(),
+        "feature_version": feature_set.feature_version,
+        "label_rule": "+".join(POSITIVE_TIERS),
+        "label_horizon_days": LABEL_HORIZON_DAYS,
+        "label_fingerprint": label_fingerprint(label_frame),
+        "grid_deg": GRID_DEG,
+        "rows_total": rows_total,
+        "rows_complete": rows_complete,
+        "rows_excluded_incomplete": rows_total - rows_complete,
+        "rows_split": rows_split,
+        "rows_purged": rows_complete - rows_split,
+        "positive_share_complete": float(target.mean()) if rows_complete else 0.0,
+        "date_range": {
+            "start": all_dates[0].isoformat(),
+            "end": all_dates[-1].isoformat(),
+            "dates": len(all_dates),
+        },
+        "window": {
+            "test_days": split.test_days,
+            "valid_days": split.valid_days,
+            "purge_days": split.purge_days,
+        },
+        "splits": {
+            "train": _split_summary("train", split, train),
+            "valid": _split_summary("valid", split, valid),
+            "test": _split_summary("test", split, test),
+        },
+        "per_day_positive_share": {
+            day.isoformat(): float(value) for day, value in per_day.items()
+        },
+        "feature_columns": list(feature_set.feature_columns),
+        "categorical_levels": feature_set.categorical_levels,
+    }
+    if extra_manifest:
+        manifest.update(dict(extra_manifest))
+
+    return PreparedDataset(
+        train=train,
+        valid=valid,
+        test=test,
+        feature_columns=feature_set.feature_columns,
+        categorical_columns=feature_set.categorical_columns,
+        categorical_levels=feature_set.categorical_levels,
+        feature_version=feature_set.feature_version,
+        manifest=manifest,
+    )
+
+
 def prepare_dataset(
     cells: pd.DataFrame,
     *,
@@ -311,11 +405,13 @@ def prepare_dataset(
         raise DatasetError(f"Tabel Gold kehilangan kolom: {', '.join(missing)}")
 
     frame["label"] = pd.to_numeric(frame["label"], errors="coerce")
-    invalid = frame["label"].isna() | ~frame["label"].isin([0, 1])
+    frame["label_complete"] = frame["label_complete"].astype("boolean").fillna(False).astype(bool)
+    invalid = (frame["label_complete"] & ~frame["label"].isin([0, 1])) | (
+        ~frame["label_complete"] & frame["label"].notna() & ~frame["label"].isin([0, 1])
+    )
     if invalid.any():
         raise DatasetError(f"Ada {int(invalid.sum())} baris dengan label bukan 0/1")
 
-    frame["label_complete"] = frame["label_complete"].astype("boolean").fillna(False).astype(bool)
     rows_total = len(frame)
     if require_complete:
         frame = frame.loc[frame["label_complete"]].reset_index(drop=True)
@@ -342,67 +438,14 @@ def prepare_dataset(
         valid_days=valid_days,
         purge_days=purge_days,
     )
-
-    train = _select_split(feature_set, target, dates, split.train)
-    valid = _select_split(feature_set, target, dates, split.valid)
-    test = _select_split(feature_set, target, dates, split.test)
-
-    if len(train.X) < min_train_rows:
-        raise DatasetError(
-            f"Train hanya {len(train.X)} baris; minimum {min_train_rows}. "
-            "Tambah data atau turunkan ML_MIN_TRAIN_ROWS."
-        )
-
-    all_dates = sorted(set(dates.tolist()))
-    rows_split = train.rows + valid.rows + test.rows
-    per_day = (
-        frame.assign(_day=dates).groupby("_day")["label"].mean().sort_index().to_dict()
-    )
-
-    manifest = {
-        "generated_at": utc_now_iso(),
-        "feature_version": FEATURE_VERSION,
-        "label_rule": "+".join(POSITIVE_TIERS),
-        "label_horizon_days": LABEL_HORIZON_DAYS,
-        "label_fingerprint": label_fingerprint(frame),
-        "grid_deg": GRID_DEG,
-        "rows_total": rows_total,
-        "rows_complete": len(frame),
-        "rows_excluded_incomplete": rows_total - len(frame),
-        "rows_split": rows_split,
-        "rows_purged": len(frame) - rows_split,
-        "positive_share_complete": float(target.mean()) if len(target) else 0.0,
-        "date_range": {
-            "start": all_dates[0].isoformat(),
-            "end": all_dates[-1].isoformat(),
-            "dates": len(all_dates),
-        },
-        "window": {
-            "test_days": test_days,
-            "valid_days": valid_days,
-            "purge_days": purge_days,
-        },
-        "splits": {
-            "train": _split_summary("train", split, train),
-            "valid": _split_summary("valid", split, valid),
-            "test": _split_summary("test", split, test),
-        },
-        "per_day_positive_share": {
-            day.isoformat(): float(value) for day, value in per_day.items()
-        },
-        "feature_columns": list(feature_set.feature_columns),
-        "categorical_levels": feature_set.categorical_levels,
-    }
-
-    return PreparedDataset(
-        train=train,
-        valid=valid,
-        test=test,
-        feature_columns=feature_set.feature_columns,
-        categorical_columns=feature_set.categorical_columns,
-        categorical_levels=feature_set.categorical_levels,
-        feature_version=FEATURE_VERSION,
-        manifest=manifest,
+    return assemble_prepared_dataset(
+        feature_set=feature_set,
+        target=target,
+        dates=dates,
+        split=split,
+        label_frame=frame,
+        rows_total=rows_total,
+        min_train_rows=min_train_rows,
     )
 
 
@@ -415,8 +458,22 @@ def prepare_from_settings(
     require_complete: bool = True,
     include_history: bool = False,
     region_grouping: bool = False,
+    feature_source: str = "gold",
 ) -> PreparedDataset:
-    """Muat Gold + konteks, lalu siapkan dataset sesuai setting environment."""
+    """Muat dataset sesuai sumber fitur yang dipilih.
+
+    ``gold`` menghitung fitur langsung dari Gold (jalur lama). ``feast``
+    mengambil fitur yang sudah terdaftar di Feast dengan point-in-time join.
+    """
+    if feature_source == "feast":
+        from ml.feast_dataset import prepare_from_feast
+
+        return prepare_from_feast(
+            settings,
+            min_train_rows=settings.min_train_rows if min_train_rows is None else min_train_rows,
+        )
+    if feature_source != "gold":
+        raise DatasetError(f"feature_source tidak dikenal: {feature_source}")
     if provinces is None and DEFAULT_PROVINCES_CSV.is_file():
         provinces = load_provinces(DEFAULT_PROVINCES_CSV)
     cells = load_cell_day(settings.gold_cell_root, require_complete=require_complete)

@@ -1,0 +1,79 @@
+# Pipeline temporal: LR 29 fitur dan LightGBM 29 fitur.
+#
+# Pipeline Prefect tidak menyentuh test. Semua keputusan memakai valid; jendela
+# test 19-23 September 2026 sudah seen. VIF dijalankan ulang di setiap training
+# dan hasilnya wajib sama dengan daftar di bawah.
+
+id: temporal-pipeline-v1
+feature_source: feast
+feature_service: hotspot_training_v1
+dataset:
+  test_days: 5
+  valid_days: 5
+  purge_days: 3
+  test_policy: none
+expected_feature_count: 29
+expected_features:
+  - frp_max
+  - frp_mean
+  - frp_p95
+  - brightness_mean
+  - brightness_diff_max
+  - confidence_max
+  - confidence_mean
+  - scan_max
+  - hour_of_max_frp
+  - n_hotspot
+  - n_satellite
+  - viirs_share
+  - center_lat
+  - center_lon
+  - province
+  - province_distance_km
+  - doy_cos
+  - hour_sin_mean
+  - hour_cos_mean
+  - temp_max
+  - temp_mean
+  - rh_mean
+  - precip_sum
+  - wind_max
+  - soil_moisture_mean
+  - et0_sum
+  - pm25_max
+  - co_mean
+  - aod_mean
+
+models:
+  lr-temporal-29:
+    model: lr
+    features: t3
+    c: 10.0
+    class_weight: null
+    vif: true
+    freeze_config: experiments/lr-baseline.yaml
+    registered_model_name: karhutla-hotspot-cell-fire-lr
+  lgbm-temporal-29:
+    model: lgbm
+    features: t3
+    vif: true
+    params:
+      num_leaves: 31
+      min_child_samples: 50
+      feature_fraction: 0.8
+      learning_rate: 0.03
+      lambda_l2: 1.0
+    freeze_config: experiments/lgbm-baseline.yaml
+    registered_model_name: karhutla-hotspot-cell-fire-lgbm
+
+promotion:
+  baseline: lr-temporal-29
+  candidate: lgbm-temporal-29
+  metric: pr_auc
+  min_delta: 0.01
+  require_ci_low_positive: true
+  min_days_better: 3
+  max_brier_worse: 0.01
+  n_resamples: 1000
+  # Promote hanya mengubah alias MLflow `champion`; default tetap rekomendasi.
+  auto_promote: false

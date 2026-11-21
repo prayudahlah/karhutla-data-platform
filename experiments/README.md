@@ -14,9 +14,13 @@ berubah mengikuti hasil test.
 4. **Konfigurasi beku punya hash.** Run wajib merujuk `lr-baseline.yaml` lewat
    `--freeze-config`; hash isi berkas dicatat di `metrics.json` dan MLflow.
 5. **Setiap run dicatat.** `src/ml/train.py` menambah entri ke `registry.yaml`
-   saat `--registry` dipakai (default: berkas ini).
+   saat `--registry` dipakai (default: berkas ini). Flow Prefect menulis
+   registry runtime ke `data/gold/models/temporal/<run_id>/registry.yaml` agar
+   riwayat eksperimen yang dikurasi tidak tercampur run otomatis.
 6. **Alasan wajib.** Evaluasi test yang sudah `seen` hanya boleh dengan
    `--allow-seen-test "<alasan>"`, dan alasannya masuk registry.
+7. **Pipeline tidak menyentuh test.** `experiments/pipeline.yaml` memakai
+   `test_policy: none`; perbandingan LR vs LightGBM hanya di valid.
 
 ## Berkas
 
@@ -25,6 +29,7 @@ berubah mengikuti hasil test.
 | `lr-baseline.yaml` | baseline temporal C=10, bukti test 0,6311 |
 | `lr-c1-stability.yaml` | varian stabilitas C=1, tanpa metrik test |
 | `lgbm-baseline.yaml` | LightGBM 29 fitur, pembanding unggul |
+| `pipeline.yaml` | konfigurasi flow Prefect: dua model, 29 fitur, kriteria promosi |
 | `registry.yaml` | riwayat run, status test, penghitung `test_looks` |
 
 ## Perintah
