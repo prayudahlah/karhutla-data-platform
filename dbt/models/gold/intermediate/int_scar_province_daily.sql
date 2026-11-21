@@ -29,6 +29,11 @@ dates as (
     select distinct date
     from {{ ref('int_cell_daily_universe') }}
 
+    union
+
+    select distinct date
+    from scar_cell
+
 ),
 
 spine as (

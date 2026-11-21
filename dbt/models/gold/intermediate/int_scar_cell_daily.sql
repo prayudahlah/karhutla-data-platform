@@ -4,14 +4,7 @@
     (semua sel x semua tanggal) supaya jendela 30 hari tidak bolong.
     Satu piksel MCD64A1 = 0,2146 km2. -#}
 
-with spine as (
-
-    select cell_id, date
-    from {{ ref('int_cell_daily_universe') }}
-
-),
-
-scar_daily as (
+with scar_daily as (
 
     select
         {{ grid_cell_id('latitude', 'longitude') }} as cell_id,
@@ -19,6 +12,20 @@ scar_daily as (
         count(*) as scar_pixels
     from {{ ref('mcd64a1_burn_scar') }}
     group by 1, 2
+
+),
+
+spine as (
+
+    select cell_id, date
+    from {{ ref('int_cell_daily_universe') }}
+
+    union
+
+    -- Tanggal scar yang tidak punya hotspot tetap masuk spine supaya
+    -- kumulatif di tanggal hotspot berikutnya tidak kehilangan piksel.
+    select cell_id, date
+    from scar_daily
 
 ),
 
