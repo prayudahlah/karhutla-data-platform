@@ -10,7 +10,10 @@ Status per 21 November 2026. Basis: `dev` setelah Silver selesai.
 | `province_daily` | `province` × `date` | 1.216 | 6 uji + 2 singular |
 | `burn_scar_monthly` | `burn_month` × `province` | 34 | 5 uji + 3 singular |
 
-Total `dbt build --select tag:gold`: **57 lulus, 0 gagal**, ±7 detik.
+Total `dbt build --select tag:gold`: **63 lulus, 0 gagal**, ±8 detik.
+
+Kolom `island` tersedia di ketiga tabel (38 provinsi → 7 pulau) untuk ML per
+pulau. Grain dan angka tidak berubah.
 
 Rekonsiliasi yang diuji otomatis:
 
@@ -48,6 +51,7 @@ Katalog memuat 4 tabel Gold (3 `implemented`, `risk_prediction_daily` masih
 | Grid | 0,25°, 70 × 186 sel, batas dikunci di `dbt/macros/grid_cell.sql` |
 | `cell_id` | `rrrr_cccc`, indeks baris/kolom, bukan koordinat |
 | Provinsi | centroid provinsi terdekat dari `resources/indonesia_provinces.csv` |
+| Pulau | kolom `island` dari `resources/indonesia_islands.csv` (38 provinsi → 7 pulau) |
 | Semesta sel | sel yang pernah punya hotspot (2.980), laut otomatis keluar |
 | Label | tier `kuat`/`sedang` pada D..D+2; `lemah`/`kandidat` bukan positif |
 | Fitur model | jendela D-7..D-1, dihitung di `src/ml/features.py` (belum ada) |

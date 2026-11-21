@@ -32,6 +32,7 @@ deduplication:
 schema:
   burn_month: {type: string, description: YYYY-MM dari MCD64A1}
   province: {type: string}
+  island: {type: string, description: pulau dari mapping provinsi}
   scar_pixels: {type: integer}
   scar_area_km2: {type: double, description: scar_pixels x 0,2146 km2}
   tile_count: {type: integer}
@@ -49,6 +50,7 @@ retention: mengikuti Silver; bisa dibangun ulang dari mcd64a1_burn_scar.
 classification: public
 quality_rules:
   - (burn_month, province) unik
+  - province dan island tidak null
   - total scar_pixels = jumlah baris mcd64a1_burn_scar (36.916 untuk 2026-09)
   - scar_area_km2 = scar_pixels x 0,2146 (toleransi 0,01)
   - first_burn_date <= last_burn_date

@@ -42,10 +42,13 @@ cells as (
 provinces as (
 
     select
-        cast(province as varchar) as province,
-        cast(latitude as double) as latitude,
-        cast(longitude as double) as longitude
-    from read_csv_auto('{{ var("provinces_csv") }}')
+        cast(p.province as varchar) as province,
+        cast(p.latitude as double) as latitude,
+        cast(p.longitude as double) as longitude,
+        cast(i.island as varchar) as island
+    from read_csv_auto('{{ var("provinces_csv") }}') p
+    left join read_csv_auto('{{ var("islands_csv") }}') i
+        on cast(p.province as varchar) = cast(i.province as varchar)
 
 ),
 
@@ -58,6 +61,7 @@ assigned as (
         cells.cell_lat,
         cells.cell_lon,
         provinces.province,
+        provinces.island,
         {{ haversine_km('cells.cell_lat', 'cells.cell_lon', 'provinces.latitude', 'provinces.longitude') }}
             as distance_km,
         row_number() over (
@@ -78,6 +82,7 @@ select
     cell_lat,
     cell_lon,
     province,
+    island,
     round(distance_km, 3) as distance_km
 from assigned
 where row_number = 1

@@ -7,9 +7,9 @@
 | F-03 | Backfill report | TBD | TBD | TBD |
 | F-04 | Producer, consumer, lag | `compose/vps-stream.yml` + `compose/vps-batch.yml`; `task lag` = 0; `stream/README.md` | `task selftest` lalu `task lag` | selesai | Kelompok 8 |
 | F-05 | Dedup, DLQ, watermark | dedup producer (`firms_seen.json`), DLQ `firms.hotspot.dlq`, watermark `data/batch/state/watermark.json` | `task dlq`, `task bronze-files` | selesai | Kelompok 8 |
-| F-06 | Bronze, Silver, Gold | [Kontrak Silver](../docs/data-contracts/README.md); Silver final di `silver/`; Gold `cell_daily`, `province_daily`, `burn_scar_monthly` (95.360 / 1.216 / 34 baris) | `task gold-build` | sebagian (risk_prediction_daily menunggu ML) | Batch |
+| F-06 | Bronze, Silver, Gold | [Kontrak Silver](../docs/data-contracts/README.md); Silver final di `silver/`; Gold `cell_daily`, `province_daily`, `burn_scar_monthly` (95.360 / 1.216 / 34 baris) + kolom `island` (7 pulau) | `task gold-build` | sebagian (risk_prediction_daily menunggu ML) | Batch |
 | F-07 | Format tabel dan snapshot | [Iceberg v2](F-07-iceberg.md): Parquet staging + Iceberg canonical; parity + `current.json`; 95.360 / 1.216 / 34 baris; snapshot, upsert, schema evolution, backup/restore | `task gold-refresh`; `python -m batch.gold.publish --check` | selesai (Garage/expire/jadwal pending) | Batch |
-| F-08 | DQ report dan quarantine | [Kontrak Silver](../docs/data-contracts/README.md); `silver/_dq/` dan `silver/_quarantine/`; 57 uji Gold termasuk rekonsiliasi dan label | `task gold-test` | sebagian | Batch |
+| F-08 | DQ report dan quarantine | [Kontrak Silver](../docs/data-contracts/README.md); `silver/_dq/` dan `silver/_quarantine/`; 63 uji Gold termasuk rekonsiliasi, label, dan mapping pulau | `task gold-test` | sebagian | Batch |
 | F-09 | Catalog dan lineage | Kontrak Gold 3 tabel + `catalog.json`/`lineage.json` (4 tabel, 13 node, 13 edge) di `data/gold/_catalog/` | `task gold-catalog` | sebagian (risk_prediction_daily `planned`) | Batch |
 | F-10 | Query dan OpenAPI | TBD | TBD | TBD |
 | F-11 | MLflow experiment | TBD | TBD | TBD |

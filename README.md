@@ -69,7 +69,8 @@ task gold-maintenance # expire snapshot + backup katalog + verify
 | `burn_scar_monthly` | `burn_month` × `province` | 34 |
 
 Semua uji rekonsiliasi lulus: 486.238 hotspot, 36.916 piksel scar (7.922 km²),
-6.377 label positif. Katalog Gold memuat 4 tabel (3 `implemented`, 1 `planned`
+6.377 label positif. Ketiga tabel punya kolom `island` (38 provinsi → 7 pulau)
+untuk ML per pulau. Katalog Gold memuat 4 tabel (3 `implemented`, 1 `planned`
 untuk ML) beserta owner, klasifikasi, retensi, dan lineage Bronze → Silver →
 Gold. **Iceberg v2 adalah jalur resmi Gold**: Parquet hanya staging dbt,
 Postgres adalah serving cache, dan ML membaca Iceberg. Detail ada di

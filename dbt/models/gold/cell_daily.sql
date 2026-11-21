@@ -66,6 +66,7 @@ select
     grid.cell_lat,
     grid.cell_lon,
     grid.province,
+    grid.island,
     grid.distance_km,
 
     cast(coalesce(hotspot.hotspot_count, 0) as integer) as hotspot_count,

@@ -43,6 +43,7 @@ schema:
   cell_lat: {type: double, description: lintang pusat sel}
   cell_lon: {type: double, description: bujur pusat sel}
   province: {type: string, description: provinsi dari centroid provinsi terdekat}
+  island: {type: string, description: pulau dari resources/indonesia_islands.csv}
   distance_km: {type: double, description: jarak pusat sel ke centroid provinsi}
   hotspot_count: {type: integer}
   hotspot_kuat: {type: integer}
@@ -95,7 +96,7 @@ retention: mengikuti Silver; Gold selalu bisa dibangun ulang dari Silver.
 classification: public
 quality_rules:
   - (cell_id, date) unik
-  - cell_id dan province tidak null
+  - cell_id, province, dan island tidak null
   - label_risk hanya 0 atau 1
   - total hotspot_count sama dengan jumlah baris hotspot_scar_label (486.238)
   - jumlah per tier sama dengan Silver

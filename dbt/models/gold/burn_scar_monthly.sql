@@ -19,6 +19,7 @@ with scar as (
 
     select
         grid.province,
+        grid.island,
         cast(scar.burn_month as varchar) as burn_month,
         cast(scar.burn_date as date) as burn_date,
         scar.tile,
@@ -33,6 +34,7 @@ with scar as (
 select
     burn_month,
     province,
+    island,
     count(*) as scar_pixels,
     round(count(*) * {{ mcd64a1_pixel_km2() }}, 4) as scar_area_km2,
     count(distinct tile) as tile_count,
@@ -41,4 +43,4 @@ select
     min(burn_date) as first_burn_date,
     max(burn_date) as last_burn_date
 from scar
-group by 1, 2
+group by 1, 2, 3

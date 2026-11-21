@@ -34,6 +34,7 @@ deduplication:
   status: dijamin oleh group by province, date
 schema:
   province: {type: string}
+  island: {type: string, description: pulau dari mapping provinsi}
   date: {type: date}
   hotspot_count: {type: integer}
   hotspot_kuat: {type: integer}
@@ -66,6 +67,7 @@ retention: mengikuti Silver; bisa dibangun ulang dari cell_daily.
 classification: public
 quality_rules:
   - (province, date) unik
+  - province dan island tidak null
   - total hotspot_count semua provinsi = 486.238
   - total per tier sama dengan Silver (kuat 45.869, sedang 17.969, lemah 11.531, kandidat 410.869)
   - total scar kumulatif akhir = 36.916 piksel

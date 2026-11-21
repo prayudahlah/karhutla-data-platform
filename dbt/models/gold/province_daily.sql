@@ -70,6 +70,7 @@ aggregated as (
 
     select
         cell.province,
+        cell.island,
         cell.date,
         sum(cell.hotspot_count) as hotspot_count,
         sum(cell.hotspot_kuat) as hotspot_kuat,
@@ -105,6 +106,7 @@ aggregated as (
        and scar.date = cell.date
     group by
         cell.province,
+        cell.island,
         cell.date,
         scar.scar_pixels_cum,
         scar.scar_area_km2_cum,
@@ -122,6 +124,7 @@ aggregated as (
 
 select
     province,
+    island,
     date,
     cast(hotspot_count as integer) as hotspot_count,
     cast(hotspot_kuat as integer) as hotspot_kuat,

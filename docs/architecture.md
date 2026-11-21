@@ -90,6 +90,9 @@ flowchart LR
 | `burn_scar_monthly` | `burn_month` × `province` | 34 |
 | `risk_prediction_daily` | `input_record_id` | menunggu ML |
 
+Ketiga tabel punya kolom `island` (38 provinsi → 7 pulau) untuk ML dan filter
+dashboard per pulau. Grain dan angka tidak berubah.
+
 Rekonsiliasi: total hotspot 486.238, tier kuat 45.869 / sedang 17.969 / lemah
 11.531 / kandidat 410.869, scar 36.916 piksel ≈ 7.922 km². Semua diuji otomatis
 di `dbt/tests/`.

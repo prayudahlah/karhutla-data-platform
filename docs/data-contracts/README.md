@@ -60,6 +60,10 @@ Parquet hanya staging dbt; Postgres adalah serving cache dari snapshot Iceberg
 aktif. Bukti F-07 memakai warehouse lokal; jalur Garage untuk Iceberg belum
 diuji.
 
+Ketiga tabel Gold punya kolom `island` dari
+`resources/indonesia_islands.csv` (38 provinsi → 7 pulau). Kolom ini untuk ML
+per pulau dan filter dashboard; grain serta angka tidak berubah.
+
 ## Tata letak Silver
 
 Silver memakai dua lapisan:

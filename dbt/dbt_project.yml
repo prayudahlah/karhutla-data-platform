@@ -21,3 +21,4 @@ vars:
   silver_publish_root: "{{ env_var('SILVER_PUBLISH_ROOT', 'data/silver/published') }}"
   gold_publish_root: "{{ env_var('GOLD_PUBLISH_ROOT', 'data/gold/published') }}"
   provinces_csv: "resources/indonesia_provinces.csv"
+  islands_csv: "resources/indonesia_islands.csv"

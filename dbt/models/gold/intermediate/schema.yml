@@ -28,6 +28,20 @@ models:
         description: Provinsi dari centroid provinsi terdekat.
         data_tests:
           - not_null
+      - name: island
+        description: Pulau dari resources/indonesia_islands.csv.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values:
+                  - Sumatera
+                  - Jawa
+                  - Kalimantan
+                  - Sulawesi
+                  - Bali & Nusa Tenggara
+                  - Maluku
+                  - Papua
       - name: distance_km
         description: Jarak pusat sel ke centroid provinsi terpilih.
         data_tests:
