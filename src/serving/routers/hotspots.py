@@ -52,6 +52,38 @@ def hotspots_daily(
     return {"count": len(rows), "rows": rows}
 
 
+@router.get("/daily/total")
+def hotspots_daily_total(
+    province: str | None = Query(default=None),
+    start: date | None = Query(default=None),
+    end: date | None = Query(default=None),
+    limit: int = Query(default=1000, ge=1, le=1000),
+    store: GoldStore = Depends(get_store),
+) -> dict[str, Any]:
+    """Total harian seluruh provinsi, dipakai grafik dashboard."""
+    where, params = province_date_filters(province, start, end)
+    rows = store.query(
+        f"""
+        select
+            date,
+            sum(hotspot_count) as hotspot_count,
+            sum(hotspot_kuat) as hotspot_kuat,
+            sum(hotspot_sedang) as hotspot_sedang,
+            sum(hotspot_lemah) as hotspot_lemah,
+            sum(hotspot_kandidat) as hotspot_kandidat,
+            round(sum(frp_sum), 3) as frp_sum,
+            max(frp_max) as frp_max
+        from province_daily
+        {where}
+        group by date
+        order by date asc
+        limit ?
+        """,
+        [*params, limit],
+    )
+    return {"count": len(rows), "rows": rows}
+
+
 @router.get("/summary")
 def hotspots_summary(
     province: str | None = Query(default=None),

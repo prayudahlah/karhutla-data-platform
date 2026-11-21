@@ -120,14 +120,17 @@ def test_admin_page_shows_identity_header(tmp_path):
     assert "admin" in response.text
 
 
-def test_dashboard_placeholder_returns_404(tmp_path):
+def test_dashboard_page_renders(tmp_path):
     _write(tmp_path, _catalog())
     client = TestClient(create_app(_settings(tmp_path)))
 
     response = client.get("/dashboard")
 
-    assert response.status_code == 404
-    assert "belum diimplementasikan" in response.text
+    assert response.status_code == 200
+    assert "Pemantauan karhutla" in response.text
+    assert "Total hotspot" in response.text
+    assert "/static/dashboard.css" in response.text
+    assert "/static/dashboard.js" in response.text
 
 
 def test_header_shows_logged_in_user(tmp_path):

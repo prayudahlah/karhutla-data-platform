@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from concurrent.futures import ThreadPoolExecutor
 from datetime import UTC, date, datetime
 from pathlib import Path
 
@@ -115,6 +116,25 @@ def test_meta_provinces(client: TestClient) -> None:
     assert response.json()["provinces"] == ["Aceh", "Bali"]
 
 
+def test_store_serializes_concurrent_queries(gold_root: Path) -> None:
+    """Dashboard memanggil beberapa endpoint sekaligus lewat threadpool."""
+    from serving.db import GoldStore
+
+    store = GoldStore(gold_root)
+    try:
+
+        def count_rows(_: int) -> int:
+            row = store.query_one("select count(*) as n from province_daily")
+            return int(row["n"]) if row else 0
+
+        with ThreadPoolExecutor(max_workers=4) as pool:
+            results = list(pool.map(count_rows, range(8)))
+
+        assert results == [3] * 8
+    finally:
+        store.close()
+
+
 def test_hotspots_daily_filters_province(client: TestClient) -> None:
     response = client.get("/hotspots/daily", params={"province": "Aceh"})
 
@@ -132,6 +152,16 @@ def test_hotspots_summary(client: TestClient) -> None:
     assert rows["Aceh"]["hotspot_count"] == 14
     assert rows["Aceh"]["hotspot_kuat"] == 3
     assert rows["Bali"]["hotspot_count"] == 2
+
+
+def test_hotspots_daily_total(client: TestClient) -> None:
+    response = client.get("/hotspots/daily/total")
+
+    assert response.status_code == 200
+    rows = {row["date"]: row for row in response.json()["rows"]}
+    assert rows["2026-09-01"]["hotspot_count"] == 12
+    assert rows["2026-09-01"]["frp_sum"] == 15.5
+    assert rows["2026-09-02"]["hotspot_count"] == 4
 
 
 def test_frp_daily(client: TestClient) -> None:

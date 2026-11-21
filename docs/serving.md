@@ -1,8 +1,8 @@
 # Serving dan Dashboard Gold
 
-Status: **API read-only dan mart Postgres jalan**. API membaca Postgres yang
-disalin dari Iceberg; dashboard HTML menyusul, Metabase opsional. Panel prediksi
-menunggu ML.
+Status: **API read-only, mart Postgres, dan dashboard HTML jalan**. API membaca
+Postgres yang disalin dari Iceberg; dashboard tersedia di `/dashboard` dan
+memanggil API serving. Metabase tetap opsional. Panel prediksi menunggu ML.
 
 ## Alur
 
@@ -66,13 +66,14 @@ schema sementara.
 | 1 | `GET /health` | jumlah baris, `freshness_at`, snapshot Iceberg + `stale` |
 | 2 | `GET /meta/provinces` | daftar provinsi |
 | 3 | `GET /hotspots/daily` | hotspot per tier per provinsi per hari |
-| 4 | `GET /hotspots/summary` | total tier + FRP untuk rentang tanggal |
-| 5 | `GET /frp/daily` | FRP harian |
-| 6 | `GET /burn-scar/monthly` | luas terbakar bulanan per provinsi |
-| 7 | `GET /burn-scar/cumulative` | scar kumulatif harian |
-| 8 | `GET /weather/daily` | cuaca harian + `weather_complete` |
-| 9 | `GET /air-quality/daily` | PM2.5 harian |
-| 10 | `GET /cells/hotspots` | peta sel 0,25° untuk satu tanggal |
+| 4 | `GET /hotspots/daily/total` | total harian seluruh provinsi untuk grafik dashboard |
+| 5 | `GET /hotspots/summary` | total tier + FRP untuk rentang tanggal |
+| 6 | `GET /frp/daily` | FRP harian |
+| 7 | `GET /burn-scar/monthly` | luas terbakar bulanan per provinsi |
+| 8 | `GET /burn-scar/cumulative` | scar kumulatif harian |
+| 9 | `GET /weather/daily` | cuaca harian + `weather_complete` |
+| 10 | `GET /air-quality/daily` | PM2.5 harian |
+| 11 | `GET /cells/hotspots` | peta sel 0,25° untuk satu tanggal |
 | - | `GET /predictions/daily` | **503** sampai model ML tersedia |
 
 Semua endpoint menerima `province`, `start`, `end`, dan `limit` bila relevan.
@@ -95,22 +96,25 @@ OpenAPI otomatis di `/openapi.json`.
 
 ### Dashboard HTML
 
-Dashboard akan berupa portal HTML dari pemilik UI, bukan Metabase.
+Dashboard adalah halaman FastAPI di `/dashboard`, bukan Metabase. Template
+`src/serving/templates/dashboard.html` memakai `base.html` (nav dan footer
+portal), lalu `src/serving/static/dashboard.css` dan `dashboard.js`.
 
-1. File HTML ditaruh di `src/serving/portal/` dan disajikan FastAPI
-   (`/portal`) bila `index.html` ada.
-2. Portal memanggil endpoint API (`/hotspots/...`, `/burn-scar/...`, `/frp/...`,
-   `/weather/...`, `/air-quality/...`, `/cells/hotspots`, `/health`). CORS GET
-   sudah diaktifkan untuk portal.
-3. Metrik minimum: tren hotspot per tier, FRP, luas terbakar bulanan, scar
-   kumulatif.
-4. Filter: pulau/provinsi dan rentang tanggal.
-5. Freshness: dari `/health` (`freshness_at` + `iceberg.stale`).
+1. Dashboard memanggil API yang sama:
+   `/hotspots/summary`, `/hotspots/daily/total`, `/burn-scar/monthly`,
+   `/meta/provinces`, dan `/health`.
+2. KPI: total hotspot, hotspot kuat, FRP total, luas terbakar.
+3. Grafik: tren hotspot harian, tren FRP harian, top 5 provinsi, komposisi tier,
+   dan top 5 luas terbakar.
+4. Filter: provinsi dan rentang tanggal. Tombol pulau disiapkan tetapi belum
+   aktif sampai kolom `island` di-merge dan `serving-sync` dijalankan.
+5. Freshness: `/health` (`latest_date`, `iceberg.stale`, `age_hours`).
 6. Panel prediksi: placeholder "menunggu model ML" sampai
    `risk_prediction_daily` terisi.
 
-Metabase tetap opsional; service-nya ada di compose, tetapi bukan dashboard
-utama.
+Data scar saat ini hanya tersedia untuk September 2026; dashboard mengambil
+bulan dari tanggal mulai filter. Metabase tetap opsional; service-nya ada di
+compose, tetapi bukan dashboard utama.
 
 ## Verifikasi
 

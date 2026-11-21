@@ -87,12 +87,11 @@ def _render(
 
 @router.get("/dashboard", response_class=HTMLResponse)
 def dashboard(request: Request):
-    """Placeholder dashboard. Belum diimplementasikan, sengaja 404."""
+    """Dashboard Gold yang membaca API serving dari browser."""
     return _render(
         request,
         "dashboard.html",
         {"active": "", "catalog_root": _portal(request).root},
-        status_code=404,
     )
 
 

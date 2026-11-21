@@ -14,7 +14,7 @@
 | F-10 | Query dan OpenAPI | 3 mart di Postgres (`gold_*`) via `serving.sync_marts` dari snapshot Iceberg `current.json`; FastAPI membaca Postgres; 10 endpoint + `/predictions/daily` 503; tanggal salah 400; `/health` memuat snapshot + `stale`; OpenAPI `/docs`; tes integrasi Postgres memakai schema sementara | `pytest -q tests/unit/test_serving_api.py tests/unit/test_serving_sync.py`; `pytest -m integration tests/integration/test_serving_postgres.py` (butuh `DATABASE_DSN`); `task serving-sync` | selesai (prediksi menunggu ML) | Kelompok 8 |
 | F-11 | MLflow experiment | TBD | TBD | TBD |
 | F-12 | Predictions table | TBD | TBD | TBD |
-| F-13 | Dashboard dan SQL | Dashboard HTML (bukan Metabase) menyusul; API + mart Postgres sudah ada; peta panel di `docs/serving.md`; Metabase opsional | `task up-core` lalu `task serving-sync` | sebagian (HTML belum ada, prediksi menunggu ML) | Kelompok 8 |
+| F-13 | Dashboard dan SQL | Dashboard HTML di `/dashboard` (`dashboard.html`, `dashboard.css`, `dashboard.js`) membaca API serving; API + mart Postgres sudah ada; panel prediksi menunggu ML | `task serving-dev`, buka `/dashboard`; `pytest -m "not integration"` | sebagian (prediksi menunggu ML; uji konsistensi SQL dua rentang belum) | Kelompok 8 |
 | F-14 | Metrics dan structured log | TBD | TBD | TBD |
 | F-15 | Tiga alert | TBD | TBD | TBD |
 | F-16 | Auth, role, audit | TBD | TBD | TBD |

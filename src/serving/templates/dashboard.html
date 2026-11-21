@@ -1,13 +1,169 @@
 {% extends "base.html" %}
 {% block title %}Dashboard | JAGAHUTAN{% endblock %}
+{% block extra_head %}<link rel="stylesheet" href="/static/dashboard.css">{% endblock %}
 {% block content %}
-<div class="shell">
-  <div class="page-head">
+<section class="hero hero-dash">
+  <div class="hero-glow"></div>
+  <svg class="treeline" viewBox="0 0 1440 300" preserveAspectRatio="xMidYMax slice" aria-hidden="true" fill="#07110C">
+    <path d="M-20,300 L12,120 L43,300 L46,79 L83,300 L63,157 L87,300 L104,78 L144,300 L129,165 L158,300 L172,88 L203,300 L217,136 L242,300 L248,126 L271,300 L308,114 L339,300 L342,138 L373,300 L370,85 L394,300 L424,94 L458,300 L460,117 L487,300 L496,59 L526,300 L515,104 L537,300 L566,101 L604,300 L596,75 L631,300 L640,107 L676,300 L674,139 L703,300 L703,114 L726,300 L744,169 L781,300 L792,109 L831,300 L830,60 L862,300 L851,130 L875,300 L902,129 L938,300 L933,133 L966,300 L978,98 L1018,300 L996,98 L1021,300 L1052,165 L1081,300 L1082,120 L1108,300 L1124,135 L1155,300 L1156,174 L1179,300 L1201,159 L1232,300 L1242,97 L1264,300 L1287,107 L1319,300 L1309,75 L1333,300 L1356,131 L1392,300 L1385,146 L1415,300 L1426,140 L1458,300 Z"/>
+  </svg>
+
+  <div class="hero-inner">
     <div class="breadcrumb"><a href="/">Ringkasan</a> / Dashboard</div>
-    <div class="kicker">Belum tersedia</div>
-    <h1 class="serif">Dashboard belum diimplementasikan.</h1>
-    <p class="lead">Tombol ini sudah disiapkan agar alurnya jelas. Panel Metabase akan dipasang setelah sinkronisasi mart ke Postgres selesai.</p>
-    <a class="link-arrow" href="/" style="margin-top:24px">&larr; Kembali ke ringkasan</a>
+    <div class="kicker" id="period-label">Dashboard · September 2026</div>
+    <h1 class="serif">Pemantauan karhutla.</h1>
+    <p class="hero-lead">Hotspot, FRP, dan luas terbakar dari Gold layer. Angka indikatif, bukan peringatan resmi.</p>
+    <div class="dash-status"><i class="dot"></i><span id="freshness">Memuat status data…</span></div>
+  </div>
+</section>
+
+<div class="stats dash-stats">
+  <div class="stat dash-stat">
+    <svg class="stat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2c1 4 5 6 5 11a5 5 0 0 1-10 0c0-2 1-3 2-4 0 2 1 3 2 3 0-4-1-6 1-10z"/></svg>
+    <div class="kicker">Total hotspot</div>
+    <div class="mono num" id="kpi-total">—</div>
+    <div class="sub" id="kpi-total-sub">Memuat…</div>
+  </div>
+  <div class="stat dash-stat">
+    <svg class="stat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l9 16H3z"/><path d="M12 9v4"/><path d="M12 16h.01"/></svg>
+    <div class="kicker">Hotspot kuat</div>
+    <div class="mono num" id="kpi-kuat">—</div>
+    <div class="sub" id="kpi-kuat-sub">Memuat…</div>
+  </div>
+  <div class="stat dash-stat">
+    <svg class="stat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12h4l2-7 4 14 2-7h6"/></svg>
+    <div class="kicker">FRP total</div>
+    <div class="mono num" id="kpi-frp">—</div>
+    <div class="sub" id="kpi-frp-sub">Memuat…</div>
+  </div>
+  <div class="stat dash-stat">
+    <svg class="stat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6l6-3 6 3 6-3v15l-6 3-6-3-6 3z"/><path d="M9 3v15"/><path d="M15 6v15"/></svg>
+    <div class="kicker">Luas terbakar</div>
+    <div class="mono num" id="kpi-scar">—</div>
+    <div class="sub" id="kpi-scar-sub">Memuat…</div>
   </div>
 </div>
+
+<div class="shell dash-wrap">
+  <div class="notice dash-error" id="dash-error" hidden></div>
+
+  <div class="dash-grid">
+    <article class="dash-panel span-6">
+      <div class="dash-head">
+        <div>
+          <div class="kicker">Tren hotspot</div>
+          <h2 class="dash-title">Harian, seluruh provinsi.</h2>
+        </div>
+        <span class="dash-badge" id="hotspot-peak">—</span>
+      </div>
+      <div class="chart-frame">
+        <svg id="chart-hotspot" viewBox="0 0 640 260" role="img" aria-label="Grafik tren hotspot harian"></svg>
+      </div>
+      <div class="chart-legend">
+        <span><i class="hotspot"></i>Total hotspot</span>
+        <span>Harian · sumber API serving</span>
+      </div>
+    </article>
+
+    <article class="dash-panel span-3">
+      <div class="dash-head">
+        <div>
+          <div class="kicker">Peringkat</div>
+          <h2 class="dash-title">Top 5 provinsi</h2>
+          <p class="dash-sub">Total hotspot</p>
+        </div>
+      </div>
+      <div class="rank-list" id="top-hotspot"></div>
+    </article>
+
+    <article class="dash-panel span-3">
+      <div class="dash-head">
+        <div>
+          <div class="kicker">Komposisi</div>
+          <h2 class="dash-title">Tingkat bukti</h2>
+        </div>
+      </div>
+      <div class="donut-wrap">
+        <svg class="donut-svg" id="donut" viewBox="0 0 200 200" role="img" aria-label="Komposisi tingkat bukti hotspot"></svg>
+        <div class="donut-legend" id="donut-legend"></div>
+      </div>
+    </article>
+
+    <article class="dash-panel span-6">
+      <div class="dash-head">
+        <div>
+          <div class="kicker">Tren FRP</div>
+          <h2 class="dash-title">Energi radiasi api.</h2>
+        </div>
+        <span class="dash-badge" id="frp-peak">—</span>
+      </div>
+      <div class="chart-frame">
+        <svg id="chart-frp" viewBox="0 0 640 260" role="img" aria-label="Grafik tren FRP harian"></svg>
+      </div>
+      <div class="chart-legend">
+        <span><i class="frp"></i>FRP</span>
+        <span>MW · harian</span>
+      </div>
+    </article>
+
+    <article class="dash-panel span-3">
+      <div class="dash-head">
+        <div>
+          <div class="kicker">Luas terbakar</div>
+          <h2 class="dash-title">Top 5 provinsi</h2>
+          <p class="dash-sub" id="scar-period">September 2026 · km²</p>
+        </div>
+      </div>
+      <div class="rank-list" id="top-scar"></div>
+    </article>
+
+    <article class="dash-panel span-3 dash-filter">
+      <div class="dash-head">
+        <div>
+          <div class="kicker">Filter</div>
+          <h2 class="dash-title">Rentang &amp; wilayah</h2>
+          <p class="dash-sub" id="filter-period">September 2026</p>
+        </div>
+      </div>
+      <form class="dash-form" id="dash-filter">
+        <div class="dash-fields">
+          <label class="dash-field">Mulai<input type="date" id="dash-start" value="2026-09-01"></label>
+          <label class="dash-field">Selesai<input type="date" id="dash-end" value="2026-09-30"></label>
+        </div>
+        <label class="dash-field">Provinsi
+          <select id="dash-province">
+            <option value="">Semua provinsi</option>
+          </select>
+        </label>
+        <button class="btn btn-primary" id="dash-apply" type="submit">Terapkan</button>
+        <div class="dash-quick" aria-label="Rentang cepat">
+          <button type="button" data-range data-start="2026-09-01" data-end="2026-09-30" class="on">September</button>
+          <button type="button" data-range data-start="2026-11-01" data-end="2026-11-14">November</button>
+          <button type="button" data-range data-start="2026-09-01" data-end="2026-11-14">Sep–Nov</button>
+        </div>
+        <div class="dash-islands" aria-label="Filter pulau, belum aktif">
+          <button type="button" disabled title="Aktif setelah merge island">Sumatera</button>
+          <button type="button" disabled title="Aktif setelah merge island">Kalimantan</button>
+          <button type="button" disabled title="Aktif setelah merge island">Sulawesi</button>
+          <button type="button" disabled title="Aktif setelah merge island">Papua</button>
+        </div>
+        <p class="dash-note">Filter pulau aktif setelah merge island + <span class="mono">serving-sync</span>.</p>
+      </form>
+    </article>
+  </div>
+
+  <section class="dash-panel dash-prediction">
+    <div class="pred-icon">
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#ffb02e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 17l5-5 4 3 7-8"/><path d="M14 7h5v5"/></svg>
+    </div>
+    <div>
+      <h2>Prediksi risiko D..D+2</h2>
+      <p>Panel ini menunggu model ML. Setelah <span class="mono">risk_prediction_daily</span> terisi, tampilkan probabilitas per sel dan provinsi. <span class="mono">label_risk</span> di Gold adalah historis, bukan prediksi.</p>
+    </div>
+    <span class="dash-badge warn">Menunggu ML</span>
+  </section>
+
+  <p class="footnote dash-footnote">Sumber: Postgres <span class="mono">gold_*</span> dari Iceberg · API <span class="mono">/health</span>. Angka mengikuti rentang filter; luas terbakar mengikuti bulan tanggal mulai.</p>
+</div>
 {% endblock %}
+{% block extra_scripts %}<script src="/static/dashboard.js" defer></script>{% endblock %}
