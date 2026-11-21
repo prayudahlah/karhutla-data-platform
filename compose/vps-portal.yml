@@ -1,0 +1,89 @@
+# Node core, hanya untuk mencoba portal dan SSO.
+#
+# Profil "sso" supaya `task up-ui` tetap ringan. Tanpa profil ini, hanya API
+# yang naik dari compose/vps-core.yml.
+#
+# Domain diatur lewat BASE_DOMAIN dan SCHEME di .env. Untuk mencoba lokal:
+#   BASE_DOMAIN=localhost SCHEME=http task up-sso
+# Lalu buka http://app.localhost:8080 (butuh entri hosts, lihat docs/serving.md).
+services:
+  caddy:
+    profiles: ["sso"]
+    image: caddy:2-alpine
+    container_name: karhutla-caddy
+    restart: unless-stopped
+    depends_on:
+      - authelia
+      - api
+      - grafana
+    environment:
+      BASE_DOMAIN: ${BASE_DOMAIN:-localhost}
+      SCHEME: ${SCHEME:-http}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ../infra/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    networks:
+      - karhutla
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  authelia:
+    profiles: ["sso"]
+    image: authelia/authelia:4
+    container_name: karhutla-authelia
+    restart: unless-stopped
+    environment:
+      AUTHELIA_SESSION_SECRET: ${AUTHELIA_SESSION_SECRET:-ganti-secret-ini-di-env}
+      TZ: ${TZ:-Asia/Jakarta}
+    volumes:
+      - ../infra/authelia/configuration.yml:/config/configuration.yml:ro
+      - ../infra/authelia/users.yml:/config/users.yml:ro
+      - authelia-data:/data
+    networks:
+      - karhutla
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  grafana:
+    profiles: ["sso"]
+    image: grafana/grafana:latest
+    container_name: karhutla-grafana
+    restart: unless-stopped
+    environment:
+      GF_SERVER_ROOT_URL: ${SCHEME:-http}://grafana.${BASE_DOMAIN:-localhost}/
+      GF_AUTH_PROXY_ENABLED: "true"
+      GF_AUTH_PROXY_HEADER_NAME: Remote-User
+      GF_AUTH_PROXY_HEADER_PROPERTY: username
+      GF_AUTH_PROXY_AUTO_SIGN_UP: "true"
+      GF_AUTH_PROXY_WHITELIST: 172.16.0.0/12
+      GF_AUTH_ANONYMOUS_ENABLED: "false"
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    volumes:
+      - grafana-data:/var/lib/grafana
+    networks:
+      - karhutla
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+volumes:
+  authelia-data:
+    name: karhutla-authelia-data
+  caddy-data:
+    name: karhutla-caddy-data
+  caddy-config:
+    name: karhutla-caddy-config
+  grafana-data:
+    name: karhutla-grafana-data
