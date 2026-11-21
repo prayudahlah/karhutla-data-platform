@@ -15,6 +15,13 @@ from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 
+from serving.portal.catalog import (
+    catalog_summary,
+    freshness_view,
+    location_view,
+    schema_rows,
+)
+from serving.portal.graph import build_graph
 from serving.portal.loader import PortalData
 
 TEMPLATE_DIR = Path(__file__).resolve().parents[1] / "templates"
@@ -110,13 +117,16 @@ def index(request: Request) -> HTMLResponse:
 @router.get("/catalog", response_class=HTMLResponse)
 def catalog_page(request: Request) -> HTMLResponse:
     portal = _portal(request)
+    tables = portal.tables
     return _render(
         request,
         "catalog.html",
         {
             "active": "katalog",
             "catalog": portal.catalog,
-            "tables": portal.tables,
+            "tables": tables,
+            "table_names": {str(table.get("name")) for table in tables},
+            "summary": catalog_summary(tables),
             "catalog_root": portal.root,
         },
     )
@@ -135,6 +145,10 @@ def dataset_page(request: Request, name: str) -> HTMLResponse:
             "active": "katalog",
             "catalog": portal.catalog,
             "table": table,
+            "table_names": {str(item.get("name")) for item in portal.tables},
+            "location": location_view(table.get("location")),
+            "freshness": freshness_view(table.get("freshness")),
+            "columns": schema_rows(table),
             "catalog_root": portal.root,
         },
     )
@@ -159,18 +173,19 @@ def admin_page(request: Request) -> HTMLResponse:
 
 
 @router.get("/lineage", response_class=HTMLResponse)
-def lineage_page(request: Request) -> HTMLResponse:
+def lineage_page(request: Request, focus: str | None = None) -> HTMLResponse:
     portal = _portal(request)
     lineage = portal.lineage
-    edges = (lineage or {}).get("edges") or []
+    graph = build_graph(
+        lineage, {str(table.get("name")) for table in portal.tables}, focus
+    )
     return _render(
         request,
         "lineage.html",
         {
             "active": "lineage",
             "lineage": lineage,
-            "grouped": portal.nodes_by_layer(),
-            "edges": [edge for edge in edges if isinstance(edge, dict)],
+            "graph": graph,
             "catalog_root": portal.root,
         },
     )

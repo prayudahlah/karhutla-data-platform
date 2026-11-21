@@ -151,3 +151,127 @@ def test_dashboard_button_points_to_metabase(tmp_path):
     response = client.get("/", headers={"Remote-User": "viewer"})
 
     assert 'href="https://mb.contoh"' in response.text
+
+
+def test_lineage_graph_renders_nodes_edges_and_links(tmp_path):
+    _write(tmp_path, _catalog(), _lineage())
+    client = TestClient(create_app(_settings(tmp_path)))
+
+    html = client.get("/lineage").text
+
+    assert html.count('class="ln-node ') == 2
+    assert html.count('marker-end="url(#ln-arrow') == 1
+    assert 'href="/catalog/cell_daily"' in html
+    assert 'role="group"' in html
+    assert "marker-end" in html
+
+
+def _chain_lineage():
+    return {
+        "layer": "gold",
+        "run_id": "run-uji",
+        "node_count": 4,
+        "edge_count": 3,
+        "nodes": [
+            {"id": "firms", "layer": "bronze", "type": "source"},
+            {"id": "hotspot", "layer": "silver", "type": "dataset"},
+            {"id": "lain", "layer": "silver", "type": "dataset"},
+            {"id": "cell_daily", "layer": "gold", "type": "table"},
+        ],
+        "edges": [
+            {"from": "firms", "to": "hotspot", "note": "normalisasi"},
+            {"from": "firms", "to": "lain", "note": "normalisasi"},
+            {"from": "hotspot", "to": "cell_daily", "note": "dbt ref"},
+        ],
+    }
+
+
+def test_lineage_focus_keeps_only_related_edges(tmp_path):
+    _write(tmp_path, _catalog(), _chain_lineage())
+    client = TestClient(create_app(_settings(tmp_path)))
+
+    html = client.get("/lineage", params={"focus": "hotspot"}).text
+
+    assert html.count('marker-end="url(#ln-arrow') == 2
+    assert "1 hulu, 1 hilir" in html
+    assert "Tampilkan semua" in html
+    assert 'class="ln-node silver dim"' in html
+
+
+def test_lineage_unknown_focus_keeps_full_graph(tmp_path):
+    _write(tmp_path, _catalog(), _chain_lineage())
+    client = TestClient(create_app(_settings(tmp_path)))
+
+    html = client.get("/lineage", params={"focus": "tidak-ada"}).text
+
+    assert html.count('marker-end="url(#ln-arrow') == 3
+    assert "Node tidak ditemukan" in html
+
+
+def test_graph_places_layers_left_to_right():
+    from serving.portal.graph import build_graph
+
+    graph = build_graph(_chain_lineage(), {"cell_daily"})
+
+    assert graph is not None
+    positions = {node["id"]: node for node in graph["nodes"]}
+    assert positions["firms"]["x"] < positions["hotspot"]["x"] < positions["cell_daily"]["x"]
+    assert positions["hotspot"]["y"] != positions["lain"]["y"]
+    assert graph["edges"][0]["path"].startswith("M ")
+
+
+def test_catalog_summary_counts_tables_and_columns(tmp_path):
+    _write(tmp_path, _catalog())
+    client = TestClient(create_app(_settings(tmp_path)))
+
+    html = client.get("/catalog").text
+
+    assert '<span class="cat-label">Tabel</span><span class="cat-value mono">1<' in html
+    assert '<span class="cat-label">Kolom terpasang</span><span class="cat-value mono">2<' in html
+    assert 'data-label="Kolom"' in html
+
+
+def _catalog_with_location():
+    catalog = _catalog()
+    catalog["tables"][0]["location"] = {
+        "storage": "Garage",
+        "prefix": "gold/cell_daily",
+        "publish": {
+            "table_format": "Iceberg v2",
+            "publish_command": "python -m batch.gold.publish --table cell_daily",
+            "partition_note": "Partisi memakai tanggal fitur.",
+        },
+    }
+    catalog["tables"][0]["freshness"] = {
+        "expected": "harian",
+        "alert_threshold": "tidak ada baris baru lebih dari 26 jam",
+        "measured_by": "freshness_at",
+    }
+    return catalog
+
+
+def test_dataset_shows_structured_location_and_freshness(tmp_path):
+    _write(tmp_path, _catalog_with_location())
+    client = TestClient(create_app(_settings(tmp_path)))
+
+    html = client.get("/catalog/cell_daily").text
+
+    assert "Format tabel" in html
+    assert "Iceberg v2" in html
+    assert "Perintah publish" in html
+    assert "python -m batch.gold.publish --table cell_daily" in html
+    assert "Partisi memakai tanggal fitur." in html
+    assert "Ambang alert" in html
+    assert "tidak ada baris baru lebih dari 26 jam" in html
+    assert "Lihat JSON lokasi" in html
+
+
+def test_dataset_schema_lists_columns_with_type(tmp_path):
+    _write(tmp_path, _catalog())
+    client = TestClient(create_app(_settings(tmp_path)))
+
+    html = client.get("/catalog/cell_daily").text
+
+    assert "2 kolom" in html
+    assert '<span class="type-badge mono">string</span>' in html
+    assert "indeks sel" in html
