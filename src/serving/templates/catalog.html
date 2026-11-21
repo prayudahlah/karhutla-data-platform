@@ -4,31 +4,45 @@
 <div class="shell">
   <div class="page-head">
     <div class="breadcrumb"><a href="/">Ringkasan</a> / Katalog</div>
-    <div class="kicker">Katalog data</div>
-    <h1 class="serif">Tabel Gold dan pemiliknya.</h1>
-    <p class="lead">Owner, retensi, dan klasifikasi berasal dari kontrak di <span class="mono">docs/data-contracts</span>. Klik nama tabel untuk melihat skema lengkap.</p>
+    <h1 class="serif">Katalog tabel Gold.</h1>
+    <p class="lead">Status, grain, jumlah kolom, dan sumber setiap tabel Gold. Owner, retensi, dan klasifikasi ada di halaman detail masing-masing tabel.</p>
   </div>
 
   {% if catalog is none %}
     <div class="notice"><strong>Katalog belum ada.</strong> Jalankan <code>task gold-catalog</code>, lalu muat ulang halaman ini.</div>
+  {% elif not tables %}
+    <div class="notice"><strong>Katalog kosong.</strong> Belum ada kontrak tabel yang terbaca dari <code>docs/data-contracts</code>.</div>
   {% else %}
+    <div class="cat-summary">
+      <div><span class="cat-label">Tabel</span><span class="cat-value mono">{{ summary.tables }}</span></div>
+      <div><span class="cat-label">Terpasang</span><span class="cat-value mono">{{ summary.implemented }}</span></div>
+      <div><span class="cat-label">Direncanakan</span><span class="cat-value mono">{{ summary.planned }}</span></div>
+      <div><span class="cat-label">Kolom terpasang</span><span class="cat-value mono">{{ summary.columns }}</span></div>
+    </div>
+    <p class="cat-foot">Terpasang berarti artefak Gold sudah dibangun dan bisa dibaca API. Katalog build <span class="mono">{{ catalog.run_id or "-" }}</span>.</p>
+
     <div class="table-wrap">
-    <table class="data">
-      <thead><tr><th scope="col">Nama</th><th scope="col">Status</th><th scope="col">Owner</th><th scope="col">Grain</th><th scope="col">Retensi</th><th scope="col">Sumber</th></tr></thead>
+    <table class="data catalog-table">
+      <caption class="sr-only">Daftar tabel Gold beserta status, grain, jumlah kolom, dan sumbernya</caption>
+      <thead><tr><th scope="col">Nama</th><th scope="col">Status</th><th scope="col">Grain</th><th scope="col">Kolom</th><th scope="col">Sumber</th></tr></thead>
       <tbody>
       {% for table in tables %}
         <tr>
-          <td><a class="mono" href="/catalog/{{ table.name }}">{{ table.name }}</a></td>
-          <td><span class="badge {{ 'ok' if table.status == 'implemented' else 'plan' }}">{{ "Terpasang" if table.status == "implemented" else "Direncanakan" }}</span></td>
-          <td>{{ table.owner }}</td>
-          <td style="color:var(--body)">{{ table.grain }}</td>
-          <td style="color:var(--body)">{{ table.retention }}</td>
-          <td class="mono" style="color:var(--label)">{{ (table.source_models or [])|join(", ") or "-" }}</td>
+          <th scope="row" class="tbl-cell"><a class="tbl-name mono" href="/catalog/{{ table.name }}">{{ table.name }}</a></th>
+          <td class="tbl-status" data-label="Status"><span class="badge {{ 'ok' if table.status == 'implemented' else 'plan' }}">{{ "Terpasang" if table.status == "implemented" else "Direncanakan" }}</span></td>
+          <td class="tbl-grain" data-label="Grain">{{ table.grain }}</td>
+          <td class="mono tbl-col" data-label="Kolom">{{ (table.schema or {})|length }}</td>
+          <td class="src-list mono" data-label="Sumber">
+            {% for source in (table.source_models or []) %}
+              {% if source in table_names %}<a href="/catalog/{{ source }}">{{ source }}</a>{% else %}{{ source }}{% endif %}{% if not loop.last %}, {% endif %}
+            {% else %}-{% endfor %}
+          </td>
         </tr>
       {% endfor %}
       </tbody>
     </table>
     </div>
+    <p class="table-hint">Geser ke samping untuk melihat semua kolom.</p>
   {% endif %}
 </div>
 {% endblock %}

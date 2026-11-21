@@ -8,41 +8,108 @@
     <p class="lead">{{ table.grain }}</p>
   </div>
 
-  <dl class="kv">
-    <dt>Owner</dt><dd>{{ table.owner }}</dd>
-    <dt>Layer</dt><dd>{{ table.layer }}</dd>
-    <dt>Klasifikasi</dt><dd>{{ table.classification }}</dd>
-    <dt>Retensi</dt><dd>{{ table.retention }}</dd>
-    <dt>Business key</dt><dd class="mono">{{ (table.business_key or [])|join(", ") or "-" }}</dd>
-    <dt>Sumber</dt><dd class="mono">{{ (table.source_models or [])|join(", ") or "-" }}</dd>
-    <dt>Konsumen</dt><dd>{{ (table.consumers or [])|join(", ") or "-" }}</dd>
-  </dl>
+  <div class="detail-grid">
+    <aside class="detail-side">
+      <section class="side-card">
+        <h2 class="side-title">Ringkasan</h2>
+        <dl class="spec-list compact">
+          <dt>Owner</dt><dd>{{ table.owner }}</dd>
+          <dt>Layer</dt><dd>{{ table.layer|capitalize }}</dd>
+          <dt>Klasifikasi</dt><dd>{{ table.classification }}</dd>
+          <dt>Retensi / rebuild</dt><dd>{{ table.retention }}</dd>
+          <dt>Business key</dt><dd class="mono">{{ (table.business_key or [])|join(", ") or "-" }}</dd>
+        </dl>
+        <a class="side-lineage" href="/lineage?focus={{ table.name }}">Lihat {{ table.name }} di lineage <span aria-hidden="true">&#8594;</span></a>
+      </section>
 
-  <div class="kicker" style="margin-bottom:12px">Lokasi</div>
-  <pre class="code">{{ table.location | pretty }}</pre>
+      <section class="side-card">
+        <h2 class="side-title">Sumber</h2>
+        <p class="side-chips">
+          {% for source in (table.source_models or []) %}
+            {% if source in table_names %}<a class="chip" href="/catalog/{{ source }}">{{ source }}</a>{% else %}<span class="chip chip-static">{{ source }}</span>{% endif %}
+          {% else %}<span class="muted">Tidak ada, tabel ini sumber.</span>{% endfor %}
+        </p>
+      </section>
 
-  <div class="kicker" style="margin:32px 0 12px">Freshness</div>
-  <pre class="code">{{ table.freshness | pretty }}</pre>
+      <section class="side-card">
+        <h2 class="side-title">Konsumen</h2>
+        <ul class="side-plain">
+          {% for consumer in (table.consumers or []) %}<li>{{ consumer }}</li>{% else %}<li class="muted">Belum ada konsumen.</li>{% endfor %}
+        </ul>
+      </section>
 
-  {% if table.quality_rules %}
-  <div class="kicker" style="margin:32px 0 12px">Aturan kualitas</div>
-  <ul style="color:var(--body);font-size:.95rem;line-height:1.7;margin:0 0 32px;padding-left:1.1rem">
-    {% for rule in table.quality_rules %}<li>{{ rule }}</li>{% endfor %}
-  </ul>
-  {% endif %}
+    </aside>
 
-  <div class="kicker" style="margin-bottom:12px">Skema</div>
-  <table class="data">
-    <thead><tr><th scope="col">Kolom</th><th scope="col">Tipe</th><th scope="col">Keterangan</th></tr></thead>
-    <tbody>
-    {% for name, spec in (table.schema or {}).items() %}
-      <tr>
-        <td class="mono">{{ name }}</td>
-        <td class="mono" style="color:var(--label)">{{ spec.type if spec is mapping else spec }}</td>
-        <td style="color:var(--body)">{{ spec.description if spec is mapping and spec.description else "" }}</td>
-      </tr>
-    {% endfor %}
-    </tbody>
-  </table>
+    <div class="detail-main">
+      <section class="panel-block">
+        <h2 class="sec-title" id="freshness">Freshness</h2>
+        {% if freshness.rows %}
+          <dl class="spec-list">
+            {% for row in freshness.rows if row.key != "alert_threshold" %}
+              <dt>{{ row.label }}</dt><dd>{{ row.value }}</dd>
+            {% endfor %}
+          </dl>
+        {% else %}
+          <p class="muted">Kontrak belum mencantumkan freshness.</p>
+        {% endif %}
+        {% if freshness.alert %}
+          <div class="alert-note">
+            <span class="cat-label">Ambang alert</span>
+            <p>{{ freshness.alert }}</p>
+          </div>
+        {% endif %}
+        {% if freshness.raw %}
+          <details class="raw"><summary>Lihat JSON freshness</summary><pre class="code">{{ freshness.raw | pretty }}</pre></details>
+        {% endif %}
+      </section>
+
+      <section class="panel-block">
+        <h2 class="sec-title" id="lokasi">Lokasi</h2>
+        {% if location.rows %}
+          <dl class="spec-list">
+            {% for row in location.rows %}
+              <dt>{{ row.label }}</dt>
+              <dd>{% if row.code %}<code>{{ row.value }}</code>{% else %}{{ row.value }}{% endif %}</dd>
+            {% endfor %}
+          </dl>
+        {% else %}
+          <p class="muted">Kontrak belum mencantumkan lokasi.</p>
+        {% endif %}
+        {% if location.note %}<p class="spec-note">{{ location.note }}</p>{% endif %}
+        {% if location.raw %}
+          <details class="raw"><summary>Lihat JSON lokasi</summary><pre class="code">{{ location.raw | pretty }}</pre></details>
+        {% endif %}
+      </section>
+
+      {% if table.quality_rules %}
+        <section class="panel-block">
+          <h2 class="sec-title" id="kualitas">Aturan kualitas <span class="count">{{ table.quality_rules|length }} aturan</span></h2>
+          <ul class="rule-list">
+            {% for rule in table.quality_rules %}<li>{{ rule }}</li>{% endfor %}
+          </ul>
+        </section>
+      {% endif %}
+
+      <section class="panel-block">
+        <h2 class="sec-title" id="skema">Skema <span class="count">{{ columns|length }} kolom</span></h2>
+        <p class="schema-hint">Geser ke samping untuk melihat tipe dan keterangan kolom.</p>
+        <div class="schema-scroll">
+          <table class="data schema-table">
+            <caption class="sr-only">Skema kolom {{ table.name }}, {{ columns|length }} kolom</caption>
+            <thead><tr><th scope="col">Kolom</th><th scope="col">Tipe</th><th scope="col">Keterangan</th></tr></thead>
+            <tbody>
+            {% for column in columns %}
+              <tr>
+                <td class="mono" data-label="Kolom">{{ column.name }}</td>
+                <td data-label="Tipe"><span class="type-badge mono">{{ column.type }}</span></td>
+                <td class="tbl-grain" data-label="Keterangan">{{ column.description }}</td>
+              </tr>
+            {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+  </div>
 </div>
 {% endblock %}
