@@ -39,6 +39,16 @@ python -m batch.gold.publish --restore data/gold/_iceberg_evidence_backup
 | Schema evolution | `id,label` → `id,label,note` |
 | Backup/restore | `--verify` setelah restore sama |
 
+### Schema evolution nyata: `island`
+
+Setelah branch island, `python -m batch.gold.publish --table all --mode full
+--strict --run-id island-2026-09` menambahkan kolom `island` ke ketiga tabel
+Iceberg tanpa menulis ulang seluruh tabel. Hasil:
+
+- `cell_daily` 95.360 baris, `province_daily` 1.216, `burn_scar_monthly` 34;
+- `--check` → `ok: true` untuk ketiga tabel;
+- kolom `island` ada di schema Iceberg ketiga tabel.
+
 `current.json` setelah upsert menunjuk snapshot ketiga tabel:
 
 ```json
