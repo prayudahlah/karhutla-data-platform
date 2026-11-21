@@ -165,6 +165,7 @@ def test_lineage_graph_renders_nodes_edges_and_links(tmp_path):
     assert html.count('class="ln-node ') == 2
     assert html.count('marker-end="url(#ln-arrow') == 1
     assert 'href="/catalog/cell_daily"' in html
+    assert 'class="ln-rail gold"' in html
     assert 'role="group"' in html
     assert "marker-end" in html
 
@@ -232,6 +233,7 @@ def test_catalog_summary_counts_tables_and_columns(tmp_path):
     assert '<span class="cat-label">Tabel</span><span class="cat-value mono">1<' in html
     assert '<span class="cat-label">Kolom terpasang</span><span class="cat-value mono">2<' in html
     assert 'data-label="Kolom"' in html
+    assert 'class="col-meter' in html
 
 
 def _catalog_with_location():

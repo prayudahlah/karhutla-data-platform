@@ -31,7 +31,12 @@
           <th scope="row" class="tbl-cell"><a class="tbl-name mono" href="/catalog/{{ table.name }}">{{ table.name }}</a></th>
           <td class="tbl-status" data-label="Status"><span class="badge {{ 'ok' if table.status == 'implemented' else 'plan' }}">{{ "Terpasang" if table.status == "implemented" else "Direncanakan" }}</span></td>
           <td class="tbl-grain" data-label="Grain">{{ table.grain }}</td>
-          <td class="mono tbl-col" data-label="Kolom">{{ (table.schema or {})|length }}</td>
+          <td class="mono tbl-col" data-label="Kolom">
+            <span class="col-cell">
+              <span class="col-meter{% if table.status != 'implemented' %} is-plan{% endif %}" aria-hidden="true"><i style="width: {{ (((table.schema or {})|length) * 100 / column_max)|round(0)|int }}%"></i></span>
+              <span>{{ (table.schema or {})|length }}</span>
+            </span>
+          </td>
           <td class="src-list mono" data-label="Sumber">
             {% for source in (table.source_models or []) %}
               {% if source in table_names %}<a href="/catalog/{{ source }}">{{ source }}</a>{% else %}{{ source }}{% endif %}{% if not loop.last %}, {% endif %}

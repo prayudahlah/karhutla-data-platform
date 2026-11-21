@@ -118,6 +118,9 @@ def index(request: Request) -> HTMLResponse:
 def catalog_page(request: Request) -> HTMLResponse:
     portal = _portal(request)
     tables = portal.tables
+    column_max = max(
+        [len(table.get("schema") or {}) for table in tables], default=0
+    )
     return _render(
         request,
         "catalog.html",
@@ -127,6 +130,7 @@ def catalog_page(request: Request) -> HTMLResponse:
             "tables": tables,
             "table_names": {str(table.get("name")) for table in tables},
             "summary": catalog_summary(tables),
+            "column_max": column_max or 1,
             "catalog_root": portal.root,
         },
     )
