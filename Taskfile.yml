@@ -184,6 +184,7 @@ tasks:
     env:
       SILVER_NORMALIZED_ROOT: data/silver/_normalized
       SILVER_PUBLISH_ROOT: data/silver/published
+      GOLD_PUBLISH_ROOT: data/gold/published
     cmds:
       - 'python -m batch.silver.prepare --clean'
       - 'dbt build --project-dir dbt --profiles-dir dbt'
@@ -231,6 +232,28 @@ tasks:
       - task: lint
       - task: test
       - task: dbt-build
+
+  # ------------------------------------------------------------------- ml
+  ml-audit:
+    desc: Audit dataset Gold sel-hari untuk ML
+    cmds:
+      - 'python -m ml.audit {{.CLI_ARGS}}'
+
+  ml-dataset:
+    desc: Siapkan split temporal dan manifest dataset ML dari Gold
+    cmds:
+      - 'python -m ml.dataset {{.CLI_ARGS}}'
+
+  ml-train:
+    desc: Latih baseline LR atau pembanding LightGBM dari Gold sel-hari, mis. task ml-train -- --model lr --features t3
+    cmds:
+      - 'python -m ml.train {{.CLI_ARGS}}'
+
+  ml-check:
+    desc: Lint dan test modul ML
+    cmds:
+      - task: lint
+      - task: test
 
   # ------------------------------------------------------------- kualitas
   test:

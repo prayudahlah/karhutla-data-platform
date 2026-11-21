@@ -7,6 +7,6 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 COPY . .
 
-RUN pip install --no-cache-dir -e ".[dev]"
+RUN pip install --no-cache-dir -e ".[dev,ml]"
 
 CMD ["python", "-c", "print('karhutla python skeleton')"]

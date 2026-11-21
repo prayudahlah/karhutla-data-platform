@@ -26,6 +26,10 @@ PUBLISHED_DATASETS: tuple[tuple[str, str], ...] = (
 
 DEFAULT_ROOT = "data/silver/published"
 
+# Dataset Gold yang ditulis dbt sebagai parquet external.
+GOLD_DATASETS: tuple[str, ...] = ("hotspot_cell_day",)
+DEFAULT_GOLD_ROOT = "data/gold/published"
+
 
 def prepare_publish_root(
     root: Path,
@@ -38,6 +42,22 @@ def prepare_publish_root(
         folder.mkdir(parents=True, exist_ok=True)
         created.append(folder)
     return created
+
+
+def prepare_gold_root(
+    root: Path,
+    datasets: Sequence[str] = GOLD_DATASETS,
+) -> list[Path]:
+    """Buat akar folder Gold saja.
+
+    DuckDB menolak menulis ke folder partisi yang sudah ada, jadi folder
+    ``<root>/<dataset>`` sengaja tidak dibuat di sini: dbt yang membuatnya saat
+    menulis parquet pertama. ``datasets`` dipertahankan sebagai dokumentasi
+    dataset Gold yang dikenal.
+    """
+    del datasets
+    root.mkdir(parents=True, exist_ok=True)
+    return [root]
 
 
 def _assert_safe_clean_target(root: Path) -> Path:
@@ -91,17 +111,27 @@ def main(argv: Sequence[str] | None = None) -> int:
         action="store_true",
         help="kosongkan folder hasil dulu supaya partisi lama tidak tertinggal",
     )
+    parser.add_argument(
+        "--gold-root",
+        default=os.environ.get("GOLD_PUBLISH_ROOT", DEFAULT_GOLD_ROOT),
+        help="akar folder hasil Gold (tidak dibersihkan)",
+    )
     args = parser.parse_args(argv)
 
     removed = clean_publish_root(Path(args.root)) if args.clean else 0
+    gold_removed = clean_publish_root(Path(args.gold_root)) if args.clean else 0
     created = prepare_publish_root(Path(args.root))
+    gold_created = prepare_gold_root(Path(args.gold_root))
     created_profiles = ensure_profiles()
     print(
         json.dumps(
             {
                 "root": args.root,
                 "folders": [str(folder) for folder in created],
+                "gold_root": args.gold_root,
+                "gold_folders": [str(folder) for folder in gold_created],
                 "files_removed": removed,
+                "gold_files_removed": gold_removed,
                 "profiles_created": str(created_profiles) if created_profiles else None,
             },
             indent=2,

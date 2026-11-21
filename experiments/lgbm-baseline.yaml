@@ -1,0 +1,24 @@
+id: lgbm-2026-09-vif-protected
+model: lightgbm
+feature_group: t3
+vif: true
+params:
+  num_leaves: 31
+  min_child_samples: 50
+  feature_fraction: 0.8
+  learning_rate: 0.03
+  lambda_l2: 1.0
+metrics:
+  valid:
+    pr_auc: 0.7675
+    roc_auc: 0.9339
+    brier: 0.0721
+    f1: 0.6801
+    precision: 0.6376
+    recall: 0.7286
+  test: null
+test_status: pending_new_window
+note: >
+  Pembanding LightGBM pada 29 fitur yang sama dengan baseline LR. Dipilih dari
+  grid 8 kombinasi; PR-AUC valid 0,7675 vs LR 0,6827. Test September 19-23
+  berstatus seen, jadi angka test hanya perbandingan pengembangan.

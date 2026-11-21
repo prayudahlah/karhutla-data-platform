@@ -1,0 +1,49 @@
+version: 2
+
+models:
+  - name: gold_hotspot_cell_day
+    description: >
+      Satu baris per sel 0,25° per hari, berisi label biner kebakaran
+      terkonfirmasi dan agregat deteksi hotspot. Sumber dataset ML.
+    columns:
+      - name: cell_id
+        description: "Indeks grid 0,25° dalam bentuk {cell_y}_{cell_x}."
+        data_tests: [not_null]
+      - name: cell_y
+        data_tests: [not_null]
+      - name: cell_x
+        data_tests: [not_null]
+      - name: center_lat
+        data_tests: [not_null]
+      - name: center_lon
+        data_tests: [not_null]
+      - name: date
+        data_tests: [not_null]
+      - name: n_hotspot
+        description: Jumlah deteksi hotspot dalam sel-hari.
+        data_tests: [not_null]
+      - name: label
+        description: "1 = ada hotspot kuat/sedang; 0 = hanya lemah/kandidat."
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [0, 1]
+      - name: label_complete
+        description: >
+          True bila semua tile yang disentuh sudah punya cakupan burn scar
+          pada rentang tanggal -7 sampai +7 hari.
+        data_tests: [not_null]
+      - name: audit_tier_max
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ['kuat', 'sedang', 'lemah', 'kandidat']
+
+  - name: mcd64a1_coverage
+    description: Satu baris per tile dan periode yang sudah diurai.
+    columns:
+      - name: period
+        data_tests: [not_null]
+      - name: tile
+        data_tests: [not_null]
