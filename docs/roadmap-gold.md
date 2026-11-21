@@ -70,10 +70,11 @@ Katalog memuat 4 tabel Gold (3 `implemented`, `risk_prediction_daily` masih
 
 ## Berikutnya (di luar ML)
 
-Kontrak Gold (3 tabel `implemented`), `catalog.json`/`lineage.json`, dan
-Iceberg v2 (ADR-002) sudah ada. Yang belum:
+Kontrak Gold (3 tabel `implemented`), `catalog.json`/`lineage.json`, Iceberg v2
+(ADR-002), serving read-only, dan mart Postgres sudah ada. Yang belum:
 
-1. Serving: Postgres + `sync_marts.py` + FastAPI 10 endpoint.
-2. Dashboard Metabase + info freshness; panel prediksi menunggu ML.
+1. G2: `sync_marts` membaca Iceberg (sekarang Parquet); API membaca
+   Postgres/Iceberg.
+2. Dashboard HTML (bukan Metabase) + info freshness; panel prediksi menunggu ML.
 
 ML (`F-11`, `F-12`) ditunda atas permintaan pemilik project.

@@ -11,10 +11,10 @@
 | F-07 | Format tabel dan snapshot | [Iceberg v2](F-07-iceberg.md): Parquet staging + Iceberg canonical; parity + `current.json`; 95.360 / 1.216 / 34 baris; snapshot, upsert, schema evolution, backup/restore | `task gold-refresh`; `python -m batch.gold.publish --check` | selesai (Garage/expire/jadwal pending) | Batch |
 | F-08 | DQ report dan quarantine | [Kontrak Silver](../docs/data-contracts/README.md); `silver/_dq/` dan `silver/_quarantine/`; 57 uji Gold termasuk rekonsiliasi dan label | `task gold-test` | sebagian | Batch |
 | F-09 | Catalog dan lineage | Kontrak Gold 3 tabel + `catalog.json`/`lineage.json` (4 tabel, 13 node, 13 edge) di `data/gold/_catalog/` | `task gold-catalog` | sebagian (risk_prediction_daily `planned`) | Batch |
-| F-10 | Query dan OpenAPI | TBD | TBD | TBD |
+| F-10 | Query dan OpenAPI | 3 mart di Postgres (`gold_*`) via `serving.sync_marts`; FastAPI 10 endpoint + `/predictions/daily` 503; tanggal salah 400; `freshness_at` di `/health`; OpenAPI `/docs` | `pytest -q tests/unit/test_serving_api.py`; `task serving-dev`; `task serving-sync` | selesai (prediksi menunggu ML) | Kelompok 8 |
 | F-11 | MLflow experiment | TBD | TBD | TBD |
 | F-12 | Predictions table | TBD | TBD | TBD |
-| F-13 | Dashboard dan SQL | TBD | TBD | TBD |
+| F-13 | Dashboard dan SQL | Service Metabase di `compose/vps-core.yml` + mart Postgres; peta panel dan SQL ada di `docs/serving.md` | `task up-core` lalu `task serving-sync` | sebagian (panel dibuat manual, prediksi menunggu ML) | Kelompok 8 |
 | F-14 | Metrics dan structured log | TBD | TBD | TBD |
 | F-15 | Tiga alert | TBD | TBD | TBD |
 | F-16 | Auth, role, audit | TBD | TBD | TBD |

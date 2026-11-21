@@ -291,6 +291,21 @@ tasks:
       - task: test
       - task: gold-refresh
 
+  # --------------------------------------------------------------- serving
+  serving-dev:
+    desc: Jalankan FastAPI Gold lokal di http://127.0.0.1:8000
+    env:
+      GOLD_PUBLISH_ROOT: data/gold/published
+    cmds:
+      - 'uvicorn serving.main:app --reload --host 127.0.0.1 --port 8000'
+
+  serving-sync:
+    desc: Salin 3 mart Gold ke Postgres (butuh DATABASE_DSN)
+    env:
+      GOLD_PUBLISH_ROOT: data/gold/published
+    cmds:
+      - 'python -m serving.sync_marts'
+
   # ------------------------------------------------------------- kualitas
   test:
     desc: Jalankan unit test

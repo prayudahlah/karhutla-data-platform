@@ -1,7 +1,8 @@
 # Arsitektur
 
-Status: **Bronze, Silver, dan Gold berjalan**; serving (Postgres + FastAPI), ML,
-dan dashboard belum diimplementasikan.
+Status: **Bronze, Silver, Gold, dan serving read-only berjalan**. Dashboard
+Metabase disiapkan sebagai service; panelnya dibuat manual. ML belum
+diimplementasikan.
 
 ## Tiga VM
 
@@ -40,10 +41,10 @@ flowchart LR
   end
 
   subgraph CO["core"]
-    PG["Postgres (belum)"]
+    PG["Postgres (mart Gold)"]
     PS["Prefect server"]
-    API["FastAPI + portal (belum)"]
-    MB["Metabase (belum)"]
+    API["FastAPI read-only"]
+    MB["Metabase"]
     OBS["Prometheus + Grafana + Loki"]
   end
 
@@ -79,7 +80,7 @@ flowchart LR
 | Bronze | JSON/JSONL/HDF + manifest + checksum, prefix `bronze/` | jalan |
 | Silver | 6 tabel Parquet, dedup, DQ, karantina, prefix `silver/` | jalan |
 | Gold | 3 tabel Parquet, prefix `gold/` | jalan |
-| Serving | 3 mart Postgres + 10 endpoint | belum |
+| Serving | 3 mart Postgres + FastAPI 10 endpoint | jalan (API); Metabase manual |
 
 ### Gold
 
@@ -102,11 +103,30 @@ Bronze → Silver → Gold.
 Perintah: `task gold-build` (bangun + katalog), `task gold-test` (uji),
 `task gold-catalog` (katalog saja), `task gold-check` (lint + unit test + build).
 
+### Serving
+
+FastAPI read-only membaca Parquet Gold lewat DuckDB, jadi API bisa jalan tanpa
+Postgres. `serving.sync_marts` menyalin 3 mart ke Postgres
+(`gold_cell_daily`, `gold_province_daily`, `gold_burn_scar_monthly`) untuk
+Metabase.
+
+| Perintah | Fungsi |
+|---|---|
+| `task serving-dev` | API lokal di `http://127.0.0.1:8000` |
+| `task serving-sync` | salin mart ke Postgres |
+| `task up-core` | Prefect + Postgres + API + Metabase |
+
+10 endpoint: health, daftar provinsi, hotspot harian/ringkasan, FRP, scar
+bulanan/kumulatif, cuaca, kualitas udara, dan peta sel 0,25°.
+`/predictions/daily` mengembalikan 503 sampai ML tersedia. Detail dan panel
+dashboard ada di `docs/serving.md`.
+
 ## Keputusan yang masih terbuka
 
 - Table format Gold: Iceberg canonical; Parquet staging; Postgres cache
   (ADR-002), snapshot 30 hari, katalog SQLite.
 - Serving: `sync_marts` masih membaca Parquet; migrasi ke Iceberg menyusul di
   branch serving.
+- Dashboard: HTML portal (bukan Metabase) menyusul; Metabase service opsional.
 - ML: dataset, training, MLflow, dan inference belum dikerjakan.
 - Batas resource per service: usulan ada di ADR-03, belum dipasang di Compose.
