@@ -220,7 +220,7 @@ def build_graph(
                 "to": edge["to"],
                 "note": str(edge.get("note") or ""),
                 "path": path,
-                "into_gold": target["layer"] == "gold" and source["layer"] != "gold",
+                "into_gold": target["layer"] == "gold",
                 "same_column": same_column,
                 "dim": source["dim"] or target["dim"],
             }

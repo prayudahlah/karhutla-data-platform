@@ -66,6 +66,7 @@
                  aria-label="{{ node.id }}, {{ node.layer }}{% if node.is_table %}, buka detail tabel{% else %}, sorot jalur{% endif %}">
                 <title>{{ node.id }} ({{ node.layer }}{% if node.type %}, {{ node.type }}{% endif %})</title>
                 <rect x="{{ node.x }}" y="{{ node.y }}" width="{{ node.w }}" height="{{ node.h }}" rx="8"></rect>
+                <rect class="ln-rail {{ node.layer }}" x="{{ node.x + 2 }}" y="{{ node.y + 9 }}" width="3" height="{{ node.h - 18 }}" rx="1.5"></rect>
                 <text class="ln-name" x="{{ node.x + 14 }}" y="{{ node.cy + 4 }}">{{ node.id }}</text>
               </a>
             {% endfor %}
@@ -82,7 +83,7 @@
         <li><span class="ln-swatch"></span>Sumber dan dataset perantara</li>
         <li><span class="ln-swatch gold"></span>Tabel Gold, klik untuk detail</li>
         <li><span class="ln-swatch arrow"></span>Arah aliran data</li>
-        <li><span class="ln-swatch focus"></span>Node yang sedang difokuskan</li>
+        {% if graph.focus %}<li><span class="ln-swatch focus"></span>Node yang sedang difokuskan</li>{% endif %}
       </ul>
     </section>
 
