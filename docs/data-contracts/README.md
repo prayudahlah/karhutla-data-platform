@@ -30,9 +30,9 @@ Field tambahan yang dipakai bila relevan: `normalized_grain`, `deduplication`,
 | `implemented` | sudah ada di kode dan tes |
 | `deprecated` | dipertahankan sementara, sudah ada pengganti |
 
-Semua kontrak Silver saat ini berstatus `implemented`.
+Semua kontrak Silver dan Gold saat ini berstatus `implemented`.
 
-## Matriks kontrak
+## Matriks kontrak Silver
 
 | Dataset | Pemilik | Grain final | Kunci unik | Prefix final | Partisi |
 |---|---|---|---|---|---|
@@ -41,6 +41,24 @@ Semua kontrak Silver saat ini berstatus `implemented`.
 | `open_meteo_air_quality` | Aulia | provinsi × kota × jam | `province, city, ts_utc` | `silver/open_meteo/dataset=air_quality` | `date=` UTC |
 | `mcd64a1_burn_scar` | Yuda | piksel terbakar × tile | `tile, burn_date, pixel_row, pixel_col` | `silver/mcd64a1/dataset=burn_scar` | `burn_date=` |
 | `hotspot_scar_label` | Yuda | satu baris per `event_id` | `event_id` | `silver/firms/dataset=hotspot_label` | `date=` |
+
+## Matriks kontrak Gold
+
+| Dataset | Pemilik | Grain final | Kunci unik | Prefix final | Partisi |
+|---|---|---|---|---|---|
+| `cell_daily` | Kelompok 8 - Batch | sel grid 0,25° × tanggal | `cell_id, date` | `gold/cell_daily` | `date=` |
+| `province_daily` | Kelompok 8 - Batch | provinsi × tanggal | `province, date` | `gold/province_daily` | `date=` |
+| `burn_scar_monthly` | Kelompok 8 - Batch | bulan terbakar × provinsi | `burn_month, province` | `gold/burn_scar_monthly` | `burn_month=` |
+
+Gold dibangun dbt dari Silver dengan `dbt build --select tag:gold`. Tabel
+`risk_prediction_daily` disiapkan sebagai folder tujuan inference ML, jadi belum
+punya kontrak sampai modelnya ada.
+
+Gold memakai **Iceberg v2 sebagai jalur resmi** lewat `task gold-publish`
+(ADR-002): snapshot 30 hari, partisi `date`/`burn_month`, katalog SQLite.
+Parquet hanya staging dbt; Postgres adalah serving cache dari snapshot Iceberg
+aktif. Bukti F-07 memakai warehouse lokal; jalur Garage untuk Iceberg belum
+diuji.
 
 ## Tata letak Silver
 
@@ -105,7 +123,9 @@ di `silver/_dq/...`, baris ditolak di `silver/_quarantine/...`, dan manifest di
 python -m pytest -q tests/unit/test_data_contracts.py
 python -m ruff check .
 python -m pytest -q
+python -m batch.silver.prepare --clean   # siapkan folder Silver + Gold
 dbt build --project-dir dbt --profiles-dir dbt
+dbt build --project-dir dbt --profiles-dir dbt --select tag:gold
 ```
 
 Untuk memeriksa alur data lengkap:

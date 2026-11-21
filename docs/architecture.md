@@ -1,14 +1,19 @@
 # Arsitektur
 
-Status: skeleton.
+Status: **Bronze, Silver, dan Gold berjalan**; serving (Postgres + FastAPI), ML,
+dan dashboard belum diimplementasikan.
 
 ## Tiga VM
 
 | VM | Peran | Isi |
 |---|---|---|
 | `stream` | Near-stream ingestion | Redpanda, producer FIRMS |
-| `batch` | Batch, lakehouse, ML | MinIO, consumer, Prefect worker, DuckDB, MLflow, LightGBM |
+| `batch` | Batch, lakehouse | Garage, consumer, Prefect worker, DuckDB + dbt |
 | `core` | Serving, portal, observability | Postgres, Prefect server, FastAPI, portal, Metabase, Prometheus, Grafana, Loki, Caddy, Authelia |
+
+Penyimpanan objek memakai **Garage** (S3-compatible), bucket `lakehouse`, bukan
+MinIO. Format analitik **Parquet zstd**, transformasi **dbt + DuckDB**, dan Gold
+dipublish ke **Iceberg v2** (ADR-002).
 
 ## Diagram
 
@@ -17,6 +22,7 @@ flowchart LR
   subgraph S["Sumber"]
     F["FIRMS"]
     O["Open-Meteo"]
+    M["MCD64A1"]
   end
 
   subgraph ST["stream"]
@@ -26,47 +32,81 @@ flowchart LR
 
   subgraph B["batch"]
     C["Consumer"]
-    M["MinIO"]
+    G["Garage lakehouse"]
     PF["Prefect worker"]
-    D["DuckDB"]
-    MLF["MLflow"]
-    L["LightGBM"]
+    D["dbt + DuckDB"]
+    GD["Gold Parquet"]
+    ICE["Iceberg v2 (canonical)"]
   end
 
   subgraph CO["core"]
-    PG["Postgres"]
+    PG["Postgres (belum)"]
     PS["Prefect server"]
-    API["FastAPI + portal"]
-    MB["Metabase"]
+    API["FastAPI + portal (belum)"]
+    MB["Metabase (belum)"]
     OBS["Prometheus + Grafana + Loki"]
   end
 
-  F --> P --> R --> C --> M
-  O --> PF --> M
-  M --> D --> PG
-  M --> L
-  L --> PG
+  F --> P --> R --> C --> G
+  O --> PF --> G
+  M --> PF --> G
+  G --> D --> GD
+  GD -->|publish| ICE
+  ICE -->|sync_marts| PG
   PG --> API
   PG --> MB
   C --> OBS
   PF --> OBS
-  API --> OBS
 ```
 
 ## Aliran data
 
-1. Producer menarik FIRMS, menulis event ke Redpanda.
-2. Consumer di `batch` membaca event, menulis Silver ke MinIO lokal.
-3. Prefect worker menarik Open-Meteo, menulis Bronze, lalu DuckDB membangun Silver dan Gold.
-4. Gold dikirim sebagai agregat ke Postgres di `core`.
-5. LightGBM membaca Gold, menulis prediksi ke Postgres.
-6. FastAPI, portal, dan Metabase membaca Postgres.
-7. Prometheus, Grafana, dan Loki memonitor semua VM.
+1. Producer menarik FIRMS, menulis event ke Redpanda; consumer menulis Bronze
+   JSONL ke Garage.
+2. Prefect worker menarik Open-Meteo (harian) dan MCD64A1 (bulanan) ke Bronze.
+3. Normalizer Python menulis Silver `_normalized`; dbt/DuckDB melakukan dedup,
+   uji kualitas, dan menulis Silver final Parquet.
+4. dbt membangun Gold Parquet dari Silver (`tag:gold`). Parquet = staging.
+5. `task gold-publish` menulis **Iceberg v2 canonical** + parity +
+   `current.json` (snapshot aktif).
+6. `sync_marts` membaca snapshot Iceberg aktif → Postgres → FastAPI/Metabase.
+7. ML membaca `cell_daily` dari Iceberg; menulis `risk_prediction_daily`.
 
-## Keputusan yang belum dibuat
+## Layer data
 
-- Table format: Delta Lake atau Iceberg.
-- Partisi dan retensi.
-- Skema event dan watermark.
-- Mekanisme auth portal.
-- Batas resource per service.
+| Layer | Isi | Status |
+|---|---|---|
+| Bronze | JSON/JSONL/HDF + manifest + checksum, prefix `bronze/` | jalan |
+| Silver | 6 tabel Parquet, dedup, DQ, karantina, prefix `silver/` | jalan |
+| Gold | 3 tabel Parquet, prefix `gold/` | jalan |
+| Serving | 3 mart Postgres + 10 endpoint | belum |
+
+### Gold
+
+| Tabel | Grain | Baris (Sep–Nov 2026) |
+|---|---|---|
+| `cell_daily` | `cell_id` × `date` (grid 0,25°) | 95.360 |
+| `province_daily` | `province` × `date` | 1.216 |
+| `burn_scar_monthly` | `burn_month` × `province` | 34 |
+| `risk_prediction_daily` | `input_record_id` | menunggu ML |
+
+Rekonsiliasi: total hotspot 486.238, tier kuat 45.869 / sedang 17.969 / lemah
+11.531 / kandidat 410.869, scar 36.916 piksel ≈ 7.922 km². Semua diuji otomatis
+di `dbt/tests/`.
+
+Katalog dan lineage dihasilkan dari kontrak Gold: `catalog.json` memuat 4 tabel
+(3 `implemented`, `risk_prediction_daily` masih `planned`) dengan owner,
+klasifikasi, retensi, dan schema; `lineage.json` memuat 13 node dan 13 edge
+Bronze → Silver → Gold.
+
+Perintah: `task gold-build` (bangun + katalog), `task gold-test` (uji),
+`task gold-catalog` (katalog saja), `task gold-check` (lint + unit test + build).
+
+## Keputusan yang masih terbuka
+
+- Table format Gold: Iceberg canonical; Parquet staging; Postgres cache
+  (ADR-002), snapshot 30 hari, katalog SQLite.
+- Serving: `sync_marts` masih membaca Parquet; migrasi ke Iceberg menyusul di
+  branch serving.
+- ML: dataset, training, MLflow, dan inference belum dikerjakan.
+- Batas resource per service: usulan ada di ADR-03, belum dipasang di Compose.

@@ -1,0 +1,48 @@
+﻿[
+  {
+    "table": "gold.cell_daily",
+    "ok": true,
+    "parquet": {
+      "row_count": 95360,
+      "hotspot_sum": 486238,
+      "label_sum": 6377,
+      "max_date": "2026-11-14"
+    },
+    "iceberg": {
+      "row_count": 95360,
+      "hotspot_sum": 486238,
+      "label_sum": 6377,
+      "max_date": "2026-11-14"
+    }
+  },
+  {
+    "table": "gold.province_daily",
+    "ok": true,
+    "parquet": {
+      "row_count": 1216,
+      "hotspot_sum": 486238,
+      "scar_sum": 721226,
+      "max_date": "2026-11-14"
+    },
+    "iceberg": {
+      "row_count": 1216,
+      "hotspot_sum": 486238,
+      "scar_sum": 721226,
+      "max_date": "2026-11-14"
+    }
+  },
+  {
+    "table": "gold.burn_scar_monthly",
+    "ok": true,
+    "parquet": {
+      "row_count": 34,
+      "scar_sum": 36916,
+      "max_month": "2026-09"
+    },
+    "iceberg": {
+      "row_count": 34,
+      "scar_sum": 36916,
+      "max_month": "2026-09"
+    }
+  }
+]
