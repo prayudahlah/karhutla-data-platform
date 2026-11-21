@@ -12,6 +12,7 @@ from batch.gold.publish import (
     ParityError,
     backup_iceberg,
     check_all,
+    expire_snapshots,
     load_catalog,
     publish_all,
     publish_table,
@@ -328,3 +329,41 @@ def test_strict_does_not_write_pointer_on_mismatch(
 
     assert not (iceberg_root / "publish_state.json").exists()
     assert not (iceberg_root / "current.json").exists()
+
+
+def test_expire_keeps_min_snapshots(
+    gold_root: Path,
+    iceberg_root: Path,
+) -> None:
+    catalog = load_catalog(iceberg_root)
+    connection = duckdb.connect()
+    try:
+        publish_all(
+            catalog,
+            connection,
+            gold_root,
+            tables=("province_daily",),
+        )
+        publish_all(
+            catalog,
+            connection,
+            gold_root,
+            tables=("province_daily",),
+        )
+        before = len(
+            catalog.load_table("gold.province_daily").metadata.snapshots
+        )
+        result = expire_snapshots(
+            catalog,
+            tables=("province_daily",),
+            retention_days=0,
+            min_snapshots=1,
+        )
+    finally:
+        connection.close()
+
+    table = catalog.load_table("gold.province_daily")
+    assert result[0]["before"] == before
+    assert result[0]["after"] <= before
+    assert result[0]["after"] >= 1
+    assert table.current_snapshot() is not None

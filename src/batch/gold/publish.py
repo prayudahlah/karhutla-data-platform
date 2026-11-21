@@ -26,7 +26,7 @@ import os
 import shutil
 import sqlite3
 from collections.abc import Sequence
-from datetime import UTC, date, datetime
+from datetime import UTC, date, datetime, timedelta
 from decimal import Decimal
 from pathlib import Path
 from typing import Any
@@ -471,6 +471,44 @@ def verify_all(
     return summaries
 
 
+def expire_snapshots(
+    catalog: Catalog,
+    tables: Sequence[str] | None = None,
+    retention_days: int = 30,
+    min_snapshots: int = 2,
+) -> list[dict[str, Any]]:
+    """Expire snapshot yang lebih tua dari ``retention_days``."""
+    selected = tables or tuple(TABLES)
+    cutoff = datetime.now(UTC) - timedelta(days=retention_days)
+    results: list[dict[str, Any]] = []
+    for table_name in selected:
+        identifier = f"{NAMESPACE}.{table_name}"
+        table = catalog.load_table(identifier)
+        before = len(table.metadata.snapshots)
+        with table.transaction() as transaction:
+            transaction.set_properties(
+                {
+                    "history.expire.max-snapshot-age-ms": str(
+                        retention_days * 24 * 60 * 60 * 1000
+                    ),
+                    "history.expire.min-snapshots-to-keep": str(min_snapshots),
+                }
+            )
+        table = catalog.load_table(identifier)
+        table.maintenance.expire_snapshots().older_than(cutoff).commit()
+        table = catalog.load_table(identifier)
+        results.append(
+            {
+                "table": identifier,
+                "before": before,
+                "after": len(table.metadata.snapshots),
+                "cutoff": cutoff.isoformat(),
+                "current_snapshot": _snapshot_id(table),
+            }
+        )
+    return results
+
+
 def schema_evolution_demo(catalog: Catalog) -> dict[str, Any]:
     """Buat tabel demo, tambah kolom, dan tunjukkan sebelum/sesudah."""
     identifier = f"{NAMESPACE}.schema_evolution_demo"
@@ -571,6 +609,9 @@ def main(argv: Sequence[str] | None = None) -> int:
     )
     parser.add_argument("--verify", action="store_true")
     parser.add_argument("--check", action="store_true", help="parity Parquet vs Iceberg")
+    parser.add_argument("--expire", action="store_true", help="expire snapshot lama")
+    parser.add_argument("--retention-days", type=int, default=30)
+    parser.add_argument("--min-snapshots", type=int, default=2)
     parser.add_argument(
         "--strict",
         action="store_true",
@@ -591,14 +632,27 @@ def main(argv: Sequence[str] | None = None) -> int:
         return 0
 
     catalog = load_catalog(iceberg_root)
+    tables = tuple(TABLES) if args.table == "all" else (args.table,)
     if args.schema_evolution_demo:
         print(json.dumps(schema_evolution_demo(catalog), indent=2))
         return 0
     if args.verify:
         print(json.dumps(verify_all(catalog), indent=2, default=str))
         return 0
-
-    tables = tuple(TABLES) if args.table == "all" else (args.table,)
+    if args.expire:
+        print(
+            json.dumps(
+                expire_snapshots(
+                    catalog,
+                    tables,
+                    args.retention_days,
+                    args.min_snapshots,
+                ),
+                indent=2,
+                default=str,
+            )
+        )
+        return 0
     if args.check:
         connection = duckdb.connect()
         try:

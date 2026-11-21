@@ -32,6 +32,7 @@ Rekonsiliasi yang diuji otomatis:
 | `task gold-catalog` | hasilkan `catalog.json` + `lineage.json` di `data/gold/_catalog/` |
 | `task gold-publish` | publish Iceberg canonical + parity + pointer |
 | `task gold-refresh` | `gold-build` lalu `gold-publish` |
+| `task gold-maintenance` | expire snapshot + backup katalog + verify |
 | `task gold-check` | lint, unit test, lalu build Gold |
 
 Katalog memuat 4 tabel Gold (3 `implemented`, `risk_prediction_daily` masih

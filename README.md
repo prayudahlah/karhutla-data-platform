@@ -59,6 +59,7 @@ task gold-test    # uji model Gold saja
 task gold-catalog # catalog.json + lineage.json di data/gold/_catalog/
 task gold-publish # publish Iceberg canonical + parity + pointer
 task gold-refresh # gold-build lalu gold-publish
+task gold-maintenance # expire snapshot + backup katalog + verify
 ```
 
 | Tabel | Grain | Baris |

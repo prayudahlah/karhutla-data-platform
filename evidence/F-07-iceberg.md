@@ -74,21 +74,37 @@ Paritas Parquet vs Iceberg (checksum minimum):
 - `evidence/artifacts/iceberg-backup.json`
 - `evidence/artifacts/iceberg-restore.json`
 - `evidence/artifacts/iceberg-verify-after-restore.json`
+- `evidence/artifacts/iceberg-expire.json`
+
+## Retensi
+
+`--expire --retention-days 30 --min-snapshots 2` dijalankan pada data asli.
+Karena semua snapshot dibuat hari ini, tidak ada yang lebih tua dari 30 hari,
+jadi hasilnya `before = after` (3 / 7 / 3). Unit test
+`test_expire_keeps_min_snapshots` membuktikan expire benar-benar mengurangi
+snapshot dengan `--retention-days 0 --min-snapshots 1` dan menyisakan minimal
+satu snapshot.
+
+Perintah maintenance:
+
+```bash
+task gold-maintenance
+```
 
 ## Batasan yang masih terbuka
 
 1. Warehouse yang dipakai bukti ini adalah **lokal**
    (`data/gold/_iceberg_evidence`). Jalur Garage `s3://` belum diuji; kontrak
    dan ADR harus menyebut ini sampai integration test Garage ada.
-2. `--expire` belum dijalankan pada bukti ini. Retensi 30 hari masih berupa
-   properti; job expire dan jadwalnya menyusul.
-3. Backup katalog sudah diuji manual, tetapi belum dijadwalkan.
-4. Serving (`sync_marts`) dan ML masih membaca Parquet. Migrasi ke Iceberg
+2. `--expire` dan `--backup` sudah bisa dijalankan dan diuji, tetapi belum
+   dijadwalkan lewat Prefect/cron. `task gold-maintenance` adalah urutan
+   operasionalnya; penjadwalan menyusul.
+3. Serving (`sync_marts`) dan ML masih membaca Parquet. Migrasi ke Iceberg
    menyusul di branch serving/ML; sampai itu selesai, Iceberg baru canonical
    untuk Gold, belum untuk konsumen.
 
 ## Kesimpulan
 
-Untuk F-07, bukti snapshot/upsert/schema evolution/backup sudah berdiri di atas
-data asli 95.360 baris, bukan fixture. Yang belum ditutup adalah Garage,
-expire terjadwal, backup terjadwal, dan migrasi konsumen.
+Untuk F-07, bukti snapshot/upsert/schema evolution/backup/expire sudah berdiri
+di atas data asli 95.360 baris, bukan fixture. Yang belum ditutup adalah
+Garage, penjadwalan expire/backup, dan migrasi konsumen.
