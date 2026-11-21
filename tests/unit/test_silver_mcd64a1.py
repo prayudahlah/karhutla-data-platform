@@ -13,12 +13,15 @@ from batch.silver.mcd64a1 import (
     TileData,
     TileGrid,
     burn_date_from_doy,
+    footprint_intersects_bbox,
+    in_bbox,
     month_doy_range,
     normalize_month,
     parse_month,
     parse_struct_metadata,
     parse_tile,
     pixel_centers,
+    polygon_intersects_bbox,
     read_tile_bytes,
     sinusoidal_to_latlon,
     tile_from_key,
@@ -200,6 +203,64 @@ def test_parse_tile_records_grid_for_join() -> None:
     assert result.tile_row["px"] == pytest.approx(100.0)
     assert result.coverage_row["pixels_burned"] == 2
     assert result.coverage_row["pixels_outside_month"] == 2
+
+
+def test_b41_footprint_intersects_when_center_is_outside_bbox() -> None:
+    grid = TileGrid(
+        ulx=14_455_360.0,
+        uly=-0.000005,
+        px=463.312717,
+        py=463.312717,
+        nx=2400,
+        ny=2400,
+    )
+
+    assert footprint_intersects_bbox(grid, 2026, 2273, BBOX) is True
+    assert footprint_intersects_bbox(grid, 1657, 2394, BBOX) is True
+    assert in_bbox(-8.443750, 141.001300, BBOX) is False
+
+
+def test_b45_footprint_fully_outside_bbox_is_excluded() -> None:
+    assert footprint_intersects_bbox(_grid(), 0, 0, BBOX) is False
+
+
+def test_b46_boundary_touch_is_closed_intersection() -> None:
+    polygon = (
+        (141.0, -8.0),
+        (142.0, -8.0),
+        (142.0, -7.0),
+        (141.0, -7.0),
+    )
+
+    assert polygon_intersects_bbox(polygon, BBOX) is True
+
+
+def test_parse_tile_marks_footprint_intersection() -> None:
+    grid = TileGrid(
+        ulx=14_455_360.0,
+        uly=-0.000005,
+        px=463.312717,
+        py=463.312717,
+        nx=2400,
+        ny=2400,
+    )
+    tile = TileData(
+        tile="h31v09",
+        month="2026-09",
+        grid=grid,
+        burn=np.zeros((2400, 2400), dtype=np.int16),
+        qa=np.full((2400, 2400), 3, dtype=np.uint8),
+        uncertainty=np.zeros((2400, 2400), dtype=np.uint8),
+        first_day=np.zeros((2400, 2400), dtype=np.int16),
+        last_day=np.zeros((2400, 2400), dtype=np.int16),
+    )
+    tile.burn[2026, 2273] = 264
+
+    rows = parse_tile(tile, bbox=BBOX, source_file="key", run_id="run").scar_rows
+
+    assert len(rows) == 1
+    assert rows[0]["in_bbox"] is False
+    assert rows[0]["footprint_intersects_bbox"] is True
 
 
 def test_normalize_month_writes_scar_tiles_coverage_and_dq(monkeypatch) -> None:

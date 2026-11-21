@@ -34,6 +34,9 @@ ml = [
     "pandas>=2.2",
     "scikit-learn>=1.5",
 ]
+feast = [
+    "feast[duckdb]>=0.68,<0.69",
+]
 dev = [
     "pytest>=8.0",
     "pytest-cov>=5.0",

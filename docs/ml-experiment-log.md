@@ -271,6 +271,8 @@ Artefak: `data/gold/models/lgbm-t3/` dan `lgbm-t3all/`, plus
 |---|---|
 | `experiments/lr-baseline.yaml` | C=10, baseline temporal, bukti test 0,6311 |
 | `experiments/lr-c1-stability.yaml` | C=1, varian stabilitas, tanpa metrik test |
+| `experiments/lgbm-baseline.yaml` | LightGBM 29 fitur, parameter beku |
+| `experiments/pipeline.yaml` | flow Prefect, dua model, kriteria promosi |
 | `experiments/registry.yaml` | riwayat run, status test, keputusan |
 
 ## Reproduksi
@@ -285,3 +287,34 @@ task ml-train -- --features t3 --c 10 \
 task ml-train -- --features t3 --c 1 --no-test \
   --freeze-config experiments/lr-c1-stability.yaml --out data/gold/models/lr-c1
 ```
+
+## Pipeline temporal Feast + Prefect (21 November 2026)
+
+Dua konfigurasi temporal sekarang dilatih lewat satu flow Prefect manual:
+
+- fitur ditulis ke Gold (`ml_feature_cell_day`, `ml_feature_province_day`),
+- Feast menyimpan 39 fitur kandidat dan melakukan point-in-time join,
+- VIF memilih 29 fitur yang sama untuk LR dan LightGBM,
+- MLflow mencatat parent run + dua nested run + dua registered model,
+- perbandingan hanya memakai valid; test tidak dievaluasi.
+
+Hasil run pengembangan `20261121T105125Z`:
+
+| Model | Fitur | PR-AUC valid | ROC-AUC valid | Brier valid |
+|---|---:|---:|---:|---:|
+| LR C=10 | 29 | 0,6827 | 0,8980 | 0,08495 |
+| LightGBM | 29 | **0,7675** | **0,9339** | **0,07206** |
+
+Delta PR-AUC valid +0,0848, CI 95% [0,0642; 0,1100], LightGBM lebih baik di
+5 dari 5 tanggal valid. Brier membaik 0,0129. Keputusan pipeline:
+`accepted`, rekomendasi `lgbm-temporal-29`, tetapi **belum dipromosikan**
+karena `promote=false` dan belum ada jendela test baru.
+
+Angka ini identik dengan run manual sebelumnya, jadi jalur Feast tidak
+menggeser split, fitur, atau hasil model. Artefak:
+`data/gold/models/temporal/20261121T105125Z/` dan
+`data/gold/models/temporal/champion.json`.
+
+Catatan: label dan agregat deteksi tetap milik dbt. `ml.feature_publish`
+hanya menambahkan fitur turunan (provinsi, jarak, rasio, waktu) dan konteks
+cuaca/AQ di atas `hotspot_cell_day`.

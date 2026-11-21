@@ -109,6 +109,30 @@ docker compose -f compose/base.yml -f compose/vps-batch.yml up -d mlflow
 
 UI: <http://localhost:5000>.
 
+### Pipeline temporal (Feast + Prefect)
+
+Dua konfigurasi temporal (`lr-temporal-29` dan `lgbm-temporal-29`) dilatih
+lewat satu flow Prefect. Fitur siap-model ditulis ke Gold, didaftarkan di
+Feast, lalu diambil kembali dengan point-in-time join sebelum training.
+
+```bash
+pip install -e ".[dev,ml,feast]"
+
+task ml-features        # tabel fitur Gold untuk Feast
+task feast-apply        # daftarkan entity + feature view
+task feast-materialize  # isi online store SQLite
+task ml-pipeline        # flow Prefect manual, tanpa jadwal
+```
+
+Output ada di `data/gold/models/temporal/<run_id>/`, termasuk
+`comparison.json` dan `pipeline_manifest.json`. MLflow mencatat satu parent
+run, dua nested run, dan dua registered model dengan alias `candidate`.
+Alias `champion` hanya di-set bila flow dijalankan dengan `promote=true`.
+
+Detail arsitektur, kontrak fitur, dan kriteria promosi ada di
+`docs/ml-temporal-pipeline.md`. Deployment Prefect-nya bernama
+`ml-temporal-training` dan sengaja tidak punya jadwal.
+
 ## Struktur
 
 - `src/` kode aplikasi

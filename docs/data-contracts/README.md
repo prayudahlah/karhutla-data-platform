@@ -90,6 +90,15 @@ di `silver/_dq/...`, baris ditolak di `silver/_quarantine/...`, dan manifest di
 - Jumlah baris Bronze harus cocok dengan hasil normalisasi; selisihnya
   dijelaskan di laporan DQ.
 
+## Kontrak label Phase 01
+
+Kontrak label temporal (QA/coverage MCD64A1, label Silver event-level, label
+Gold cell-day, lineage, fingerprint) berada di:
+
+- `docs/adr/ADR-008-phase-01-label-contract.md`
+- `docs/ml-label-contract.md`
+- `docs/ml-phase-01-batch-1-audit.md`
+
 ## Perubahan kontrak
 
 1. Ubah YAML dan tes dbt yang relevan dalam PR yang sama.
