@@ -57,8 +57,9 @@ punya kontrak sampai modelnya ada.
 Gold memakai **Iceberg v2 sebagai jalur resmi** lewat `task gold-publish`
 (ADR-002): snapshot 30 hari, partisi `date`/`burn_month`, katalog SQLite.
 Parquet hanya staging dbt; Postgres adalah serving cache dari snapshot Iceberg
-aktif. Bukti F-07 memakai warehouse lokal; jalur Garage untuk Iceberg belum
-diuji.
+aktif. Bukti F-07 memakai warehouse lokal; jalur Garage
+(`s3://lakehouse/gold/iceberg`) sudah diuji 21 November 2026 dengan integration
+test dan publish 95.360 baris.
 
 Ketiga tabel Gold punya kolom `island` dari
 `resources/indonesia_islands.csv` (38 provinsi → 7 pulau). Kolom ini untuk ML

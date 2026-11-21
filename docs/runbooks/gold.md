@@ -94,7 +94,8 @@ cron/Task Scheduler adalah jadwal resmi.
 
 ## Batasan
 
-- Bukti F-07 memakai warehouse lokal; jalur Garage belum diuji.
-- Serving (`sync_marts`) dan ML masih membaca Parquet sampai migrasi G2/G3.
-  Sampai itu selesai, `current.json` adalah pointer Gold canonical, bukan
-  pointer konsumen.
+- Bukti F-07 memakai warehouse lokal; jalur Garage sudah diuji
+  (`s3://lakehouse/gold/iceberg`) pada 21 November 2026. Warehouse lokal tetap
+  default untuk demo.
+- Serving (`sync_marts`) membaca Iceberg lalu menyalin ke Postgres; ML masih
+  membaca Parquet sampai helper Iceberg dipakai.

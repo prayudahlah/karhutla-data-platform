@@ -67,11 +67,14 @@ Keputusan: **Iceberg menjadi jalur resmi Gold.** Parquet hanya staging dbt.
 
 ## Bukti dan batasan
 
-- Bukti F-07 saat ini memakai **warehouse lokal**
+- Bukti F-07 data asli memakai warehouse lokal
   (`data/gold/_iceberg_evidence`).
-- Jalur Garage `s3://lakehouse/gold/iceberg` belum diuji. Sampai integration
-  test Garage ada, kontrak menyebut warehouse lokal untuk Iceberg; Garage tetap
-  dipakai untuk Bronze/Silver.
+- **Garage diuji 21 November 2026**: integration test tulis/baca tabel kecil
+  dan publish Gold asli 95.360 / 1.216 / 34 baris ke
+  `s3://lakehouse/gold/iceberg`. Parity `ok`; kolom `island` ikut. Artefak:
+  `evidence/artifacts/iceberg-garage-*.json`.
+- Warehouse lokal tetap default untuk demo; jalur Garage terbukti dan dapat
+  dipakai dengan `ICEBERG_WAREHOUSE=s3://lakehouse/gold/iceberg`.
 - Penjadwalan expire/backup memakai `task gold-maintenance`; deployment
   Prefect/cron menyusul.
 

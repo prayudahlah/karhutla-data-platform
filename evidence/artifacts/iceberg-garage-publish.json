@@ -1,0 +1,129 @@
+﻿[
+  {
+    "table": "gold.cell_daily",
+    "rows": 95360,
+    "columns": [
+      "cell_id",
+      "cell_lat",
+      "cell_lon",
+      "province",
+      "island",
+      "distance_km",
+      "hotspot_count",
+      "hotspot_kuat",
+      "hotspot_sedang",
+      "hotspot_lemah",
+      "hotspot_kandidat",
+      "hotspot_day",
+      "hotspot_night",
+      "frp_sum",
+      "frp_mean",
+      "frp_max",
+      "confidence_mean",
+      "gap_days_min",
+      "scar_pixels_cum",
+      "scar_area_km2_cum",
+      "scar_pixels_30d",
+      "scar_area_km2_30d",
+      "days_since_last_scar",
+      "temp_mean",
+      "temp_max",
+      "rh_mean",
+      "rh_min",
+      "precip_sum",
+      "wind_speed_max",
+      "vpd_max",
+      "soil_moisture_mean",
+      "et0_sum",
+      "weather_hours",
+      "weather_complete",
+      "pm25_mean",
+      "pm25_max",
+      "pm10_mean",
+      "co_mean",
+      "no2_mean",
+      "so2_mean",
+      "o3_mean",
+      "aod_mean",
+      "aq_hours",
+      "label_risk",
+      "label_hotspot_count",
+      "label_window_end",
+      "label_complete",
+      "date"
+    ],
+    "snapshot_count": 1,
+    "snapshots": [
+      {
+        "snapshot_id": 5478734391610331471,
+        "sequence_number": 1,
+        "timestamp_ms": 1795253786167,
+        "operation": "append"
+      }
+    ]
+  },
+  {
+    "table": "gold.province_daily",
+    "rows": 1216,
+    "columns": [
+      "province",
+      "island",
+      "hotspot_count",
+      "hotspot_kuat",
+      "hotspot_sedang",
+      "hotspot_lemah",
+      "hotspot_kandidat",
+      "active_cells",
+      "frp_sum",
+      "frp_mean",
+      "frp_max",
+      "scar_pixels_cum",
+      "scar_area_km2_cum",
+      "temp_max",
+      "rh_min",
+      "precip_sum",
+      "wind_speed_max",
+      "vpd_max",
+      "weather_hours",
+      "weather_complete",
+      "pm25_mean",
+      "pm25_max",
+      "freshness_at",
+      "date"
+    ],
+    "snapshot_count": 1,
+    "snapshots": [
+      {
+        "snapshot_id": 400107213912176750,
+        "sequence_number": 1,
+        "timestamp_ms": 1795253787087,
+        "operation": "append"
+      }
+    ]
+  },
+  {
+    "table": "gold.burn_scar_monthly",
+    "rows": 34,
+    "columns": [
+      "province",
+      "island",
+      "scar_pixels",
+      "scar_area_km2",
+      "tile_count",
+      "qa_mean",
+      "uncertainty_mean",
+      "first_burn_date",
+      "last_burn_date",
+      "burn_month"
+    ],
+    "snapshot_count": 1,
+    "snapshots": [
+      {
+        "snapshot_id": 2654485071537444257,
+        "sequence_number": 1,
+        "timestamp_ms": 1795253787473,
+        "operation": "append"
+      }
+    ]
+  }
+]

@@ -71,6 +71,15 @@ Paritas Parquet vs Iceberg (checksum minimum):
 | `province_daily` | 1.216 | hotspot 486.238; scar 721.226 (jumlah kumulatif harian) |
 | `burn_scar_monthly` | 34 | scar 36.916 |
 
+## Garage
+
+- Integration test `tests/integration/test_iceberg_garage.py` lulus 21 November
+  2026 dengan `ICEBERG_WAREHOUSE=s3://lakehouse/gold/iceberg`.
+- Publish Gold asli ke Garage: `cell_daily` 95.360, `province_daily` 1.216,
+  `burn_scar_monthly` 34; `--check` `ok: true`; kolom `island` ikut.
+- Artefak: `iceberg-garage-publish.json`, `iceberg-garage-check.json`,
+  `iceberg-garage-verify.json`.
+
 ## Artefak
 
 - `evidence/artifacts/iceberg-publish-1.json`
@@ -80,6 +89,9 @@ Paritas Parquet vs Iceberg (checksum minimum):
 - `evidence/artifacts/iceberg-verify.json`
 - `evidence/artifacts/iceberg-publish-state.json`
 - `evidence/artifacts/iceberg-current.json`
+- `evidence/artifacts/iceberg-garage-publish.json`
+- `evidence/artifacts/iceberg-garage-check.json`
+- `evidence/artifacts/iceberg-garage-verify.json`
 - `evidence/artifacts/iceberg-schema-evolution.json`
 - `evidence/artifacts/iceberg-backup.json`
 - `evidence/artifacts/iceberg-restore.json`
@@ -103,20 +115,18 @@ task gold-maintenance
 
 ## Batasan yang masih terbuka
 
-1. Warehouse yang dipakai bukti ini adalah **lokal**
-   (`data/gold/_iceberg_evidence`). Integration test
-   `tests/integration/test_iceberg_garage.py` tersedia, tetapi belum dijalankan
-   karena Garage belum dikonfigurasi. Kontrak dan ADR menyebut warehouse lokal
-   sampai test itu lolos.
+1. Bukti utama memakai warehouse lokal
+   (`data/gold/_iceberg_evidence`). Jalur Garage juga diuji
+   (`s3://lakehouse/gold/iceberg`); warehouse lokal tetap default untuk demo.
 2. `--expire` dan `--backup` sudah bisa dijalankan dan diuji. Urutan
    operasionalnya ada di `docs/runbooks/gold.md` (`task gold-maintenance`);
    deployment cron/Prefect belum dipasang.
-3. Serving (`sync_marts`) dan ML masih membaca Parquet. Migrasi ke Iceberg
-   menyusul di branch serving/ML; sampai itu selesai, Iceberg baru canonical
-   untuk Gold, belum untuk konsumen.
+3. Serving sekarang membaca Postgres yang disalin dari Iceberg (`sync_marts`);
+   API memakai Postgres bila `DATABASE_DSN` diisi. ML masih membaca Parquet
+   sampai helper Iceberg dipakai.
 
 ## Kesimpulan
 
 Untuk F-07, bukti snapshot/upsert/schema evolution/backup/expire sudah berdiri
-di atas data asli 95.360 baris, bukan fixture. Yang belum ditutup adalah
-Garage, penjadwalan expire/backup, dan migrasi konsumen.
+di atas data asli 95.360 baris, bukan fixture. Garage juga sudah diuji. Yang
+belum ditutup adalah penjadwalan expire/backup dan migrasi ML ke Iceberg.

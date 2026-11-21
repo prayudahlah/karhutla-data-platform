@@ -13,7 +13,7 @@ location:
     uploader: null
     table_format: Iceberg v2
     iceberg_prefix: gold/iceberg/burn_scar_monthly
-    iceberg_warehouse: local (Garage path untested)
+    iceberg_warehouse: s3://lakehouse/gold/iceberg (Garage tested 2026-11-21); local default for demo
     publish_command: python -m batch.gold.publish --table burn_scar_monthly
     role: canonical
     staging: parquet
