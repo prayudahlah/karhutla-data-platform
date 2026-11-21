@@ -15,6 +15,9 @@ EXPECTED_CONTRACTS = {
     "mcd64a1_burn_scar",
     "open_meteo_air_quality",
     "open_meteo_weather",
+    "cell_daily",
+    "province_daily",
+    "burn_scar_monthly",
 }
 REQUIRED_FIELDS = {
     "name",
@@ -30,6 +33,7 @@ REQUIRED_FIELDS = {
     "quality_rules",
     "consumers",
 }
+ALLOWED_LAYERS = {"silver", "gold"}
 ALLOWED_STATUSES = {"draft", "implemented", "deprecated"}
 ALLOWED_TYPES = {"boolean", "date", "double", "integer", "string", "timestamp"}
 
@@ -51,7 +55,7 @@ def test_contract_has_required_fields(path: Path) -> None:
 def test_contract_identity_and_status(path: Path) -> None:
     contract = _load(path)
     assert contract["name"] == path.stem
-    assert contract["layer"] == "silver"
+    assert contract["layer"] in ALLOWED_LAYERS
     assert contract["status"] in ALLOWED_STATUSES
     assert isinstance(contract["owner"], str) and contract["owner"].startswith("Kelompok 8")
     assert contract["classification"] == "public"
@@ -60,17 +64,20 @@ def test_contract_identity_and_status(path: Path) -> None:
 
 @pytest.mark.parametrize("path", CONTRACTS, ids=lambda path: path.stem)
 def test_contract_location(path: Path) -> None:
-    location = _load(path)["location"]
+    contract = _load(path)
+    layer = contract["layer"]
+    location = contract["location"]
     assert isinstance(location, dict)
     assert "Garage" in location["storage"]
     assert location["bucket"] == "lakehouse"
-    assert location["prefix"].startswith("silver/")
+    assert location["prefix"].startswith(f"{layer}/")
     assert ".parquet" in location["pattern"] and "=" in location["pattern"]
 
     publish = location["publish"]
     assert publish["materialization"] == "external parquet (dbt-duckdb)"
-    assert publish["local_root"].startswith("data/silver/published/")
-    assert publish["uploader"] == "python -m batch.silver.sync push"
+    assert publish["local_root"].startswith(f"data/{layer}/published/")
+    if layer == "silver":
+        assert publish["uploader"] == "python -m batch.silver.sync push"
 
 
 @pytest.mark.parametrize("path", CONTRACTS, ids=lambda path: path.stem)

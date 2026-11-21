@@ -1,0 +1,50 @@
+name: burn_scar_monthly
+owner: Kelompok 8 - Batch
+layer: gold
+status: implemented
+location:
+  storage: Garage (S3-compatible)
+  bucket: lakehouse
+  prefix: gold/burn_scar_monthly
+  pattern: burn_month=YYYY-MM/*.parquet
+  publish:
+    materialization: external parquet (dbt-duckdb)
+    local_root: data/gold/published/burn_scar_monthly
+    uploader: null
+  partition_note: Satu partisi per bulan terbakar, memakai burn_month dari MCD64A1.
+source_models:
+  - mcd64a1_burn_scar
+grain: Satu baris per bulan terbakar per provinsi.
+business_key:
+  - burn_month
+  - province
+deduplication:
+  key: [burn_month, province]
+  status: dijamin oleh group by burn_month, province
+schema:
+  burn_month: {type: string, description: YYYY-MM dari MCD64A1}
+  province: {type: string}
+  scar_pixels: {type: integer}
+  scar_area_km2: {type: double, description: scar_pixels x 0,2146 km2}
+  tile_count: {type: integer}
+  qa_mean: {type: double}
+  uncertainty_mean: {type: double}
+  first_burn_date: {type: date}
+  last_burn_date: {type: date}
+
+freshness:
+  expected: bulanan, mengikuti ingestion MCD64A1 tanggal 5
+  alert_threshold: tidak ada bulan baru setelah granule MCD64A1 tersedia
+  measured_by: last_burn_date pada build terakhir
+
+retention: mengikuti Silver; bisa dibangun ulang dari mcd64a1_burn_scar.
+classification: public
+quality_rules:
+  - (burn_month, province) unik
+  - total scar_pixels = jumlah baris mcd64a1_burn_scar (36.916 untuk 2026-09)
+  - scar_area_km2 = scar_pixels x 0,2146 (toleransi 0,01)
+  - first_burn_date <= last_burn_date
+consumers:
+  - FastAPI read-only
+  - dashboard Metabase
+  - laporan luas terbakar bulanan

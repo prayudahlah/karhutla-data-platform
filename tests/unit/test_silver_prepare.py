@@ -101,3 +101,36 @@ def test_clean_then_prepare_recreates_dataset_folders(tmp_path: Path) -> None:
 
     assert not stale.exists()
     assert (tmp_path / "open_meteo" / "weather").is_dir()
+
+
+def test_prepare_gold_creates_every_table_folder(tmp_path: Path) -> None:
+    from batch.silver.prepare import GOLD_DATASETS, prepare_layer
+
+    result = prepare_layer("gold", tmp_path)
+
+    assert result["layer"] == "gold"
+    assert result["root"] == str(tmp_path)
+    assert len(result["folders"]) == len(GOLD_DATASETS)
+    for parts in GOLD_DATASETS:
+        assert (tmp_path.joinpath(*parts)).is_dir()
+
+
+def test_clean_gold_keeps_ml_output_folder(tmp_path: Path) -> None:
+    from batch.silver.prepare import (
+        LAYER_DB_DATASETS,
+        clean_publish_root,
+        prepare_layer,
+    )
+
+    for table in ("cell_daily", "risk_prediction_daily"):
+        stale = tmp_path / table / "date=2020-01-01"
+        stale.mkdir(parents=True)
+        (stale / "old.parquet").write_bytes(b"x")
+
+    removed = clean_publish_root(tmp_path, LAYER_DB_DATASETS["gold"])
+    prepare_layer("gold", tmp_path)
+
+    assert removed == 1
+    assert not (tmp_path / "cell_daily" / "date=2020-01-01").exists()
+    assert (tmp_path / "risk_prediction_daily" / "date=2020-01-01").is_dir()
+    assert (tmp_path / "cell_daily").is_dir()

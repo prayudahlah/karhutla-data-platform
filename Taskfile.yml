@@ -232,6 +232,39 @@ tasks:
       - task: test
       - task: dbt-build
 
+  # ----------------------------------------------------------------- gold
+  gold-build:
+    desc: Bangun tabel Gold lewat dbt tanpa menyentuh Silver
+    env:
+      SILVER_NORMALIZED_ROOT: data/silver/_normalized
+      SILVER_PUBLISH_ROOT: data/silver/published
+      GOLD_PUBLISH_ROOT: data/gold/published
+    cmds:
+      - 'python -m batch.silver.prepare --layer gold --clean'
+      - 'dbt build --project-dir dbt --profiles-dir dbt --select tag:gold'
+      - 'python -m batch.gold.catalog'
+
+  gold-catalog:
+    desc: Hasilkan catalog.json dan lineage.json dari kontrak Gold
+    env:
+      GOLD_CATALOG_ROOT: data/gold/_catalog
+    cmds:
+      - 'python -m batch.gold.catalog'
+
+  gold-test:
+    desc: Jalankan uji model Gold saja
+    env:
+      GOLD_PUBLISH_ROOT: data/gold/published
+    cmds:
+      - 'dbt test --project-dir dbt --profiles-dir dbt --select tag:gold'
+
+  gold-check:
+    desc: Lint, unit test, lalu bangun Gold
+    cmds:
+      - task: lint
+      - task: test
+      - task: gold-build
+
   # ------------------------------------------------------------- kualitas
   test:
     desc: Jalankan unit test
