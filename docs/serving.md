@@ -102,14 +102,19 @@ portal), lalu `src/serving/static/dashboard.css` dan `dashboard.js`.
 
 1. Dashboard memanggil API yang sama:
    `/hotspots/summary`, `/hotspots/daily/total`, `/burn-scar/monthly`,
-   `/meta/provinces`, dan `/health`.
-2. KPI: total hotspot, hotspot kuat, FRP total, luas terbakar.
-3. Grafik: tren hotspot harian, tren FRP harian, top 5 provinsi, komposisi tier,
-   dan top 5 luas terbakar.
-4. Filter: provinsi dan rentang tanggal. Tombol pulau disiapkan tetapi belum
-   aktif sampai kolom `island` di-merge dan `serving-sync` dijalankan.
-5. Freshness: `/health` (`latest_date`, `iceberg.stale`, `age_hours`).
-6. Panel prediksi: placeholder "menunggu model ML" sampai
+   `/cells/hotspots`, `/meta/provinces`, dan `/health`.
+2. KPI: total hotspot, hotspot kuat, FRP total, luas terbakar, dengan sparkline
+   harian.
+3. Insight strip: provinsi dominan, puncak harian, pangsa hotspot kuat, dan
+   luas terbakar pada bulan terpilih.
+4. Peta: sel hotspot pada tanggal akhir filter, diwarnai menurut tier dan
+   diskalakan menurut `hotspot_count`.
+5. Grafik: tren hotspot mingguan per tier, tren FRP harian, top 5 provinsi,
+   komposisi tier, dan top 5 luas terbakar.
+6. Filter bar: provinsi dan rentang tanggal. Tombol pulau disiapkan tetapi
+   belum aktif sampai kolom `island` di-merge dan `serving-sync` dijalankan.
+7. Freshness: `/health` (`latest_date`, `iceberg.stale`, `age_hours`).
+8. Panel prediksi: placeholder "menunggu model ML" sampai
    `risk_prediction_daily` terisi.
 
 Data scar saat ini hanya tersedia untuk September 2026; dashboard mengambil

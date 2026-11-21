@@ -23,18 +23,21 @@
     <div class="kicker">Total hotspot</div>
     <div class="mono num" id="kpi-total">—</div>
     <div class="sub" id="kpi-total-sub">Memuat…</div>
+    <svg class="dash-spark" id="spark-total" viewBox="0 0 200 28" aria-hidden="true"></svg>
   </div>
   <div class="stat dash-stat">
     <svg class="stat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l9 16H3z"/><path d="M12 9v4"/><path d="M12 16h.01"/></svg>
     <div class="kicker">Hotspot kuat</div>
     <div class="mono num" id="kpi-kuat">—</div>
     <div class="sub" id="kpi-kuat-sub">Memuat…</div>
+    <svg class="dash-spark" id="spark-kuat" viewBox="0 0 200 28" aria-hidden="true"></svg>
   </div>
   <div class="stat dash-stat">
     <svg class="stat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12h4l2-7 4 14 2-7h6"/></svg>
     <div class="kicker">FRP total</div>
     <div class="mono num" id="kpi-frp">—</div>
     <div class="sub" id="kpi-frp-sub">Memuat…</div>
+    <svg class="dash-spark" id="spark-frp" viewBox="0 0 200 28" aria-hidden="true"></svg>
   </div>
   <div class="stat dash-stat">
     <svg class="stat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6l6-3 6 3 6-3v15l-6 3-6-3-6 3z"/><path d="M9 3v15"/><path d="M15 6v15"/></svg>
@@ -45,23 +48,89 @@
 </div>
 
 <div class="shell dash-wrap">
+  <section class="dash-insights" aria-label="Temuan utama">
+    <div class="insight">
+      <span class="insight-label">Provinsi dominan</span>
+      <b id="insight-province">—</b>
+      <span class="insight-sub" id="insight-province-sub">—</span>
+    </div>
+    <div class="insight">
+      <span class="insight-label">Puncak harian</span>
+      <b id="insight-peak">—</b>
+      <span class="insight-sub" id="insight-peak-sub">—</span>
+    </div>
+    <div class="insight">
+      <span class="insight-label">Hotspot kuat</span>
+      <b id="insight-strong">—</b>
+      <span class="insight-sub" id="insight-strong-sub">—</span>
+    </div>
+    <div class="insight">
+      <span class="insight-label">Luas terbakar</span>
+      <b id="insight-scar">—</b>
+      <span class="insight-sub" id="insight-scar-sub">—</span>
+    </div>
+  </section>
+
+  <section class="dash-toolbar">
+    <div class="dash-toolbar-head">
+      <div>
+        <span class="kicker">Filter</span>
+        <span class="dash-toolbar-title">Rentang &amp; wilayah</span>
+      </div>
+      <span class="dash-badge" id="filter-period">September 2026</span>
+    </div>
+    <form class="dash-form dash-form-row" id="dash-filter">
+      <label class="dash-field">Mulai<input type="date" id="dash-start" value="2026-09-01"></label>
+      <label class="dash-field">Selesai<input type="date" id="dash-end" value="2026-09-30"></label>
+      <label class="dash-field">Provinsi
+        <select id="dash-province">
+          <option value="">Semua provinsi</option>
+        </select>
+      </label>
+      <button class="btn btn-primary" id="dash-apply" type="submit">Terapkan</button>
+      <div class="dash-toolbar-extra">
+        <div class="dash-quick" aria-label="Rentang cepat">
+          <button type="button" data-range data-start="2026-09-01" data-end="2026-09-30" class="on">September</button>
+          <button type="button" data-range data-start="2026-11-01" data-end="2026-11-14">November</button>
+          <button type="button" data-range data-start="2026-09-01" data-end="2026-11-14">Sep–Nov</button>
+        </div>
+        <div class="dash-islands" aria-label="Filter pulau, belum aktif">
+          <button type="button" disabled title="Aktif setelah merge island">Sumatera</button>
+          <button type="button" disabled title="Aktif setelah merge island">Kalimantan</button>
+          <button type="button" disabled title="Aktif setelah merge island">Sulawesi</button>
+          <button type="button" disabled title="Aktif setelah merge island">Papua</button>
+        </div>
+      </div>
+    </form>
+  </section>
+
   <div class="notice dash-error" id="dash-error" hidden></div>
 
   <div class="dash-grid">
-    <article class="dash-panel span-6">
+    <article class="dash-panel span-6 dash-map-panel">
       <div class="dash-head">
         <div>
-          <div class="kicker">Tren hotspot</div>
-          <h2 class="dash-title">Harian, seluruh provinsi.</h2>
+          <div class="kicker">Peta hotspot</div>
+          <h2 class="dash-title">Sebaran sel aktif.</h2>
+          <p class="dash-sub" id="map-date">30 Sep 2026</p>
         </div>
-        <span class="dash-badge" id="hotspot-peak">—</span>
+        <span class="dash-badge" id="map-count">—</span>
       </div>
-      <div class="chart-frame">
-        <svg id="chart-hotspot" viewBox="0 0 640 260" role="img" aria-label="Grafik tren hotspot harian"></svg>
-      </div>
-      <div class="chart-legend">
-        <span><i class="hotspot"></i>Total hotspot</span>
-        <span>Harian · sumber API serving</span>
+      <div class="map-frame">
+        <svg id="map-hotspot" viewBox="0 0 640 320" role="img" aria-label="Peta sebaran sel hotspot"></svg>
+        <div class="map-focus">
+          <div class="focus-kicker">Fokus provinsi</div>
+          <div class="focus-name" id="map-focus-name">—</div>
+          <div class="focus-stats">
+            <div><b id="map-focus-hotspot">—</b><span>hotspot</span></div>
+            <div><b id="map-focus-share">—</b><span>dari total</span></div>
+          </div>
+        </div>
+        <div class="map-legend">
+          <span><i style="background:#ff5a2b"></i>Kuat</span>
+          <span><i style="background:#ff8a3d"></i>Sedang</span>
+          <span><i style="background:#ffb02e"></i>Lemah</span>
+        </div>
       </div>
     </article>
 
@@ -74,6 +143,7 @@
         </div>
       </div>
       <div class="rank-list" id="top-hotspot"></div>
+      <p class="panel-note" id="top-hotspot-note">—</p>
     </article>
 
     <article class="dash-panel span-3">
@@ -81,24 +151,47 @@
         <div>
           <div class="kicker">Komposisi</div>
           <h2 class="dash-title">Tingkat bukti</h2>
+          <p class="dash-sub">Kuat + sedang + lemah</p>
         </div>
       </div>
       <div class="donut-wrap">
         <svg class="donut-svg" id="donut" viewBox="0 0 200 200" role="img" aria-label="Komposisi tingkat bukti hotspot"></svg>
         <div class="donut-legend" id="donut-legend"></div>
       </div>
+      <p class="panel-note" id="donut-note">—</p>
     </article>
 
-    <article class="dash-panel span-6">
+    <article class="dash-panel span-5">
+      <div class="dash-head">
+        <div>
+          <div class="kicker">Tren hotspot</div>
+          <h2 class="dash-title">Mingguan per tier.</h2>
+          <p class="dash-sub">Kuat, sedang, lemah, kandidat</p>
+        </div>
+        <span class="dash-badge" id="tier-peak">—</span>
+      </div>
+      <div class="chart-frame">
+        <svg id="chart-tier" viewBox="0 0 640 260" role="img" aria-label="Grafik tren hotspot mingguan per tier"></svg>
+      </div>
+      <div class="chart-legend">
+        <span><i class="tier-kuat"></i>Kuat</span>
+        <span><i class="tier-sedang"></i>Sedang</span>
+        <span><i class="tier-lemah"></i>Lemah</span>
+        <span><i class="tier-kandidat"></i>Kandidat</span>
+      </div>
+    </article>
+
+    <article class="dash-panel span-4">
       <div class="dash-head">
         <div>
           <div class="kicker">Tren FRP</div>
-          <h2 class="dash-title">Energi radiasi api.</h2>
+          <h2 class="dash-title">FRP harian.</h2>
+          <p class="dash-sub">Energi radiasi api · MW</p>
         </div>
         <span class="dash-badge" id="frp-peak">—</span>
       </div>
       <div class="chart-frame">
-        <svg id="chart-frp" viewBox="0 0 640 260" role="img" aria-label="Grafik tren FRP harian"></svg>
+        <svg id="chart-frp" viewBox="0 0 480 260" role="img" aria-label="Grafik tren FRP harian"></svg>
       </div>
       <div class="chart-legend">
         <span><i class="frp"></i>FRP</span>
@@ -115,40 +208,7 @@
         </div>
       </div>
       <div class="rank-list" id="top-scar"></div>
-    </article>
-
-    <article class="dash-panel span-3 dash-filter">
-      <div class="dash-head">
-        <div>
-          <div class="kicker">Filter</div>
-          <h2 class="dash-title">Rentang &amp; wilayah</h2>
-          <p class="dash-sub" id="filter-period">September 2026</p>
-        </div>
-      </div>
-      <form class="dash-form" id="dash-filter">
-        <div class="dash-fields">
-          <label class="dash-field">Mulai<input type="date" id="dash-start" value="2026-09-01"></label>
-          <label class="dash-field">Selesai<input type="date" id="dash-end" value="2026-09-30"></label>
-        </div>
-        <label class="dash-field">Provinsi
-          <select id="dash-province">
-            <option value="">Semua provinsi</option>
-          </select>
-        </label>
-        <button class="btn btn-primary" id="dash-apply" type="submit">Terapkan</button>
-        <div class="dash-quick" aria-label="Rentang cepat">
-          <button type="button" data-range data-start="2026-09-01" data-end="2026-09-30" class="on">September</button>
-          <button type="button" data-range data-start="2026-11-01" data-end="2026-11-14">November</button>
-          <button type="button" data-range data-start="2026-09-01" data-end="2026-11-14">Sep–Nov</button>
-        </div>
-        <div class="dash-islands" aria-label="Filter pulau, belum aktif">
-          <button type="button" disabled title="Aktif setelah merge island">Sumatera</button>
-          <button type="button" disabled title="Aktif setelah merge island">Kalimantan</button>
-          <button type="button" disabled title="Aktif setelah merge island">Sulawesi</button>
-          <button type="button" disabled title="Aktif setelah merge island">Papua</button>
-        </div>
-        <p class="dash-note">Filter pulau aktif setelah merge island + <span class="mono">serving-sync</span>.</p>
-      </form>
+      <p class="panel-note" id="top-scar-note">—</p>
     </article>
   </div>
 
@@ -160,10 +220,13 @@
       <h2>Prediksi risiko D..D+2</h2>
       <p>Panel ini menunggu model ML. Setelah <span class="mono">risk_prediction_daily</span> terisi, tampilkan probabilitas per sel dan provinsi. <span class="mono">label_risk</span> di Gold adalah historis, bukan prediksi.</p>
     </div>
+    <div class="pred-pipeline">
+      <span class="chip">cell_daily</span><span class="arrow">→</span><span class="chip">model</span><span class="arrow">→</span><span class="chip">risk_prediction_daily</span>
+    </div>
     <span class="dash-badge warn">Menunggu ML</span>
   </section>
 
-  <p class="footnote dash-footnote">Sumber: Postgres <span class="mono">gold_*</span> dari Iceberg · API <span class="mono">/health</span>. Angka mengikuti rentang filter; luas terbakar mengikuti bulan tanggal mulai.</p>
+  <p class="footnote dash-footnote">Sumber: Postgres <span class="mono">gold_*</span> dari Iceberg · API <span class="mono">/health</span>. Angka mengikuti rentang filter; peta memakai tanggal akhir; luas terbakar mengikuti bulan tanggal mulai.</p>
 </div>
 {% endblock %}
 {% block extra_scripts %}<script src="/static/dashboard.js" defer></script>{% endblock %}
