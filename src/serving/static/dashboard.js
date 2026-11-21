@@ -154,60 +154,11 @@
 
     $("kpi-scar").textContent = number.format(Math.round(scar));
     $("kpi-scar-sub").textContent =
-      "km² · " +
-      number.format(scarPixels) +
-      " piksel · " +
-      monthLong(state.start.slice(0, 7));
+      "km² · " + number.format(scarPixels) + " piksel MCD64A1";
 
     $("period-label").textContent = "Dashboard · " + periodLabel();
-    $("filter-period").textContent = periodLabel();
     $("scar-period").textContent =
       monthLong(state.start.slice(0, 7)) + " · km²";
-  }
-
-  function renderInsights(summaryRows, dailyRows, monthlyRows) {
-    const total = sum(summaryRows, "hotspot_count");
-    const scar = sum(monthlyRows, "scar_area_km2");
-    const scarPixels = sum(monthlyRows, "scar_pixels");
-    const top = [...(summaryRows || [])].sort(
-      (a, b) => Number(b.hotspot_count) - Number(a.hotspot_count),
-    )[0];
-    const peak = [...(dailyRows || [])].sort(
-      (a, b) => Number(b.hotspot_count) - Number(a.hotspot_count),
-    )[0];
-    const frpPeak = [...(dailyRows || [])].sort(
-      (a, b) => Number(b.frp_sum) - Number(a.frp_sum),
-    )[0];
-
-    $("insight-province").textContent = top ? top.province : "—";
-    $("insight-province-sub").textContent =
-      top && total
-        ? decimal.format((Number(top.hotspot_count) / total) * 100) +
-          "% · " +
-          number.format(Math.round(Number(top.hotspot_count))) +
-          " hotspot"
-        : "Tidak ada hotspot pada rentang ini";
-
-    $("insight-peak").textContent = peak
-      ? number.format(Math.round(Number(peak.hotspot_count)))
-      : "—";
-    $("insight-peak-sub").textContent = peak
-      ? "hotspot pada " + dateLong(peak.date)
-      : "Belum ada data harian";
-
-    $("insight-frp").textContent = frpPeak
-      ? compact(frpPeak.frp_sum)
-      : "—";
-    $("insight-frp-sub").textContent = frpPeak
-      ? "MW pada " + dateLong(frpPeak.date)
-      : "Belum ada data FRP";
-
-    $("insight-scar").textContent =
-      number.format(Math.round(scar)) + " km²";
-    $("insight-scar-sub").textContent =
-      number.format(Math.round(scarPixels)) +
-      " piksel · " +
-      monthLong(state.start.slice(0, 7));
   }
 
   function renderSpark(svgId, rows, key, color) {
@@ -929,7 +880,6 @@
       const monthlyRows = monthly.rows || [];
 
       renderSummary(summaryRows, monthlyRows);
-      renderInsights(summaryRows, dailyRows, monthlyRows);
       renderSpark("spark-total", dailyRows, "hotspot_count", "#ff8a3d");
       renderSpark("spark-kuat", dailyRows, "hotspot_kuat", "#ff5a2b");
       renderSpark("spark-frp", dailyRows, "frp_sum", "#ffb02e");
@@ -1018,32 +968,9 @@
   }
 
   function bindFilters() {
-    const form = $("dash-filter");
-    form.addEventListener("submit", (event) => {
+    $("dash-filter").addEventListener("submit", (event) => {
       event.preventDefault();
       applyFilters();
-    });
-
-    ["dash-start", "dash-end", "dash-province"].forEach((id) => {
-      $(id).addEventListener("change", () => {
-        form
-          .querySelectorAll("[data-range]")
-          .forEach((item) => item.classList.remove("on"));
-      });
-    });
-
-    form.querySelectorAll("[data-range]").forEach((button) => {
-      button.addEventListener("click", () => {
-        form
-          .querySelectorAll("[data-range]")
-          .forEach((item) => item.classList.toggle("on", item === button));
-        $("dash-start").value = button.dataset.start;
-        $("dash-end").value = button.dataset.end;
-        state.start = button.dataset.start;
-        state.end = button.dataset.end;
-        state.province = $("dash-province").value;
-        load();
-      });
     });
   }
 

@@ -48,36 +48,12 @@
 </div>
 
 <div class="shell dash-wrap">
-  <section class="dash-insights" aria-label="Temuan utama">
-    <div class="insight">
-      <span class="insight-label">Provinsi dominan</span>
-      <b id="insight-province">—</b>
-      <span class="insight-sub" id="insight-province-sub">—</span>
-    </div>
-    <div class="insight">
-      <span class="insight-label">Puncak harian</span>
-      <b id="insight-peak">—</b>
-      <span class="insight-sub" id="insight-peak-sub">—</span>
-    </div>
-    <div class="insight">
-      <span class="insight-label">Puncak FRP</span>
-      <b id="insight-frp">—</b>
-      <span class="insight-sub" id="insight-frp-sub">—</span>
-    </div>
-    <div class="insight">
-      <span class="insight-label">Luas terbakar</span>
-      <b id="insight-scar">—</b>
-      <span class="insight-sub" id="insight-scar-sub">—</span>
-    </div>
-  </section>
-
   <section class="dash-toolbar">
     <div class="dash-toolbar-head">
       <div>
         <span class="kicker">Filter</span>
         <span class="dash-toolbar-title">Rentang &amp; wilayah</span>
       </div>
-      <span class="dash-badge" id="filter-period">September 2026</span>
     </div>
     <form class="dash-form dash-form-row" id="dash-filter">
       <label class="dash-field">Mulai<input type="date" id="dash-start" value="2026-09-01"></label>
@@ -88,14 +64,6 @@
         </select>
       </label>
       <button class="btn btn-primary" id="dash-apply" type="submit">Terapkan</button>
-      <div class="dash-toolbar-extra">
-        <div class="dash-quick" aria-label="Rentang cepat">
-          <button type="button" data-range data-start="2026-09-01" data-end="2026-09-30" class="on">September</button>
-          <button type="button" data-range data-start="2026-11-01" data-end="2026-11-14">November</button>
-          <button type="button" data-range data-start="2026-09-01" data-end="2026-11-14">Sep–Nov</button>
-        </div>
-        <span class="dash-coming" title="Aktif setelah merge island dan serving-sync">Pulau segera</span>
-      </div>
     </form>
   </section>
 
@@ -274,7 +242,6 @@
     </div>
   </section>
 
-  <p class="footnote dash-footnote">Sumber: Postgres <span class="mono">gold_*</span> dari Iceberg · API <span class="mono">/health</span>. Angka mengikuti rentang filter; peta memakai tanggal akhir; luas terbakar mengikuti bulan tanggal mulai.</p>
 </div>
 {% endblock %}
 {% block extra_scripts %}<script src="/static/dashboard.js" defer></script>{% endblock %}
