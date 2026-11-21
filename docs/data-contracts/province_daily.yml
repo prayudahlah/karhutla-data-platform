@@ -11,6 +11,9 @@ location:
     materialization: external parquet (dbt-duckdb)
     local_root: data/gold/published/province_daily
     uploader: null
+    table_format: Iceberg v2
+    iceberg_prefix: gold/iceberg/province_daily
+    publish_command: python -m batch.gold.publish --table province_daily
   partition_note: Satu partisi per tanggal, ditimpa penuh setiap build.
 source_models:
   - cell_daily

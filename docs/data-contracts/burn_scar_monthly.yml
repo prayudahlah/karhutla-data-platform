@@ -11,6 +11,9 @@ location:
     materialization: external parquet (dbt-duckdb)
     local_root: data/gold/published/burn_scar_monthly
     uploader: null
+    table_format: Iceberg v2
+    iceberg_prefix: gold/iceberg/burn_scar_monthly
+    publish_command: python -m batch.gold.publish --table burn_scar_monthly
   partition_note: Satu partisi per bulan terbakar, memakai burn_month dari MCD64A1.
 source_models:
   - mcd64a1_burn_scar

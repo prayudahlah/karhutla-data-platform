@@ -20,6 +20,8 @@ Rekonsiliasi yang diuji otomatis:
   `label_complete`
 - scar: 36.916 piksel = 7.922,17 km², tersebar di 34 provinsi
 - dua build berturut-turut menghasilkan isi identik (0 baris berbeda)
+- Iceberg v2: 3 tabel, ≥3 snapshot per tabel, upsert 1 partisi,
+  schema evolution, backup/restore katalog (`task gold-publish`)
 
 ## Perintah
 
@@ -28,6 +30,7 @@ Rekonsiliasi yang diuji otomatis:
 | `task gold-build` | bersihkan tabel Gold dbt, `dbt build --select tag:gold`, lalu hasilkan katalog |
 | `task gold-test` | jalankan uji model Gold saja |
 | `task gold-catalog` | hasilkan `catalog.json` + `lineage.json` di `data/gold/_catalog/` |
+| `task gold-publish` | publish 3 tabel Gold Parquet ke Iceberg v2 |
 | `task gold-check` | lint, unit test, lalu build Gold |
 
 Katalog memuat 4 tabel Gold (3 `implemented`, `risk_prediction_daily` masih
@@ -47,6 +50,7 @@ Katalog memuat 4 tabel Gold (3 `implemented`, `risk_prediction_daily` masih
 | Label | tier `kuat`/`sedang` pada D..D+2; `lemah`/`kandidat` bukan positif |
 | Fitur model | jendela D-7..D-1, dihitung di `src/ml/features.py` (belum ada) |
 | Partisi | `date=` untuk harian, `burn_month=` untuk scar bulanan |
+| Format Gold | Parquet dari dbt + Iceberg v2 lewat `task gold-publish` (snapshot 30 hari) |
 | Determinisme | agregat uang/float memakai `decimal(18,3)` agar tidak berubah antar run |
 
 ## Batasan yang harus ditulis di laporan
@@ -64,11 +68,10 @@ Katalog memuat 4 tabel Gold (3 `implemented`, `risk_prediction_daily` masih
 
 ## Berikutnya (di luar ML)
 
-Kontrak Gold (3 tabel `implemented`) dan `catalog.json`/`lineage.json` sudah
-ada. Yang belum:
+Kontrak Gold (3 tabel `implemented`), `catalog.json`/`lineage.json`, dan
+Iceberg v2 (ADR-002) sudah ada. Yang belum:
 
-1. Publish Iceberg v2 (fase 4) atau tulis batasannya di ADR.
-2. Serving: Postgres + `sync_marts.py` + FastAPI 10 endpoint.
-3. Dashboard Metabase + info freshness; panel prediksi menunggu ML.
+1. Serving: Postgres + `sync_marts.py` + FastAPI 10 endpoint.
+2. Dashboard Metabase + info freshness; panel prediksi menunggu ML.
 
 ML (`F-11`, `F-12`) ditunda atas permintaan pemilik project.

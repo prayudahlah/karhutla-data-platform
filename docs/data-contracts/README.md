@@ -54,6 +54,9 @@ Gold dibangun dbt dari Silver dengan `dbt build --select tag:gold`. Tabel
 `risk_prediction_daily` disiapkan sebagai folder tujuan inference ML, jadi belum
 punya kontrak sampai modelnya ada.
 
+Gold juga dipublish ke **Iceberg v2** lewat `task gold-publish` (ADR-002):
+snapshot 30 hari, partisi `date`/`burn_month`, katalog SQLite.
+
 ## Tata letak Silver
 
 Silver memakai dua lapisan:

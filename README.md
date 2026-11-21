@@ -57,6 +57,7 @@ dulu sekali supaya view Silver ada di DuckDB lokal:
 task gold-build   # bersihkan tabel Gold dbt, dbt build --select tag:gold, lalu katalog
 task gold-test    # uji model Gold saja
 task gold-catalog # catalog.json + lineage.json di data/gold/_catalog/
+task gold-publish # publish Gold Parquet ke Iceberg v2 (snapshot/upsert)
 ```
 
 | Tabel | Grain | Baris |
@@ -68,7 +69,9 @@ task gold-catalog # catalog.json + lineage.json di data/gold/_catalog/
 Semua uji rekonsiliasi lulus: 486.238 hotspot, 36.916 piksel scar (7.922 km²),
 6.377 label positif. Katalog Gold memuat 4 tabel (3 `implemented`, 1 `planned`
 untuk ML) beserta owner, klasifikasi, retensi, dan lineage Bronze → Silver →
-Gold. Detail ada di `docs/roadmap-gold.md`.
+Gold. Gold juga dipublish ke **Iceberg v2** (snapshot 30 hari, upsert, schema
+evolution) lewat `task gold-publish`. Detail ada di `docs/roadmap-gold.md` dan
+`docs/adr/ADR-002-storage.md`.
 
 Garage dan browser bucket-nya jalan lewat Compose, lalu web UI ada di
 <http://localhost:3909>:
