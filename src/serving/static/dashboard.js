@@ -47,6 +47,15 @@
     });
   };
 
+  const scarPeriodLabel = (rows) => {
+    const months = [
+      ...new Set((rows || []).map((row) => row.burn_month).filter(Boolean)),
+    ].sort();
+    if (!months.length) return monthLong(state.start.slice(0, 7));
+    if (months.length === 1) return monthLong(months[0]);
+    return monthLong(months[0]) + " – " + monthLong(months[months.length - 1]);
+  };
+
   const periodLabel = () => {
     const start = new Date(state.start + "T00:00:00");
     const end = new Date(state.end + "T00:00:00");
@@ -122,10 +131,7 @@
   };
 
   const scarQuery = () => {
-    const params = new URLSearchParams({
-      month: state.start.slice(0, 7),
-      limit: "1000",
-    });
+    const params = new URLSearchParams({ limit: "1000" });
     if (state.province) params.set("province", state.province);
     return params.toString();
   };
@@ -139,91 +145,74 @@
     const scarPixels = sum(monthlyRows, "scar_pixels");
     const provinceCount = (summaryRows || []).length;
 
-    $("kpi-total").textContent = number.format(total);
-    $("kpi-total-sub").textContent =
-      periodLabel() + " · " + provinceCount + " provinsi";
+    $("tab1-total").textContent = number.format(total);
+    $("tab1-total-sub").textContent =
+      periodLabel() + " \u00b7 " + provinceCount + " provinsi";
 
-    $("kpi-kuat").textContent = number.format(kuat);
-    $("kpi-kuat-sub").textContent = total
+    $("tab1-kuat").textContent = number.format(kuat);
+    $("tab1-kuat-sub").textContent = total
       ? decimal.format((kuat / total) * 100) + "% dari total hotspot"
       : "Tidak ada hotspot pada rentang ini";
 
-    $("kpi-frp").textContent = decimal.format(frp / 1_000_000) + " jt";
-    $("kpi-frp-sub").textContent =
-      "Σ MW · puncak " + number.format(frpMax) + " MW";
+    $("tab1-frp").textContent = decimal.format(frp / 1_000_000) + " jt";
+    $("tab1-frp-sub").textContent =
+      "\u03a3 MW \u00b7 maks provinsi " + number.format(frpMax) + " MW";
 
-    $("kpi-scar").textContent = number.format(Math.round(scar));
-    $("kpi-scar-sub").textContent =
-      "km² · " + number.format(scarPixels) + " piksel MCD64A1";
+    $("tab1-scar").textContent = number.format(Math.round(scar));
+    $("tab1-scar-sub").textContent =
+      "km\u00b2 \u00b7 " +
+      number.format(scarPixels) +
+      " piksel \u00b7 " +
+      scarPeriodLabel(monthlyRows);
 
-    $("period-label").textContent = "Dashboard · " + periodLabel();
+    const activeCells = sum(summaryRows, "active_cell_days");
+    $("tab1-active").textContent = number.format(activeCells);
+    $("tab1-active-sub").textContent = "sel-hari \u00b7 grid 0,25\u00b0";
+
+    $("tab1-period").textContent = periodLabel();
+    $("tab2-period").textContent = periodLabel();
+    $("period-label").textContent = "Dashboard \u00b7 " + periodLabel();
     $("filter-meta").textContent =
-      provinceCount + " provinsi · " + number.format(total) + " hotspot";
+      provinceCount + " provinsi \u00b7 " + number.format(total) + " hotspot";
     $("scar-period").textContent =
-      monthLong(state.start.slice(0, 7)) + " · km²";
+      scarPeriodLabel(monthlyRows) + " \u00b7 km\u00b2";
   }
 
-  function renderSpark(svgId, rows, key, color) {
-    const svg = $(svgId);
-    const values = (rows || []).map((row) => Number(row[key] || 0));
-    if (values.length < 2) {
-      svg.innerHTML = "";
-      return;
-    }
+  function renderTrendKpis(dailyRows) {
+    const rows = dailyRows || [];
+    const days = rows.length;
+    const total = sum(rows, "hotspot_count");
+    const peak = [...rows].sort(
+      (a, b) => Number(b.hotspot_count) - Number(a.hotspot_count),
+    )[0];
+    const frpPeak = [...rows].sort(
+      (a, b) => Number(b.frp_sum) - Number(a.frp_sum),
+    )[0];
 
-    const width = 200;
-    const height = 28;
-    const pad = 2;
-    const minValue = Math.min(...values);
-    const maxValue = Math.max(...values);
-    const span = maxValue - minValue || 1;
-    const points = values.map((value, index) => [
-      pad + (index * (width - 2 * pad)) / (values.length - 1),
-      height - pad - ((value - minValue) / span) * (height - 2 * pad),
-    ]);
-    const line = points
-      .map(
-        (point, index) =>
-          (index ? "L" : "M") +
-          point[0].toFixed(1) +
-          " " +
-          point[1].toFixed(1),
-      )
-      .join(" ");
-    const area =
-      line +
-      " L " +
-      points[points.length - 1][0].toFixed(1) +
-      " " +
-      height +
-      " L " +
-      points[0][0].toFixed(1) +
-      " " +
-      height +
-      " Z";
+    $("tab2-peak").textContent = peak
+      ? number.format(Math.round(Number(peak.hotspot_count)))
+      : "\u2014";
+    $("tab2-peak-sub").textContent = peak
+      ? "pada " + dateLong(peak.date)
+      : "Belum ada data harian";
 
-    svg.setAttribute("preserveAspectRatio", "none");
-    svg.innerHTML =
-      '<defs><linearGradient id="' +
-      svgId +
-      '-fill" x1="0" y1="0" x2="0" y2="1">' +
-      '<stop offset="0%" stop-color="' +
-      color +
-      '" stop-opacity=".28" />' +
-      '<stop offset="100%" stop-color="' +
-      color +
-      '" stop-opacity="0" />' +
-      "</linearGradient></defs>" +
-      '<path d="' +
-      area +
-      '" fill="url(#' +
-      svgId +
-      '-fill)" />' +
-      '<path d="' +
-      line +
-      '" fill="none" stroke="' +
-      color +
-      '" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />';
+    $("tab2-avg").textContent = days
+      ? number.format(Math.round(total / days))
+      : "\u2014";
+    $("tab2-avg-sub").textContent = "hotspot per hari";
+
+    $("tab2-days").textContent = number.format(days);
+    $("tab2-days-sub").textContent = "hari dengan data";
+
+    $("tab2-frp").textContent = frpPeak
+      ? compact(frpPeak.frp_sum)
+      : "\u2014";
+    $("tab2-frp-sub").textContent = "Σ MW · gabungan provinsi";
+
+    $("tab2-frp-date").textContent = frpPeak
+      ? dateShort(frpPeak.date)
+      : "\u2014";
+    $("tab2-frp-date-sub").textContent = "puncak FRP";
   }
 
   function renderLineChart(svgId, rows, key, badgeId, color) {
@@ -1073,7 +1062,7 @@
       ? number.format(Math.round(km2)) + " km²"
       : "Belum ada";
     $("scar-summary-period").textContent =
-      monthLong(state.start.slice(0, 7)) + " · km²";
+      scarPeriodLabel(rows) + " · km²";
   }
 
   function renderFreshness(health) {
@@ -1118,12 +1107,14 @@
 
       const summaryRows = summary.rows || [];
       const dailyRows = daily.rows || [];
-      const monthlyRows = monthly.rows || [];
+      const startMonth = state.start.slice(0, 7);
+      const endMonth = state.end.slice(0, 7);
+      const monthlyRows = (monthly.rows || []).filter(
+        (row) => row.burn_month >= startMonth && row.burn_month <= endMonth,
+      );
 
       renderSummary(summaryRows, monthlyRows);
-      renderSpark("spark-total", dailyRows, "hotspot_count", "#ff8a3d");
-      renderSpark("spark-kuat", dailyRows, "hotspot_kuat", "#ff5a2b");
-      renderSpark("spark-frp", dailyRows, "frp_sum", "#ffb02e");
+      renderTrendKpis(dailyRows);
       renderTierChart(dailyRows);
       renderDailyStrip(dailyRows);
       renderMap(cells.rows || [], summaryRows);
@@ -1165,7 +1156,7 @@
         ? "Total " +
           number.format(Math.round(scarTotal)) +
           " km² · " +
-          monthLong(state.start.slice(0, 7))
+          scarPeriodLabel(monthlyRows)
         : "Belum ada data scar bulan ini.";
       $("donut-note").textContent = hotspotTotal
         ? "Kandidat " +

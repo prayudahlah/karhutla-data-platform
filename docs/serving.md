@@ -103,8 +103,12 @@ portal), lalu `src/serving/static/dashboard.css` dan `dashboard.js`.
 1. Dashboard memanggil API yang sama:
    `/hotspots/summary`, `/hotspots/daily/total`, `/burn-scar/monthly`,
    `/cells/hotspots`, `/meta/provinces`, dan `/health`.
-2. KPI: total hotspot, hotspot kuat, FRP total, luas terbakar, dengan sparkline
-   harian.
+2. KPI berbeda per tab:
+   - **Ikhtisar**: total hotspot, hotspot kuat, FRP total, luas terbakar,
+     sel aktif.
+   - **Tren**: puncak harian, rata-rata harian, hari terdata, puncak Σ FRP,
+     tanggal puncak FRP.
+   - **Prediksi**: horizon, frekuensi, granularitas, status model, kesiapan.
 3. Peta: sel hotspot pada tanggal akhir filter, diwarnai menurut tier dan
    diskalakan menurut `hotspot_count`; filter provinsi ikut diteruskan.
 4. Tiga tab: **Ikhtisar** (peta, donut tier, treemap provinsi, top 5),
