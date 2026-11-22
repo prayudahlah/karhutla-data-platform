@@ -117,6 +117,10 @@
   const setLoading = (loading) => {
     const button = $("dash-apply");
     if (button) button.disabled = loading;
+    const progress = $("dash-progress");
+    if (progress) progress.hidden = !loading;
+    const wrap = document.querySelector(".dash-wrap");
+    if (wrap) wrap.setAttribute("aria-busy", String(loading));
     if (loading) $("freshness").textContent = "Memuat data…";
   };
 
@@ -614,10 +618,10 @@
     const note = $("treemap-note");
     const badge = $("treemap-share");
     const total = sum(rows, "hotspot_count");
-    const top = [...(rows || [])]
+    const all = [...(rows || [])]
       .filter((row) => Number(row.hotspot_count || 0) > 0)
-      .sort((a, b) => Number(b.hotspot_count) - Number(a.hotspot_count))
-      .slice(0, 8);
+      .sort((a, b) => Number(b.hotspot_count) - Number(a.hotspot_count));
+    const top = all.slice(0, 8);
 
     if (!top.length) {
       svg.innerHTML =
@@ -642,6 +646,18 @@
       value: Number(row.hotspot_count || 0),
       color: colors[index] || colors[colors.length - 1],
     }));
+    const others = all.slice(top.length);
+    const othersValue = others.reduce(
+      (value, row) => value + Number(row.hotspot_count || 0),
+      0,
+    );
+    if (othersValue > 0) {
+      items.push({
+        name: "Lainnya · " + others.length + " provinsi",
+        value: othersValue,
+        color: "#5c6b62",
+      });
+    }
     const boxes = [];
     layoutTreemap(items, 0, 0, 1000, 340, true, boxes);
     const topTotal = items.reduce((value, item) => value + item.value, 0);
@@ -726,10 +742,12 @@
       })
       .join("");
 
-    badge.textContent = "Top " + top.length;
+    badge.textContent = "Top " + top.length + " + lainnya";
     note.textContent =
       top.length +
-      " provinsi · " +
+      " provinsi teratas + " +
+      others.length +
+      " lainnya · " +
       decimal.format((topTotal / total) * 100) +
       "% dari total hotspot";
   }
@@ -819,18 +837,17 @@
       .slice(0, 5);
 
     if (!sorted.length) {
-      host.innerHTML = '<p class="dash-empty">Belum ada data pada rentang ini.</p>';
+      host.innerHTML =
+        '<p class="dash-empty">Belum ada data pada rentang ini.</p>';
       return;
     }
 
-    const biggest = Math.max(...sorted.map((row) => Number(row[key] || 0)), 1);
+    const denominator = Number(total) || 1;
     host.innerHTML = sorted
       .map((row, index) => {
-        const value = Math.max(2, (Number(row[key]) / biggest) * 100);
-        const share =
-          total && Number(total) > 0
-            ? decimal.format((Number(row[key]) / Number(total)) * 100)
-            : null;
+        const numeric = Number(row[key] || 0);
+        const share = (numeric / denominator) * 100;
+        const width = Math.max(1.5, share);
         return (
           '<div class="rank-row">' +
           '<span class="rank-no">' +
@@ -838,19 +855,22 @@
           "</span>" +
           '<span class="rank-name" title="' +
           row.province +
-          " · " +
-          number.format(Math.round(Number(row[key] || 0))) +
-          (share !== null ? " · " + share + "%" : "") +
-          '">' +
+          " \u00b7 " +
+          number.format(Math.round(numeric)) +
+          " \u00b7 " +
+          decimal.format(share) +
+          '%">' +
           row.province +
           "</span>" +
           '<span class="rank-val">' +
-          number.format(Math.round(Number(row[key] || 0))) +
-          "</span>" +
+          number.format(Math.round(numeric)) +
+          "<small>" +
+          decimal.format(share) +
+          "%</small></span>" +
           '<span class="rank-track' +
           (gold ? " gold" : "") +
           '"><i style="width:' +
-          value.toFixed(1) +
+          width.toFixed(1) +
           '%"></i></span>' +
           "</div>"
         );
@@ -1124,7 +1144,10 @@
 
       renderFreshness(health);
     } catch (error) {
-      showError("Data belum bisa dimuat. " + error.message);
+      console.error("Dashboard load failed", error);
+      showError(
+        "Data belum bisa dimuat. Coba lagi sebentar atau periksa koneksi API serving.",
+      );
       $("freshness").textContent = "Data gagal dimuat";
     } finally {
       setLoading(false);

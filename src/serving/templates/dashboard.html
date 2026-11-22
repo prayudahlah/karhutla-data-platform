@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% block title %}Dashboard | JAGAHUTAN{% endblock %}
-{% block extra_head %}<link rel="stylesheet" href="/static/dashboard.css?v=20261122f">{% endblock %}
+{% block extra_head %}<link rel="stylesheet" href="/static/dashboard.css?v=20261122h">{% endblock %}
 {% block content %}
 <section class="hero hero-dash">
   <div class="hero-glow"></div>
@@ -29,8 +29,15 @@
 </section>
 
 <div class="shell dash-wrap">
-  <section class="dash-toolbar" aria-label="Filter data">
-    <form class="dash-form dash-form-row" id="dash-filter">
+  <div class="dash-controlbar">
+    <div class="dash-tabbar">
+      <div class="dash-tabs" role="tablist" aria-label="Bagian dashboard">
+        <button class="dash-tab" id="tab-sebaran" type="button" role="tab" aria-selected="true" aria-controls="panel-sebaran" data-tab="sebaran">Sebaran &amp; dampak</button>
+        <button class="dash-tab" id="tab-tren" type="button" role="tab" aria-selected="false" aria-controls="panel-tren" data-tab="tren" tabindex="-1">Tren &amp; prediksi</button>
+      </div>
+      <span class="dash-badge tab-period" id="tabs-period">September 2026</span>
+    </div>
+    <form class="dash-toolbar dash-form-row" id="dash-filter" aria-label="Filter data">
       <label class="dash-field">Mulai<input type="date" id="dash-start" value="2026-09-01"></label>
       <label class="dash-field">Selesai<input type="date" id="dash-end" value="2026-09-30"></label>
       <label class="dash-field">Provinsi
@@ -38,20 +45,12 @@
           <option value="">Semua provinsi</option>
         </select>
       </label>
-      <div class="dash-filter-hint">Filter berlaku untuk kedua tab.</div>
       <button class="btn btn-primary" id="dash-apply" type="submit">Terapkan</button>
     </form>
-  </section>
-
-  <div class="notice dash-error" id="dash-error" hidden role="alert"></div>
-
-  <div class="dash-tabbar">
-    <div class="dash-tabs" role="tablist" aria-label="Bagian dashboard">
-      <button class="dash-tab" id="tab-sebaran" type="button" role="tab" aria-selected="true" aria-controls="panel-sebaran" data-tab="sebaran">Sebaran &amp; dampak</button>
-      <button class="dash-tab" id="tab-tren" type="button" role="tab" aria-selected="false" aria-controls="panel-tren" data-tab="tren" tabindex="-1">Tren &amp; prediksi</button>
-    </div>
-    <span class="dash-badge tab-period" id="tabs-period">September 2026</span>
   </div>
+
+  <div class="dash-progress" id="dash-progress" hidden></div>
+  <div class="notice dash-error" id="dash-error" hidden role="alert"></div>
 
   <section class="dash-tabpanel" id="panel-sebaran" role="tabpanel" aria-labelledby="tab-sebaran" tabindex="0">
     <div class="tab-head">
@@ -252,4 +251,4 @@
   </section>
 </div>
 {% endblock %}
-{% block extra_scripts %}<script src="/static/dashboard.js?v=20261122d" defer></script>{% endblock %}
+{% block extra_scripts %}<script src="/static/dashboard.js?v=20261122g" defer></script>{% endblock %}
