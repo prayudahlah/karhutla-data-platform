@@ -319,10 +319,8 @@
     $("tab1-active").textContent = number.format(activeCells);
     $("tab1-active-sub").textContent = "sel-hari \u00b7 grid 0,25\u00b0";
 
-    $("period-label").textContent = "Dashboard \u00b7 " + periodLabel();
     $("rail-period").textContent = periodLabel();
     $("rail-coverage").textContent = provinceCount + " provinsi";
-    $("rail-total").textContent = number.format(total);
   }
 
   function renderTrendKpis(dailyRows) {

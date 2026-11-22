@@ -11,33 +11,26 @@
   } catch (error) {}
 })();
 </script>
-<link rel="stylesheet" href="/static/dashboard.css?v=20261123e">
+<link rel="stylesheet" href="/static/dashboard.css?v=20261123f">
 {% endblock %}
 {% block content %}
-<section class="hero hero-dash">
-  <div class="hero-glow"></div>
-  <svg class="treeline" viewBox="0 0 1440 300" preserveAspectRatio="none" aria-hidden="true" fill="#06130d">
-    <path d="M0,300 L0,215 C90,198 155,160 245,174 C335,188 390,142 485,155 C575,168 635,124 725,143 C815,162 875,118 965,136 C1055,154 1115,112 1205,132 C1295,152 1350,120 1440,142 L1440,300 Z"/>
-  </svg>
-
-  <div class="hero-inner">
+<section class="dash-hero">
+  <div class="dash-hero-inner">
     <div class="hero-copy">
       <div class="breadcrumb"><a href="/">Ringkasan</a> / Dashboard</div>
-      <div class="kicker" id="period-label">Dashboard · September 2026</div>
+      <div class="kicker" id="period-label">Dashboard · Gold layer</div>
       <h1 class="serif">Pemantauan karhutla.</h1>
       <p class="hero-lead">Hotspot, FRP, dan luas terbakar dari Gold layer. Angka indikatif, bukan peringatan resmi.</p>
     </div>
-    <aside class="hero-rail" aria-label="Status data dashboard">
+    <div class="hero-meta" aria-label="Status data dashboard">
       <div class="dash-status"><i class="dot"></i><span id="freshness" aria-live="polite">Memuat status data…</span></div>
-      <div class="rail-total-block">
-        <span>Total hotspot</span>
-        <b id="rail-total">—</b>
-      </div>
-      <div class="rail-divider"></div>
-      <div class="rail-row"><span>Periode</span><b id="rail-period">September 2026</b></div>
-      <div class="rail-row"><span>Cakupan</span><b id="rail-coverage">38 provinsi</b></div>
-    </aside>
+      <div class="hero-meta-row"><span>Periode</span><b id="rail-period">September 2026</b></div>
+      <div class="hero-meta-row"><span>Cakupan</span><b id="rail-coverage">38 provinsi</b></div>
+    </div>
   </div>
+  <svg class="hero-ridge" viewBox="0 0 1440 48" preserveAspectRatio="none" aria-hidden="true" fill="currentColor">
+    <path d="M0,48 L0,31 C120,27 220,15 340,19 C460,23 560,11 680,16 C800,21 900,9 1020,14 C1140,19 1300,11 1440,17 L1440,48 Z"/>
+  </svg>
 </section>
 
 <div class="dash-workspace">
@@ -258,4 +251,4 @@
 </div>
 </div>
 {% endblock %}
-{% block extra_scripts %}<script src="/static/dashboard.js?v=20261123e" defer></script>{% endblock %}
+{% block extra_scripts %}<script src="/static/dashboard.js?v=20261123f" defer></script>{% endblock %}
