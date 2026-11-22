@@ -208,6 +208,129 @@
   const isLight = () => document.documentElement.dataset.theme === "light";
   const palette = () => (isLight() ? PALETTES.light : PALETTES.dark);
 
+  const escapeText = (value) =>
+    String(value == null ? "" : value)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;");
+
+  function hideTooltip() {
+    const tooltip = $("chart-tooltip");
+    if (!tooltip) return;
+    tooltip.classList.remove("is-visible");
+    tooltip.setAttribute("aria-hidden", "true");
+  }
+
+  function bindTooltips() {
+    const workspace = document.querySelector(".dash-workspace");
+    const tooltip = $("chart-tooltip");
+    if (!workspace || !tooltip) return;
+    const selector = "[data-tt-title], [data-tt-value]";
+    let visible = false;
+
+    const content = (target) => {
+      const parts = [];
+      if (target.dataset.ttKicker) {
+        parts.push(
+          '<div class="tt-kicker">' +
+            escapeText(target.dataset.ttKicker) +
+            "</div>",
+        );
+      }
+      if (target.dataset.ttTitle) {
+        parts.push(
+          '<div class="tt-title">' +
+            escapeText(target.dataset.ttTitle) +
+            "</div>",
+        );
+      }
+      if (target.dataset.ttValue) {
+        parts.push(
+          '<div class="tt-value">' +
+            escapeText(target.dataset.ttValue) +
+            "</div>",
+        );
+      }
+      if (target.dataset.ttSub) {
+        parts.push(
+          '<div class="tt-sub">' + escapeText(target.dataset.ttSub) + "</div>",
+        );
+      }
+      return parts.join("");
+    };
+
+    const place = (x, y) => {
+      const rect = tooltip.getBoundingClientRect();
+      const pad = 12;
+      let left = x + 14;
+      let top = y - rect.height - 14;
+      if (left + rect.width + pad > window.innerWidth) {
+        left = x - rect.width - 14;
+      }
+      if (top < pad) top = y + 18;
+      tooltip.style.left = Math.max(pad, left) + "px";
+      tooltip.style.top = Math.max(pad, top) + "px";
+    };
+
+    const show = (target, x, y) => {
+      const html = content(target);
+      if (!html) return;
+      tooltip.innerHTML = html;
+      tooltip.classList.add("is-visible");
+      tooltip.setAttribute("aria-hidden", "false");
+      visible = true;
+      place(x, y);
+    };
+
+    workspace.addEventListener("pointerover", (event) => {
+      const target = event.target.closest(selector);
+      if (!target || target.contains(event.relatedTarget)) return;
+      show(target, event.clientX, event.clientY);
+    });
+    workspace.addEventListener("pointermove", (event) => {
+      if (!visible) return;
+      const target = event.target.closest(selector);
+      if (!target) return;
+      place(event.clientX, event.clientY);
+    });
+    workspace.addEventListener("pointerout", (event) => {
+      const target = event.target.closest(selector);
+      if (!target) return;
+      if (event.relatedTarget && target.contains(event.relatedTarget)) return;
+      hideTooltip();
+      visible = false;
+    });
+    workspace.addEventListener("focusin", (event) => {
+      const target = event.target.closest(selector);
+      if (!target) return;
+      const rect = target.getBoundingClientRect();
+      show(target, rect.left + rect.width / 2, rect.top);
+    });
+    workspace.addEventListener("focusout", (event) => {
+      if (event.target.closest(selector)) {
+        hideTooltip();
+        visible = false;
+      }
+    });
+    window.addEventListener(
+      "wheel",
+      () => {
+        hideTooltip();
+        visible = false;
+      },
+      { passive: true },
+    );
+    window.addEventListener(
+      "touchmove",
+      () => {
+        hideTooltip();
+        visible = false;
+      },
+      { passive: true },
+    );
+  }
+
   let lastData = null;
 
   function syncThemeButton() {
@@ -223,6 +346,7 @@
   }
 
   function renderAll(data) {
+    hideTooltip();
     const { summaryRows, dailyRows, monthlyRows, health, cells } = data;
     renderSummary(summaryRows, monthlyRows);
     renderSparkline(dailyRows);
@@ -579,6 +703,21 @@
       )
       .join("");
 
+    const hits = present
+      .map(
+        (point) =>
+          '<circle cx="' +
+          xFor(point.index).toFixed(1) +
+          '" cy="' +
+          yFor(point.value).toFixed(1) +
+          '" r="7" fill="transparent" pointer-events="all" data-tt-kicker="FRP harian" data-tt-title="' +
+          escapeText(dateLong(domain[point.index])) +
+          '" data-tt-value="' +
+          compact(point.value) +
+          ' MW" data-tt-sub="Energi radiasi api" />',
+      )
+      .join("");
+
     svg.innerHTML =
       '<defs><linearGradient id="' +
       svgId +
@@ -610,7 +749,8 @@
       '" fill="var(--text)" font-size="10">' +
       compact(peak.value) +
       "</text>" +
-      xLabels;
+      xLabels +
+      hits;
 
     badge.textContent =
       "Puncak hari · " +
@@ -719,6 +859,8 @@
             const barHeight = (value / yMax) * plotH;
             if (!barHeight) return "";
             y -= barHeight;
+            const tierName = key.charAt(0).toUpperCase() + key.slice(1);
+            const week = dateShort(isoDate(bucket.start));
             return (
               '<rect x="' +
               x.toFixed(1) +
@@ -730,11 +872,15 @@
               barHeight.toFixed(1) +
               '" rx="2" fill="' +
               color +
-              '"><title>' +
-              key +
-              ": " +
+              '" data-tt-kicker="Minggu ' +
+              week +
+              '" data-tt-title="' +
+              tierName +
+              '" data-tt-value="' +
               number.format(Math.round(value)) +
-              "</title></rect>"
+              ' hotspot" data-tt-sub="Total minggu ' +
+              number.format(Math.round(total)) +
+              '"></rect>'
             );
           })
           .join("");
@@ -968,8 +1114,25 @@
           )
           .join("");
         const valueY = y + 26 + (labelLines.length - 1) * 22 + 22;
+        const share = (box.value / topTotal) * 100;
+        const labelText =
+          box.name +
+          ": " +
+          number.format(box.value) +
+          " hotspot (" +
+          decimal.format(share) +
+          "%)";
         return (
-          '<g><rect x="' +
+          '<g class="treemap-tile" tabindex="0" role="img" aria-label="' +
+          escapeText(labelText) +
+          '" data-tt-kicker="Provinsi" data-tt-title="' +
+          escapeText(box.name) +
+          '" data-tt-value="' +
+          number.format(box.value) +
+          ' hotspot" data-tt-sub="' +
+          decimal.format(share) +
+          '% dari total">' +
+          '<rect x="' +
           x.toFixed(1) +
           '" y="' +
           y.toFixed(1) +
@@ -979,13 +1142,7 @@
           height.toFixed(1) +
           '" rx="4" fill="' +
           box.color +
-          '" opacity=".94"><title>' +
-          box.name +
-          ": " +
-          number.format(box.value) +
-          " hotspot (" +
-          decimal.format((box.value / topTotal) * 100) +
-          "%)</title></rect>" +
+          '" opacity=".94"></rect>' +
           (showName
             ? '<text fill="' +
               fill +
@@ -1087,10 +1244,10 @@
         const day = new Date(date + "T00:00:00").getDate();
         if (!byDate.has(date)) {
           return (
-            '<div class="day-cell empty" tabindex="0" title="' +
-            dateLong(date) +
-            ': tidak ada data" aria-label="' +
-            dateLong(date) +
+            '<div class="day-cell empty" tabindex="0" data-tt-kicker="Kalender hotspot" data-tt-title="' +
+            escapeText(dateLong(date)) +
+            '" data-tt-value="Tidak ada data" data-tt-sub="Tidak ada sel pada tanggal ini" aria-label="' +
+            escapeText(dateLong(date)) +
             ': tidak ada data">' +
             day +
             "</div>"
@@ -1103,12 +1260,12 @@
           background +
           ";color:" +
           color +
-          '" title="' +
-          dateLong(date) +
-          ": " +
+          '" data-tt-kicker="Kalender hotspot" data-tt-title="' +
+          escapeText(dateLong(date)) +
+          '" data-tt-value="' +
           number.format(value) +
-          ' hotspot" aria-label="' +
-          dateLong(date) +
+          ' hotspot" data-tt-sub="Intensitas harian" aria-label="' +
+          escapeText(dateLong(date)) +
           ": " +
           number.format(value) +
           ' hotspot">' +
@@ -1289,7 +1446,15 @@
         const opacity = 0.3 + 0.55 * (count / maxCount);
         return (
           '<circle class="map-dot" data-province="' +
-          row.province +
+          escapeText(row.province) +
+          '" data-tt-kicker="Sel hotspot" data-tt-title="' +
+          escapeText(row.province) +
+          '" data-tt-value="' +
+          number.format(count) +
+          ' hotspot" data-tt-sub="Klik untuk fokus provinsi" aria-label="' +
+          escapeText(row.province) +
+          ": " +
+          number.format(count) +
           '" cx="' +
           x.toFixed(1) +
           '" cy="' +
@@ -1300,11 +1465,7 @@
           color(row) +
           '" opacity="' +
           opacity.toFixed(2) +
-          '"><title>' +
-          row.province +
-          ": " +
-          number.format(count) +
-          " hotspot</title></circle>"
+          '"></circle>'
         );
       })
       .join("");
@@ -1358,8 +1519,9 @@
     const circles = segments
       .map((segment) => {
         const length = (segment.value / total) * circumference;
+        const share = (segment.value / total) * 100;
         const circle =
-          '<circle cx="100" cy="100" r="' +
+          '<circle class="donut-seg" tabindex="0" cx="100" cy="100" r="' +
           radius +
           '" fill="none" stroke="' +
           segment.color +
@@ -1369,7 +1531,19 @@
           circumference.toFixed(2) +
           '" stroke-dashoffset="' +
           (-offset).toFixed(2) +
-          '" />';
+          '" data-tt-kicker="Tingkat bukti" data-tt-title="' +
+          segment.label +
+          '" data-tt-value="' +
+          number.format(segment.value) +
+          ' hotspot" data-tt-sub="' +
+          decimal.format(share) +
+          '% dari total" aria-label="' +
+          segment.label +
+          ": " +
+          number.format(segment.value) +
+          ' hotspot, ' +
+          decimal.format(share) +
+          '% dari total" />';
         offset += length;
         return circle;
       })
@@ -1545,6 +1719,7 @@
 
   document.addEventListener("DOMContentLoaded", () => {
     bindTheme();
+    bindTooltips();
     bindTabs();
     bindFilters();
     loadProvinces();

@@ -72,6 +72,54 @@ html[data-theme="light"] .dash-workspace {
   --kpi-shadow: 0 6px 18px rgba(40, 50, 38, 0.05);
 }
 
+.chart-tooltip {
+  position: fixed;
+  z-index: 100;
+  max-width: 240px;
+  padding: 9px 11px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--panel);
+  color: var(--text);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.28);
+  font-size: 0.72rem;
+  line-height: 1.45;
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(4px);
+  transition: opacity 120ms ease, transform 120ms ease;
+}
+.chart-tooltip.is-visible {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+.chart-tooltip .tt-kicker {
+  color: var(--label);
+  font-size: 0.6rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.chart-tooltip .tt-title {
+  margin-top: 2px;
+  color: var(--text);
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+.chart-tooltip .tt-value {
+  margin-top: 3px;
+  color: var(--amber);
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-size: 0.9rem;
+  font-variant-numeric: tabular-nums;
+}
+.chart-tooltip .tt-sub {
+  margin-top: 2px;
+  color: var(--label);
+  font-size: 0.68rem;
+}
+
 .theme-toggle {
   display: inline-flex;
   flex: none;
@@ -639,6 +687,12 @@ html[data-theme="light"] .map-focus {
 }
 .treemap-frame svg { display: block; width: 100%; height: 100%; }
 .treemap-frame text { font-family: "Inter", ui-sans-serif, system-ui, sans-serif; }
+.treemap-tile { cursor: default; outline: none; }
+.treemap-tile:hover rect,
+.treemap-tile:focus-visible rect {
+  stroke: var(--text);
+  stroke-width: 1.6;
+}
 
 .day-strip {
   display: grid;
@@ -784,6 +838,8 @@ html[data-theme="light"] .map-focus {
   justify-content: center;
 }
 .donut-svg { display: block; width: clamp(180px, 15vw, 230px); height: auto; aspect-ratio: 1; }
+.donut-seg { cursor: pointer; outline: none; }
+.donut-seg:focus-visible { stroke-width: 25; }
 .donut-legend { display: flex; flex-direction: column; gap: 8px; width: 100%; margin-top: 16px; }
 .donut-item { display: flex; align-items: center; gap: 8px; color: var(--body); font-size: 0.8rem; }
 .donut-item i { width: 9px; height: 9px; border-radius: 2px; flex: none; }
