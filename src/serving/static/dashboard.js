@@ -169,11 +169,11 @@
     $("tab1-active").textContent = number.format(activeCells);
     $("tab1-active-sub").textContent = "sel-hari \u00b7 grid 0,25\u00b0";
 
-    $("tab1-period").textContent = periodLabel();
-    $("tab2-period").textContent = periodLabel();
     $("period-label").textContent = "Dashboard \u00b7 " + periodLabel();
-    $("filter-meta").textContent =
-      provinceCount + " provinsi \u00b7 " + number.format(total) + " hotspot";
+    $("tabs-period").textContent = periodLabel();
+    $("rail-period").textContent = periodLabel();
+    $("rail-coverage").textContent = provinceCount + " provinsi";
+    $("rail-total").textContent = number.format(total) + " hotspot";
     $("scar-period").textContent =
       scarPeriodLabel(monthlyRows) + " \u00b7 km\u00b2";
   }
