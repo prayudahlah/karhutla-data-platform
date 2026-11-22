@@ -712,7 +712,7 @@ def cell_features(
             raise FeatureError("provinsi tidak bisa dipetakan ke wilayah")
 
     context_columns: list[str] = []
-    if include_context and context is not None:
+    if include_context and context is not None and not context.empty:
         _require_columns(context, ("province", "date"))
         context_frame = context.copy()
         context_frame["province"] = context_frame["province"].astype("string")

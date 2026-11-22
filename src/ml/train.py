@@ -133,7 +133,10 @@ def build_lr_pipeline(
                 "log",
                 Pipeline(
                     [
-                        ("impute", SimpleImputer(strategy="median")),
+                        (
+                            "impute",
+                            SimpleImputer(strategy="median", keep_empty_features=True),
+                        ),
                         ("log1p", FunctionTransformer(np.log1p, feature_names_out="one-to-one")),
                         ("scale", StandardScaler()),
                     ]
@@ -147,7 +150,10 @@ def build_lr_pipeline(
                 "num",
                 Pipeline(
                     [
-                        ("impute", SimpleImputer(strategy="median")),
+                        (
+                            "impute",
+                            SimpleImputer(strategy="median", keep_empty_features=True),
+                        ),
                         ("scale", StandardScaler()),
                     ]
                 ),
@@ -196,7 +202,10 @@ def build_lr_pipeline(
 
 
 def _imputed(frame: pd.DataFrame, columns: Sequence[str]) -> pd.DataFrame:
-    values = SimpleImputer(strategy="median").fit_transform(frame[list(columns)])
+    values = SimpleImputer(
+        strategy="median",
+        keep_empty_features=True,
+    ).fit_transform(frame[list(columns)])
     return pd.DataFrame(values, columns=list(columns))
 
 
