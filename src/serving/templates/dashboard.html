@@ -11,7 +11,7 @@
   } catch (error) {}
 })();
 </script>
-<link rel="stylesheet" href="/static/dashboard.css?v=20261123k">
+<link rel="stylesheet" href="/static/dashboard.css?v=20261123m">
 {% endblock %}
 {% block content %}
 <section class="dash-hero">
@@ -61,6 +61,11 @@
 
   <div class="notice dash-error" id="dash-error" hidden role="alert"></div>
 
+  <div class="dash-insight">
+    <span class="insight-label">Insight</span>
+    <p id="insight-text">Memuat insight…</p>
+  </div>
+
   <section class="dash-tabpanel" id="panel-sebaran" role="tabpanel" aria-labelledby="tab-sebaran" tabindex="0">
     <div class="tab-kpis">
       <div class="tab-kpi accent">
@@ -68,6 +73,7 @@
         <b id="tab1-total">—</b>
         <span id="tab1-total-sub">—</span>
         <svg class="kpi-spark" id="spark-total" viewBox="0 0 120 30" aria-hidden="true"></svg>
+        <div class="kpi-tier" id="kpi-tier" aria-hidden="true"></div>
       </div>
       <div class="tab-kpi"><span class="kicker">Hotspot kuat</span><b id="tab1-kuat">—</b><span id="tab1-kuat-sub">—</span></div>
       <div class="tab-kpi"><span class="kicker">FRP total</span><b id="tab1-frp">—</b><span id="tab1-frp-sub">—</span></div>
@@ -82,10 +88,14 @@
             <h2 class="dash-title">Sebaran sel aktif.</h2>
             <p class="dash-sub" id="map-date">30 Sep 2026</p>
           </div>
-          <span class="dash-badge" id="map-count">—</span>
         </div>
         <div class="map-frame">
           <svg id="map-hotspot" viewBox="0 0 640 320" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Peta sebaran sel hotspot"></svg>
+          <div class="map-chips">
+            <span class="map-chip"><b id="map-provinces">—</b> provinsi</span>
+            <span class="map-chip"><b id="map-count">—</b> sel</span>
+            <span class="map-chip"><b id="map-dominant">—</b><span id="map-dominant-share"></span></span>
+          </div>
           <div class="map-focus">
             <div class="focus-kicker">Fokus provinsi</div>
             <div class="focus-name" id="map-focus-name">—</div>
@@ -151,7 +161,12 @@
 
   <section class="dash-tabpanel" id="panel-tren" role="tabpanel" aria-labelledby="tab-tren" tabindex="0" hidden>
     <div class="tab-kpis">
-      <div class="tab-kpi accent"><span class="kicker">Puncak harian</span><b id="tab2-peak">—</b><span id="tab2-peak-sub">—</span></div>
+      <div class="tab-kpi accent">
+        <span class="kicker">Puncak harian</span>
+        <b id="tab2-peak">—</b>
+        <span id="tab2-peak-sub">—</span>
+        <svg class="kpi-spark" id="spark-peak" viewBox="0 0 120 30" aria-hidden="true"></svg>
+      </div>
       <div class="tab-kpi"><span class="kicker">Rata-rata harian</span><b id="tab2-avg">—</b><span id="tab2-avg-sub">—</span></div>
       <div class="tab-kpi"><span class="kicker">Hari terdata</span><b id="tab2-days">—</b><span id="tab2-days-sub">—</span></div>
       <div class="tab-kpi"><span class="kicker">Puncak Σ FRP</span><b id="tab2-frp">—</b><span id="tab2-frp-sub">—</span></div>
@@ -257,4 +272,4 @@
 <div class="chart-tooltip" id="chart-tooltip" role="tooltip" aria-hidden="true"></div>
 </div>
 {% endblock %}
-{% block extra_scripts %}<script src="/static/dashboard.js?v=20261123k" defer></script>{% endblock %}
+{% block extra_scripts %}<script src="/static/dashboard.js?v=20261123m" defer></script>{% endblock %}

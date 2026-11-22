@@ -2,6 +2,11 @@
    tetapi tetap memakai token dan tipografi portal.css. */
 
 /* Workspace membawa token tema; hero, navbar, dan footer tetap gelap. */
+body {
+  --lime: #c6f36a;
+  --lime-soft: rgba(198, 243, 106, 0.18);
+}
+
 .dash-workspace {
   --tier-kuat: #ff5a2b;
   --tier-sedang: #ff8a3d;
@@ -37,6 +42,8 @@ html[data-theme="light"] body {
   --ember: #d9431f;
   --gold: #b98314;
   --green: #2f7d57;
+  --lime: #5f8f2a;
+  --lime-soft: rgba(95, 143, 42, 0.16);
   --chip-bg: rgba(22, 36, 28, 0.04);
   --chip-border: #e0d9ca;
 }
@@ -288,8 +295,8 @@ html[data-theme="light"] .hero-ridge {
   width: 7px;
   height: 7px;
   border-radius: 50%;
-  background: var(--green);
-  box-shadow: 0 0 0 3px rgba(76, 175, 122, 0.16);
+  background: var(--lime);
+  box-shadow: 0 0 0 3px var(--lime-soft);
   flex: none;
 }
 .dash-status.warn .dot {
@@ -303,6 +310,39 @@ html[data-theme="light"] .hero-ridge {
 
 .dash-wrap { padding-block: 24px 0; }
 .dash-error { margin: 0 0 16px; }
+
+.dash-insight {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  margin: 0 0 16px;
+  padding: 4px 0 4px 14px;
+  border-left: 2px solid var(--lime);
+}
+.insight-label {
+  flex: none;
+  color: var(--lime);
+  font-size: 0.62rem;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.dash-insight p {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  color: var(--body);
+  font-size: 0.8rem;
+  line-height: 1.5;
+}
+.dash-insight b {
+  color: var(--text);
+  font-weight: 600;
+}
+.dash-insight .insight-sep {
+  margin: 0 6px;
+  color: var(--label);
+}
 
 .tab-head {
   display: flex;
@@ -328,7 +368,7 @@ html[data-theme="light"] .hero-ridge {
 }
 .tab-kpis {
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: repeat(6, minmax(0, 1fr));
   gap: 10px;
   margin-bottom: 18px;
 }
@@ -341,6 +381,9 @@ html[data-theme="light"] .hero-ridge {
   background: var(--panel);
   box-shadow: var(--kpi-shadow);
 }
+.tab-kpi:first-child {
+  grid-column: span 2;
+}
 .tab-kpi.accent {
   position: relative;
   overflow: hidden;
@@ -349,16 +392,28 @@ html[data-theme="light"] .hero-ridge {
 }
 .tab-kpi.accent b {
   color: var(--amber);
-  font-size: clamp(1.8rem, 2vw, 2.05rem);
+  font-size: clamp(2rem, 2.2vw, 2.35rem);
 }
 .kpi-spark {
   position: absolute;
   top: 14px;
   right: 14px;
-  width: 84px;
-  height: 26px;
+  width: 96px;
+  height: 28px;
   opacity: 0.75;
   pointer-events: none;
+}
+.kpi-tier {
+  display: flex;
+  gap: 2px;
+  height: 5px;
+  margin-top: 9px;
+  overflow: hidden;
+  border-radius: 99px;
+}
+.kpi-tier i {
+  display: block;
+  height: 100%;
 }
 .tab-kpi b {
   display: block;
@@ -509,7 +564,7 @@ html[data-theme="light"] .dash-controlbar {
 .dash-tab:hover { color: var(--text); }
 .dash-tab[aria-selected="true"] {
   color: var(--text);
-  border-bottom-color: var(--amber);
+  border-bottom-color: var(--lime);
 }
 .dash-tab:focus-visible {
   outline: none;
@@ -606,7 +661,7 @@ html[data-theme="light"] .dash-panel:hover {
 .map-frame {
   position: relative;
   width: 100%;
-  aspect-ratio: 2 / 1;
+  aspect-ratio: 1.9 / 1;
   min-height: 0;
   margin-bottom: 14px;
   overflow: hidden;
@@ -615,10 +670,42 @@ html[data-theme="light"] .dash-panel:hover {
   background:
     radial-gradient(460px 230px at 50% 82%, rgba(255, 138, 61, 0.1), transparent 68%),
     var(--panel-2);
+  box-shadow: inset 0 0 70px rgba(0, 0, 0, 0.24);
+}
+html[data-theme="light"] .map-frame {
+  box-shadow: inset 0 0 70px rgba(90, 100, 70, 0.07);
 }
 .map-frame > svg { display: block; width: 100%; height: 100%; }
 .map-dot { cursor: pointer; transition: stroke-width 120ms ease; }
 .map-dot.is-focus { stroke: var(--text); stroke-width: 1.5px; }
+
+.map-chips {
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  z-index: 1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.map-chip {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 4px;
+  padding: 4px 8px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--map-legend-bg);
+  color: var(--label);
+  font-size: 0.6rem;
+  backdrop-filter: blur(8px);
+}
+.map-chip b {
+  color: var(--text);
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-size: 0.66rem;
+  font-weight: 500;
+}
 .map-glow { animation: mapPulse 4.5s ease-in-out infinite; }
 @keyframes mapPulse {
   0%, 100% { opacity: 0.08; }
@@ -1023,6 +1110,7 @@ html[data-theme="light"] .map-focus {
     right: 12px;
     margin-left: 0;
   }
+  .map-chips { display: none; }
   .map-frame {
     aspect-ratio: auto;
     height: auto;
