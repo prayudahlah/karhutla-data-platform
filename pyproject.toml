@@ -59,7 +59,7 @@ where = ["src"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-q"
-pythonpath = ["src", "stream/src"]
+pythonpath = ["src", "stream/src", "."]
 markers = [
     "integration: tests that require a live Garage/S3-compatible endpoint",
 ]
