@@ -157,6 +157,8 @@
       "km² · " + number.format(scarPixels) + " piksel MCD64A1";
 
     $("period-label").textContent = "Dashboard · " + periodLabel();
+    $("filter-meta").textContent =
+      provinceCount + " provinsi · " + number.format(total) + " hotspot";
     $("scar-period").textContent =
       monthLong(state.start.slice(0, 7)) + " · km²";
   }
@@ -586,6 +588,245 @@
       dateShort(isoDate(buckets[peakIndex].start));
   }
 
+  function layoutTreemap(items, x, y, width, height, vertical, out) {
+    if (items.length === 1) {
+      out.push({ ...items[0], x, y, width, height });
+      return;
+    }
+    const total = items.reduce((value, item) => value + item.value, 0);
+    let accumulated = 0;
+    let split = 1;
+    for (let index = 0; index < items.length - 1; index += 1) {
+      accumulated += items[index].value;
+      if (accumulated >= total / 2) {
+        split = index + 1;
+        break;
+      }
+    }
+    const left = items.slice(0, split);
+    const right = items.slice(split);
+    const leftTotal = left.reduce((value, item) => value + item.value, 0);
+    const ratio = leftTotal / total;
+    if (vertical) {
+      layoutTreemap(left, x, y, width * ratio, height, !vertical, out);
+      layoutTreemap(right, x + width * ratio, y, width * (1 - ratio), height, !vertical, out);
+    } else {
+      layoutTreemap(left, x, y, width, height * ratio, !vertical, out);
+      layoutTreemap(right, x, y + height * ratio, width, height * (1 - ratio), !vertical, out);
+    }
+  }
+
+  function contrastText(hex) {
+    const value = hex.replace("#", "");
+    const r = parseInt(value.slice(0, 2), 16);
+    const g = parseInt(value.slice(2, 4), 16);
+    const b = parseInt(value.slice(4, 6), 16);
+    const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+    return luminance > 0.55 ? "#1a0d03" : "#f4fbf6";
+  }
+
+  function renderTreemap(rows) {
+    const svg = $("treemap");
+    const note = $("treemap-note");
+    const badge = $("treemap-share");
+    const total = sum(rows, "hotspot_count");
+    const top = [...(rows || [])]
+      .filter((row) => Number(row.hotspot_count || 0) > 0)
+      .sort((a, b) => Number(b.hotspot_count) - Number(a.hotspot_count))
+      .slice(0, 8);
+
+    if (!top.length) {
+      svg.innerHTML =
+        '<text x="500" y="170" text-anchor="middle" fill="var(--label)" font-size="14">Belum ada data.</text>';
+      note.textContent = "Belum ada hotspot pada rentang ini.";
+      badge.textContent = "Top 8";
+      return;
+    }
+
+    const colors = [
+      "#ff5a2b",
+      "#ff7a2d",
+      "#ff9a3d",
+      "#ffb02e",
+      "#e0a03a",
+      "#c98a35",
+      "#a87532",
+      "#8a6230",
+    ];
+    const items = top.map((row, index) => ({
+      name: row.province,
+      value: Number(row.hotspot_count || 0),
+      color: colors[index] || colors[colors.length - 1],
+    }));
+    const boxes = [];
+    layoutTreemap(items, 0, 0, 1000, 340, true, boxes);
+    const topTotal = items.reduce((value, item) => value + item.value, 0);
+
+    svg.innerHTML = boxes
+      .map((box) => {
+        const x = box.x + 3;
+        const y = box.y + 3;
+        const width = Math.max(0, box.width - 6);
+        const height = Math.max(0, box.height - 6);
+        const fill = contrastText(box.color);
+        const name =
+          box.name.length > 20 ? box.name.slice(0, 19) + "…" : box.name;
+        const showName = width > 105 && height > 46;
+        const showInline = !showName && width > 180 && height > 30;
+        const showValue =
+          !showName && !showInline && width > 70 && height > 34;
+        return (
+          '<g><rect x="' +
+          x.toFixed(1) +
+          '" y="' +
+          y.toFixed(1) +
+          '" width="' +
+          width.toFixed(1) +
+          '" height="' +
+          height.toFixed(1) +
+          '" rx="4" fill="' +
+          box.color +
+          '" opacity=".92"><title>' +
+          box.name +
+          ": " +
+          number.format(box.value) +
+          " hotspot (" +
+          decimal.format((box.value / topTotal) * 100) +
+          "%)</title></rect>" +
+          (showName
+            ? '<text x="' +
+              (x + 9).toFixed(1) +
+              '" y="' +
+              (y + 20).toFixed(1) +
+              '" fill="' +
+              fill +
+              '" font-size="14" font-weight="600">' +
+              name +
+              "</text>" +
+              '<text x="' +
+              (x + 9).toFixed(1) +
+              '" y="' +
+              (y + 39).toFixed(1) +
+              '" fill="' +
+              fill +
+              '" opacity=".84" font-size="11">' +
+              number.format(box.value) +
+              "</text>"
+            : "") +
+          (showInline
+            ? '<text x="' +
+              (x + 9).toFixed(1) +
+              '" y="' +
+              (y + 21).toFixed(1) +
+              '" fill="' +
+              fill +
+              '" font-size="11">' +
+              name +
+              " · " +
+              number.format(box.value) +
+              "</text>"
+            : "") +
+          (showValue
+            ? '<text x="' +
+              (x + 9).toFixed(1) +
+              '" y="' +
+              (y + 22).toFixed(1) +
+              '" fill="' +
+              fill +
+              '" opacity=".84" font-size="11">' +
+              number.format(box.value) +
+              "</text>"
+            : "") +
+          "</g>"
+        );
+      })
+      .join("");
+
+    badge.textContent = "Top " + top.length;
+    note.textContent =
+      top.length +
+      " provinsi · " +
+      decimal.format((topTotal / total) * 100) +
+      "% dari total hotspot";
+  }
+
+  function heatColor(ratio) {
+    if (ratio <= 0.001) return ["#173026", "#eaf3ec"];
+    if (ratio < 0.25) return ["#2f5e49", "#f4fbf6"];
+    if (ratio < 0.5) return ["#6f9c83", "#10241c"];
+    if (ratio < 0.75) return ["#ffb02e", "#1a0d03"];
+    if (ratio < 0.9) return ["#ff8a3d", "#1a0d03"];
+    return ["#ff5a2b", "#1a0d03"];
+  }
+
+  function renderDailyStrip(rows) {
+    const host = $("day-strip");
+    const badge = $("strip-peak");
+    const byDate = new Map(
+      (rows || []).map((row) => [row.date, Number(row.hotspot_count || 0)]),
+    );
+    const start = new Date(state.start + "T00:00:00");
+    const end = new Date(state.end + "T00:00:00");
+    const dates = [];
+    const cursor = new Date(start);
+    while (cursor <= end) {
+      dates.push(isoDate(cursor));
+      cursor.setDate(cursor.getDate() + 1);
+    }
+
+    if (!dates.length) {
+      host.innerHTML = '<p class="dash-empty">Tidak ada tanggal.</p>';
+      badge.textContent = "—";
+      return;
+    }
+
+    const values = dates
+      .filter((date) => byDate.has(date))
+      .map((date) => byDate.get(date));
+    const maxValue = Math.max(...values, 0);
+    const peakDate = dates.find((date) => byDate.get(date) === maxValue);
+
+    host.innerHTML = dates
+      .map((date) => {
+        const day = new Date(date + "T00:00:00").getDate();
+        if (!byDate.has(date)) {
+          return (
+            '<div class="day-cell empty" tabindex="0" title="' +
+            dateLong(date) +
+            ': tidak ada data" aria-label="' +
+            dateLong(date) +
+            ': tidak ada data">' +
+            day +
+            "</div>"
+          );
+        }
+        const value = byDate.get(date);
+        const [background, color] = heatColor(maxValue ? value / maxValue : 0);
+        return (
+          '<div class="day-cell" tabindex="0" style="background:' +
+          background +
+          ";color:" +
+          color +
+          '" title="' +
+          dateLong(date) +
+          ": " +
+          number.format(value) +
+          ' hotspot" aria-label="' +
+          dateLong(date) +
+          ": " +
+          number.format(value) +
+          ' hotspot">' +
+          day +
+          "</div>"
+        );
+      })
+      .join("");
+
+    badge.textContent = maxValue
+      ? "Puncak " + compact(maxValue) + " · " + dateShort(peakDate)
+      : "Tidak ada data";
+  }
+
   function renderTop(hostId, rows, key, gold, total) {
     const host = $(hostId);
     const sorted = [...(rows || [])]
@@ -884,7 +1125,9 @@
       renderSpark("spark-kuat", dailyRows, "hotspot_kuat", "#ff5a2b");
       renderSpark("spark-frp", dailyRows, "frp_sum", "#ffb02e");
       renderTierChart(dailyRows);
+      renderDailyStrip(dailyRows);
       renderMap(cells.rows || [], summaryRows);
+      renderTreemap(summaryRows);
       renderLineChart(
         "chart-frp",
         dailyRows,

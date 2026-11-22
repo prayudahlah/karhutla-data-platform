@@ -107,12 +107,14 @@ portal), lalu `src/serving/static/dashboard.css` dan `dashboard.js`.
    harian.
 3. Peta: sel hotspot pada tanggal akhir filter, diwarnai menurut tier dan
    diskalakan menurut `hotspot_count`; filter provinsi ikut diteruskan.
-4. Tiga tab: **Ikhtisar** (peta, top 5, komposisi tier), **Tren** (hotspot per
-   tier, FRP, luas terbakar), **Prediksi** (placeholder ML dan checklist).
-5. Grafik: tren hotspot mingguan per tier, tren FRP harian, top 5 provinsi,
-   komposisi tier, dan top 5 luas terbakar.
-6. Kanvas dashboard memakai lebar sampai 1720 px, lebih lebar dari portal,
-   supaya tidak menyisakan gutter besar di monitor desktop.
+4. Tiga tab: **Ikhtisar** (peta, donut tier, treemap provinsi, top 5),
+   **Tren** (hotspot per tier, FRP, kalender harian, scar), **Prediksi**
+   (status, checklist, pipeline, pratinjau tabel risiko).
+5. Grafik: tren hotspot mingguan per tier, tren FRP harian, kalender
+   intensitas harian, treemap provinsi, top 5 provinsi, komposisi tier, dan
+   top 5 luas terbakar.
+6. Kanvas dashboard memakai lebar sampai 1560 px dengan padding samping,
+   lebih lebar dari portal tetapi tetap menyisakan ruang di monitor desktop.
 7. Filter bar: provinsi dan rentang tanggal. Filter pulau belum tersedia
    sampai kolom `island` di-merge dan `serving-sync` dijalankan.
 8. Freshness: `/health` (`latest_date`, `iceberg.stale`, `age_hours`).

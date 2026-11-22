@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% block title %}Dashboard | JAGAHUTAN{% endblock %}
-{% block extra_head %}<link rel="stylesheet" href="/static/dashboard.css">{% endblock %}
+{% block extra_head %}<link rel="stylesheet" href="/static/dashboard.css?v=20261122c">{% endblock %}
 {% block content %}
 <section class="hero hero-dash">
   <div class="hero-glow"></div>
@@ -63,6 +63,7 @@
           <option value="">Semua provinsi</option>
         </select>
       </label>
+      <div class="dash-filter-meta" id="filter-meta">—</div>
       <button class="btn btn-primary" id="dash-apply" type="submit">Terapkan</button>
     </form>
   </section>
@@ -77,7 +78,7 @@
 
   <section class="dash-tabpanel" id="panel-ikhtisar" role="tabpanel" aria-labelledby="tab-ikhtisar" tabindex="0">
     <div class="dash-grid">
-      <article class="dash-panel span-6 dash-map-panel">
+      <article class="dash-panel span-7 dash-map-panel">
         <div class="dash-head">
           <div>
             <div class="kicker">Peta hotspot</div>
@@ -100,11 +101,42 @@
             <span><i style="background:#ff5a2b"></i>Kuat</span>
             <span><i style="background:#ff8a3d"></i>Sedang</span>
             <span><i style="background:#ffb02e"></i>Lemah</span>
+            <span><i style="background:#6f9c83"></i>Kandidat</span>
           </div>
         </div>
       </article>
 
-      <article class="dash-panel span-3">
+      <article class="dash-panel span-5">
+        <div class="dash-head">
+          <div>
+            <div class="kicker">Komposisi</div>
+            <h2 class="dash-title">Tingkat bukti</h2>
+            <p class="dash-sub">Kuat + sedang + lemah + kandidat</p>
+          </div>
+        </div>
+        <div class="donut-wrap">
+          <svg class="donut-svg" id="donut" viewBox="0 0 200 200" role="img" aria-label="Komposisi tingkat bukti hotspot"></svg>
+          <div class="donut-legend" id="donut-legend"></div>
+        </div>
+        <p class="panel-note" id="donut-note">—</p>
+      </article>
+
+      <article class="dash-panel span-7">
+        <div class="dash-head">
+          <div>
+            <div class="kicker">Treemap</div>
+            <h2 class="dash-title">Konsentrasi provinsi.</h2>
+            <p class="dash-sub">Luas kotak = pangsa hotspot</p>
+          </div>
+          <span class="dash-badge" id="treemap-share">Top 8</span>
+        </div>
+        <div class="treemap-frame">
+          <svg id="treemap" viewBox="0 0 1000 340" role="img" aria-label="Treemap hotspot per provinsi"></svg>
+        </div>
+        <p class="panel-note" id="treemap-note">—</p>
+      </article>
+
+      <article class="dash-panel span-5">
         <div class="dash-head">
           <div>
             <div class="kicker">Peringkat</div>
@@ -114,21 +146,6 @@
         </div>
         <div class="rank-list" id="top-hotspot"></div>
         <p class="panel-note" id="top-hotspot-note">—</p>
-      </article>
-
-      <article class="dash-panel span-3">
-        <div class="dash-head">
-          <div>
-            <div class="kicker">Komposisi</div>
-            <h2 class="dash-title">Tingkat bukti</h2>
-            <p class="dash-sub">Kuat + sedang + lemah</p>
-          </div>
-        </div>
-        <div class="donut-wrap">
-          <svg class="donut-svg" id="donut" viewBox="0 0 200 200" role="img" aria-label="Komposisi tingkat bukti hotspot"></svg>
-          <div class="donut-legend" id="donut-legend"></div>
-        </div>
-        <p class="panel-note" id="donut-note">—</p>
       </article>
     </div>
   </section>
@@ -173,6 +190,23 @@
         </div>
       </article>
 
+      <article class="dash-panel span-12">
+        <div class="dash-head">
+          <div>
+            <div class="kicker">Kalender hotspot</div>
+            <h2 class="dash-title">Intensitas harian.</h2>
+            <p class="dash-sub">Warna = jumlah hotspot; arahkan kursor untuk detail</p>
+          </div>
+          <span class="dash-badge" id="strip-peak">—</span>
+        </div>
+        <div class="day-strip" id="day-strip"></div>
+        <div class="strip-legend">
+          <span>rendah</span>
+          <i class="heat-1"></i><i class="heat-2"></i><i class="heat-3"></i><i class="heat-4"></i><i class="heat-5"></i>
+          <span>tinggi</span>
+        </div>
+      </article>
+
       <article class="dash-panel span-6">
         <div class="dash-head">
           <div>
@@ -185,7 +219,7 @@
         <p class="panel-note" id="top-scar-note">—</p>
       </article>
 
-      <article class="dash-panel span-6">
+      <article class="dash-panel span-6 is-sparse">
         <div class="dash-head">
           <div>
             <div class="kicker">Ringkasan scar</div>
@@ -216,8 +250,10 @@
           <span class="dash-badge warn">Menunggu ML</span>
         </div>
         <p class="pred-copy">Setelah <span class="mono">risk_prediction_daily</span> terisi, panel ini menampilkan probabilitas per sel dan provinsi. <span class="mono">label_risk</span> di Gold adalah label historis untuk latihan, bukan prediksi.</p>
-        <div class="pred-pipeline">
-          <span class="chip">cell_daily</span><span class="arrow">→</span><span class="chip">model</span><span class="arrow">→</span><span class="chip">risk_prediction_daily</span>
+        <div class="pred-horizon" aria-label="Pratinjau horizon prediksi D sampai D+2">
+          <div class="horizon-day"><span>D</span><div class="horizon-grid">{% for _ in range(8) %}<i></i>{% endfor %}</div></div>
+          <div class="horizon-day"><span>D+1</span><div class="horizon-grid">{% for _ in range(8) %}<i></i>{% endfor %}</div></div>
+          <div class="horizon-day"><span>D+2</span><div class="horizon-grid">{% for _ in range(8) %}<i></i>{% endfor %}</div></div>
         </div>
         <p class="panel-note">Endpoint <span class="mono">/predictions/daily</span> akan mengembalikan 200 setelah model di-deploy.</p>
       </article>
@@ -239,9 +275,51 @@
         </ul>
         <p class="panel-note">Yang perlu disepakati dengan pemilik ML: grain sel, horizon label D..D+2, dan penulisan hasil ke tabel prediksi.</p>
       </article>
+
+      <article class="dash-panel span-5 is-sparse">
+        <div class="dash-head">
+          <div>
+            <div class="kicker">Pipeline</div>
+            <h2 class="dash-title">Alur prediksi.</h2>
+            <p class="dash-sub">Dari Gold ke tabel risiko</p>
+          </div>
+        </div>
+        <div class="pipeline-flow">
+          <div class="flow-node"><span>Input</span><b>cell_daily</b><em class="status done">Siap</em></div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-node"><span>Model</span><b>risk model</b><em class="status todo">Belum</em></div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-node"><span>Output</span><b>risk_prediction_daily</b><em class="status todo">Kosong</em></div>
+        </div>
+        <p class="panel-note">Model membaca <span class="mono">cell_daily</span> dari Iceberg, lalu menulis probabilitas D..D+2 ke Postgres/Iceberg.</p>
+      </article>
+
+      <article class="dash-panel span-7">
+        <div class="dash-head">
+          <div>
+            <div class="kicker">Output</div>
+            <h2 class="dash-title">Tabel risiko.</h2>
+            <p class="dash-sub">Pratinjau skema <span class="mono">risk_prediction_daily</span></p>
+          </div>
+          <span class="dash-badge warn">Kosong</span>
+        </div>
+        <div class="table-wrap">
+          <table class="data risk-table">
+            <thead><tr><th>cell_id</th><th>date</th><th>probabilitas</th><th>tier</th></tr></thead>
+            <tbody>
+              <tr><td class="mono">—</td><td class="mono">—</td><td class="mono">—</td><td>—</td></tr>
+              <tr><td class="mono">—</td><td class="mono">—</td><td class="mono">—</td><td>—</td></tr>
+              <tr><td class="mono">—</td><td class="mono">—</td><td class="mono">—</td><td>—</td></tr>
+              <tr><td class="mono">—</td><td class="mono">—</td><td class="mono">—</td><td>—</td></tr>
+              <tr><td class="mono">—</td><td class="mono">—</td><td class="mono">—</td><td>—</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="panel-note">Tabel ini akan terisi setelah inference berjalan; dashboard cukup membaca endpoint <span class="mono">/predictions/daily</span>.</p>
+      </article>
     </div>
   </section>
 
 </div>
 {% endblock %}
-{% block extra_scripts %}<script src="/static/dashboard.js" defer></script>{% endblock %}
+{% block extra_scripts %}<script src="/static/dashboard.js?v=20261122c" defer></script>{% endblock %}
