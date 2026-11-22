@@ -1,6 +1,83 @@
 /* Dashboard Gold. Halaman ini memakai kanvas lebih lebar dari portal,
    tetapi tetap memakai token dan tipografi portal.css. */
 
+/* Workspace membawa token tema; hero, navbar, dan footer tetap gelap. */
+.dash-workspace {
+  --tier-kuat: #ff5a2b;
+  --tier-sedang: #ff8a3d;
+  --tier-lemah: #ffb02e;
+  --tier-kandidat: #4f9c75;
+  --controlbar-bg: rgba(13, 31, 23, 0.9);
+  --map-focus-bg: rgba(16, 36, 28, 0.9);
+  --map-legend-bg: rgba(10, 23, 18, 0.9);
+  --track: #173026;
+  --heat-1: #173026;
+  --heat-2: #2f5e49;
+  --heat-3: #6f9c83;
+  --heat-4: #ffb02e;
+  --heat-5: #ff5a2b;
+  --panel-shadow: 0 8px 22px rgba(0, 0, 0, 0.16);
+  --kpi-shadow: 0 6px 18px rgba(0, 0, 0, 0.12);
+  padding-bottom: 28px;
+  background: var(--bg);
+  color: var(--text);
+}
+
+html[data-theme="light"] .dash-workspace {
+  --bg: #f3f0e7;
+  --panel: #fffdf9;
+  --panel-2: #f8f5ec;
+  --line: #e0d9ca;
+  --line-soft: #ece6da;
+  --text: #16241c;
+  --body: #3f5146;
+  --label: #6f7f75;
+  --edge: #9aab9d;
+  --amber: #d9581e;
+  --ember: #d9431f;
+  --gold: #b98314;
+  --green: #2f7d57;
+  --tier-kuat: #e2402a;
+  --tier-sedang: #f2711c;
+  --tier-lemah: #e9a21b;
+  --tier-kandidat: #2f7d57;
+  --controlbar-bg: rgba(255, 253, 249, 0.92);
+  --map-focus-bg: rgba(255, 253, 249, 0.94);
+  --map-legend-bg: rgba(255, 253, 249, 0.94);
+  --track: #eee8db;
+  --heat-1: #f1ede2;
+  --heat-2: #e6efe5;
+  --heat-3: #c7ddc6;
+  --heat-4: #ffb02e;
+  --heat-5: #ff5a2b;
+  --panel-shadow: 0 8px 22px rgba(40, 50, 38, 0.06);
+  --kpi-shadow: 0 6px 18px rgba(40, 50, 38, 0.05);
+}
+
+.theme-toggle {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 6px;
+  height: 34px;
+  margin-left: 8px;
+  padding: 0 10px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: var(--panel-2);
+  color: var(--body);
+  font: inherit;
+  font-size: 0.73rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: border-color 140ms ease, color 140ms ease;
+}
+.theme-toggle:hover { border-color: var(--edge); color: var(--text); }
+.theme-toggle:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
+.theme-toggle .theme-icon.moon { display: none; }
+html[data-theme="light"] .theme-toggle .theme-icon.sun { display: none; }
+html[data-theme="light"] .theme-toggle .theme-icon.moon { display: block; }
+
 .site-header .site-nav,
 .site-footer,
 .dash-stats,
@@ -178,7 +255,7 @@
   border: 1px solid var(--line);
   border-radius: var(--radius);
   background: var(--panel);
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.12);
+  box-shadow: var(--kpi-shadow);
 }
 .tab-kpi.accent {
   border-top: 2px solid var(--amber);
@@ -224,9 +301,12 @@
   padding: 10px 14px;
   border: 1px solid var(--line);
   border-radius: 14px;
-  background: rgba(13, 31, 23, 0.9);
+  background: var(--controlbar-bg);
   box-shadow: 0 12px 30px rgba(0, 0, 0, 0.18);
   backdrop-filter: blur(12px);
+}
+html[data-theme="light"] .dash-controlbar {
+  box-shadow: 0 10px 26px rgba(40, 50, 38, 0.07);
 }
 .dash-toolbar { min-width: 0; }
 .dash-form { display: flex; flex-direction: column; gap: 12px; }
@@ -370,11 +450,14 @@
   border: 1px solid var(--line);
   border-radius: var(--radius);
   background: var(--panel);
-  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.16);
+  box-shadow: var(--panel-shadow);
   transition: border-color 160ms ease;
 }
 .dash-panel:hover {
   border-color: #355a49;
+}
+html[data-theme="light"] .dash-panel:hover {
+  border-color: #cdc4b2;
 }
 
 .dash-head {
@@ -416,10 +499,10 @@
 .chart-legend i.frp { width: 18px; height: 2px; border-radius: 99px; }
 .chart-legend i.hotspot { background: var(--amber); }
 .chart-legend i.frp { background: var(--gold); }
-.chart-legend i.tier-kuat { background: #ff5a2b; }
-.chart-legend i.tier-sedang { background: #ff8a3d; }
-.chart-legend i.tier-lemah { background: #ffb02e; }
-.chart-legend i.tier-kandidat { background: #4f9c75; }
+.chart-legend i.tier-kuat { background: var(--tier-kuat); }
+.chart-legend i.tier-sedang { background: var(--tier-sedang); }
+.chart-legend i.tier-lemah { background: var(--tier-lemah); }
+.chart-legend i.tier-kandidat { background: var(--tier-kandidat); }
 
 .map-frame {
   position: relative;
@@ -448,7 +531,7 @@
   padding: 12px;
   border: 1px solid var(--line);
   border-radius: 12px;
-  background: rgba(16, 36, 28, 0.9);
+  background: var(--map-focus-bg);
   box-shadow: 0 12px 30px rgba(0, 0, 0, 0.28);
   backdrop-filter: blur(10px);
 }
@@ -473,6 +556,9 @@
   font-variant-numeric: tabular-nums;
 }
 .focus-stats span { color: var(--label); font-size: 0.62rem; }
+html[data-theme="light"] .map-focus {
+  box-shadow: 0 10px 24px rgba(40, 50, 38, 0.1);
+}
 .map-legend {
   position: absolute;
   left: 14px;
@@ -486,7 +572,7 @@
   padding: 6px 9px;
   border: 1px solid var(--line);
   border-radius: 7px;
-  background: rgba(10, 23, 18, 0.9);
+  background: var(--map-legend-bg);
   color: var(--label);
   font-size: 0.68rem;
 }
@@ -542,11 +628,11 @@
   height: 8px;
   border-radius: 2px;
 }
-.strip-legend .heat-1 { background: #173026; }
-.strip-legend .heat-2 { background: #2f5e49; }
-.strip-legend .heat-3 { background: #6f9c83; }
-.strip-legend .heat-4 { background: #ffb02e; }
-.strip-legend .heat-5 { background: #ff5a2b; }
+.strip-legend .heat-1 { background: var(--heat-1); }
+.strip-legend .heat-2 { background: var(--heat-2); }
+.strip-legend .heat-3 { background: var(--heat-3); }
+.strip-legend .heat-4 { background: var(--heat-4); }
+.strip-legend .heat-5 { background: var(--heat-5); }
 
 .pipeline-flow {
   display: flex;
@@ -623,7 +709,7 @@
   margin-top: 2px;
   overflow: hidden;
   border-radius: 99px;
-  background: #173026;
+  background: var(--track);
 }
 .rank-track i {
   display: block;
@@ -809,6 +895,13 @@
   .dash-form-row { grid-template-columns: 1fr 1fr; }
   .dash-grid { gap: 14px; }
   .dash-tabbar { flex-wrap: wrap; }
+  .dash-controlbar .dash-tabbar { padding-right: 46px; }
+  .theme-toggle {
+    position: absolute;
+    top: 10px;
+    right: 12px;
+    margin-left: 0;
+  }
   .map-frame {
     aspect-ratio: auto;
     height: auto;
@@ -850,6 +943,8 @@
     aspect-ratio: 1000 / 520;
   }
   .scroll-hint { display: block; }
+  .theme-label { display: none; }
+  .theme-toggle { padding: 0 9px; }
 }
 
 @media (max-width: 520px) {

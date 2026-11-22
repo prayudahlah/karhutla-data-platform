@@ -136,6 +136,156 @@
     return params.toString();
   };
 
+  const THEME_KEY = "jagahutan-theme";
+
+  const PALETTES = {
+    dark: {
+      tier: {
+        kuat: "#ff5a2b",
+        sedang: "#ff8a3d",
+        lemah: "#ffb02e",
+        kandidat: "#4f9c75",
+      },
+      frp: "#ffb02e",
+      treemap: [
+        "#E8681F",
+        "#2F7D57",
+        "#3A8F66",
+        "#4F9C75",
+        "#67AD88",
+        "#82BF9D",
+        "#A0D0B4",
+        "#BFE0C9",
+      ],
+      treemapOthers: "#5C6B62",
+      mapLand: "#153a2b",
+      mapStroke: "#3d7657",
+      mapGrid: "#1b3a2d",
+      mapLabel: "#8fb5a0",
+      heat: [
+        ["#173026", "#eaf3ec"],
+        ["#2f5e49", "#f4fbf6"],
+        ["#6f9c83", "#10241c"],
+        ["#ffb02e", "#1a0d03"],
+        ["#ff8a3d", "#1a0d03"],
+        ["#ff5a2b", "#1a0d03"],
+      ],
+    },
+    light: {
+      tier: {
+        kuat: "#e2402a",
+        sedang: "#f2711c",
+        lemah: "#e9a21b",
+        kandidat: "#2f7d57",
+      },
+      frp: "#d9581e",
+      treemap: [
+        "#D9581E",
+        "#1B4F36",
+        "#266044",
+        "#317054",
+        "#3D8062",
+        "#4F9070",
+        "#65A184",
+        "#7FB29A",
+      ],
+      treemapOthers: "#B7AF9F",
+      mapLand: "#d8e2c5",
+      mapStroke: "#9fb28e",
+      mapGrid: "#e6e2d3",
+      mapLabel: "#6d7f72",
+      heat: [
+        ["#f1ede2", "#8a978c"],
+        ["#e6efe5", "#3f5c4c"],
+        ["#c7ddc6", "#24402f"],
+        ["#9dc79b", "#16241c"],
+        ["#ffb02e", "#1a0d03"],
+        ["#ff5a2b", "#1a0d03"],
+      ],
+    },
+  };
+
+  const isLight = () => document.documentElement.dataset.theme === "light";
+  const palette = () => (isLight() ? PALETTES.light : PALETTES.dark);
+
+  let lastData = null;
+
+  function syncThemeButton() {
+    const button = $("theme-toggle");
+    if (!button) return;
+    const light = isLight();
+    button.setAttribute("aria-pressed", String(light));
+    const label = button.querySelector(".theme-label");
+    if (label) label.textContent = light ? "Gelap" : "Terang";
+    const title = light ? "Ganti ke tema gelap" : "Ganti ke tema terang";
+    button.setAttribute("aria-label", "Ganti tema");
+    button.setAttribute("title", title);
+  }
+
+  function renderAll(data) {
+    const { summaryRows, dailyRows, monthlyRows, health, cells } = data;
+    renderSummary(summaryRows, monthlyRows);
+    renderTrendKpis(dailyRows);
+    renderTierChart(dailyRows);
+    renderDailyStrip(dailyRows);
+    renderMap(cells, summaryRows);
+    renderTreemap(summaryRows);
+    renderLineChart(
+      "chart-frp",
+      dailyRows,
+      "frp_sum",
+      "frp-peak",
+      palette().frp,
+    );
+    renderTop(
+      "top-hotspot",
+      summaryRows,
+      "hotspot_count",
+      false,
+      sum(summaryRows, "hotspot_count"),
+    );
+    renderDonut(summaryRows);
+
+    const hotspotTotal = sum(summaryRows, "hotspot_count");
+    const kandidat = sum(summaryRows, "hotspot_kandidat");
+    $("top-hotspot-note").textContent = summaryRows.length
+      ? summaryRows.length +
+        " provinsi · " +
+        number.format(hotspotTotal) +
+        " hotspot"
+      : "Belum ada data pada rentang ini.";
+    $("donut-note").textContent = hotspotTotal
+      ? "Kandidat " +
+        decimal.format((kandidat / hotspotTotal) * 100) +
+        "% dari total"
+      : "Belum ada data pada rentang ini.";
+    renderFreshness(health);
+  }
+
+  function applyTheme(theme, persist) {
+    if (theme === "light") {
+      document.documentElement.dataset.theme = "light";
+    } else {
+      delete document.documentElement.dataset.theme;
+    }
+    if (persist) {
+      try {
+        localStorage.setItem(THEME_KEY, theme);
+      } catch (error) {}
+    }
+    syncThemeButton();
+    if (lastData) renderAll(lastData);
+  }
+
+  function bindTheme() {
+    const button = $("theme-toggle");
+    if (!button) return;
+    button.addEventListener("click", () => {
+      applyTheme(isLight() ? "dark" : "light", true);
+    });
+    syncThemeButton();
+  }
+
   function renderSummary(summaryRows, monthlyRows) {
     const total = sum(summaryRows, "hotspot_count");
     const kuat = sum(summaryRows, "hotspot_kuat");
@@ -514,10 +664,10 @@
         const x = center - barWidth / 2;
         let y = padT + plotH;
         const parts = [
-          ["kuat", "#ff5a2b"],
-          ["sedang", "#ff8a3d"],
-          ["lemah", "#ffb02e"],
-          ["kandidat", "#4F9C75"],
+          ["kuat", palette().tier.kuat],
+          ["sedang", palette().tier.sedang],
+          ["lemah", palette().tier.lemah],
+          ["kandidat", palette().tier.kandidat],
         ]
           .map(([key, color]) => {
             const value = bucket[key];
@@ -626,16 +776,7 @@
       return;
     }
 
-    const colors = [
-      "#E8681F",
-      "#2F7D57",
-      "#3A8F66",
-      "#4F9C75",
-      "#67AD88",
-      "#82BF9D",
-      "#A0D0B4",
-      "#BFE0C9",
-    ];
+    const colors = palette().treemap;
     const items = top.map((row, index) => ({
       name: row.province,
       value: Number(row.hotspot_count || 0),
@@ -650,7 +791,7 @@
       items.push({
         name: "Lainnya · " + others.length + " provinsi",
         value: othersValue,
-        color: "#5C6B62",
+        color: palette().treemapOthers,
       });
     }
     const boxes = [];
@@ -780,12 +921,13 @@
   }
 
   function heatColor(ratio) {
-    if (ratio <= 0.001) return ["#173026", "#eaf3ec"];
-    if (ratio < 0.25) return ["#2f5e49", "#f4fbf6"];
-    if (ratio < 0.5) return ["#6f9c83", "#10241c"];
-    if (ratio < 0.75) return ["#ffb02e", "#1a0d03"];
-    if (ratio < 0.9) return ["#ff8a3d", "#1a0d03"];
-    return ["#ff5a2b", "#1a0d03"];
+    const ramp = palette().heat;
+    if (ratio <= 0.001) return ramp[0];
+    if (ratio < 0.25) return ramp[1];
+    if (ratio < 0.5) return ramp[2];
+    if (ratio < 0.75) return ramp[3];
+    if (ratio < 0.9) return ramp[4];
+    return ramp[5];
   }
 
   function renderDailyStrip(rows) {
@@ -941,20 +1083,29 @@
         ? decimal.format((Number(top.hotspot_count) / total) * 100) + "%"
         : "—";
 
+    const colors = palette();
     const land =
       '<rect width="640" height="320" fill="url(#mapGrid)" />' +
-      '<g fill="#153a2b" stroke="#3d7657" stroke-width="1.3" stroke-linejoin="round">' +
+      '<g fill="' +
+      colors.mapLand +
+      '" stroke="' +
+      colors.mapStroke +
+      '" stroke-width="1.3" stroke-linejoin="round">' +
       '<path fill-rule="evenodd" d="' +
       ISLAND_PATHS +
       '" />' +
       "</g>" +
-      '<g fill="#8fb5a0" font-size="9.5" font-weight="600" letter-spacing="1.2" text-anchor="middle" opacity=".8">' +
+      '<g fill="' +
+      colors.mapLabel +
+      '" font-size="9.5" font-weight="600" letter-spacing="1.2" text-anchor="middle" opacity=".8">' +
       '<text x="95" y="223">SUMATERA</text><text x="235" y="260">JAWA</text><text x="338" y="206">KALIMANTAN</text><text x="440" y="218">SULAWESI</text><text x="568" y="216">PAPUA</text>' +
       "</g>";
 
     if (!rows.length) {
       svg.innerHTML =
-        '<defs><pattern id="mapGrid" width="26" height="26" patternUnits="userSpaceOnUse"><path d="M 26 0 L 0 0 0 26" fill="none" stroke="#1b3a2d" stroke-width="1" /></pattern></defs>' +
+        '<defs><pattern id="mapGrid" width="26" height="26" patternUnits="userSpaceOnUse"><path d="M 26 0 L 0 0 0 26" fill="none" stroke="' +
+        colors.mapGrid +
+        '" stroke-width="1" /></pattern></defs>' +
         land +
         '<text x="320" y="168" text-anchor="middle" fill="var(--label)" font-size="13">Tidak ada sel pada tanggal ini.</text>';
       return;
@@ -969,10 +1120,10 @@
       28 + ((6 - Number(lat)) / 17) * 268,
     ];
     const color = (row) => {
-      if (Number(row.hotspot_kuat) > 0) return "#ff5a2b";
-      if (Number(row.hotspot_sedang) > 0) return "#ff8a3d";
-      if (Number(row.hotspot_lemah) > 0) return "#ffb02e";
-      return "#4F9C75";
+      if (Number(row.hotspot_kuat) > 0) return colors.tier.kuat;
+      if (Number(row.hotspot_sedang) > 0) return colors.tier.sedang;
+      if (Number(row.hotspot_lemah) > 0) return colors.tier.lemah;
+      return colors.tier.kandidat;
     };
     const radius = (count) =>
       Math.min(7, Math.max(1.6, 1.4 + Math.sqrt(count) * 0.42));
@@ -1024,7 +1175,9 @@
       .join("");
 
     svg.innerHTML =
-      '<defs><pattern id="mapGrid" width="26" height="26" patternUnits="userSpaceOnUse"><path d="M 26 0 L 0 0 0 26" fill="none" stroke="#1b3a2d" stroke-width="1" /></pattern></defs>' +
+      '<defs><pattern id="mapGrid" width="26" height="26" patternUnits="userSpaceOnUse"><path d="M 26 0 L 0 0 0 26" fill="none" stroke="' +
+      colors.mapGrid +
+      '" stroke-width="1" /></pattern></defs>' +
       land +
       glows +
       dots;
@@ -1033,11 +1186,12 @@
   function renderDonut(summaryRows) {
     const svg = $("donut");
     const legend = $("donut-legend");
+    const colors = palette().tier;
     const segments = [
-      { label: "Kuat", value: sum(summaryRows, "hotspot_kuat"), color: "#ff5a2b" },
-      { label: "Sedang", value: sum(summaryRows, "hotspot_sedang"), color: "#ff8a3d" },
-      { label: "Lemah", value: sum(summaryRows, "hotspot_lemah"), color: "#ffb02e" },
-      { label: "Kandidat", value: sum(summaryRows, "hotspot_kandidat"), color: "#4F9C75" },
+      { label: "Kuat", value: sum(summaryRows, "hotspot_kuat"), color: colors.kuat },
+      { label: "Sedang", value: sum(summaryRows, "hotspot_sedang"), color: colors.sedang },
+      { label: "Lemah", value: sum(summaryRows, "hotspot_lemah"), color: colors.lemah },
+      { label: "Kandidat", value: sum(summaryRows, "hotspot_kandidat"), color: colors.kandidat },
     ].filter((segment) => segment.value > 0);
 
     const total = segments.reduce((acc, segment) => acc + segment.value, 0);
@@ -1147,43 +1301,14 @@
         (row) => row.burn_month >= startMonth && row.burn_month <= endMonth,
       );
 
-      renderSummary(summaryRows, monthlyRows);
-      renderTrendKpis(dailyRows);
-      renderTierChart(dailyRows);
-      renderDailyStrip(dailyRows);
-      renderMap(cells.rows || [], summaryRows);
-      renderTreemap(summaryRows);
-      renderLineChart(
-        "chart-frp",
-        dailyRows,
-        "frp_sum",
-        "frp-peak",
-        "#ffb02e",
-      );
-      renderTop(
-        "top-hotspot",
+      lastData = {
         summaryRows,
-        "hotspot_count",
-        false,
-        sum(summaryRows, "hotspot_count"),
-      );
-      renderDonut(summaryRows);
-
-      const hotspotTotal = sum(summaryRows, "hotspot_count");
-      const kandidat = sum(summaryRows, "hotspot_kandidat");
-      $("top-hotspot-note").textContent = summaryRows.length
-        ? summaryRows.length +
-          " provinsi · " +
-          number.format(hotspotTotal) +
-          " hotspot"
-        : "Belum ada data pada rentang ini.";
-      $("donut-note").textContent = hotspotTotal
-        ? "Kandidat " +
-          decimal.format((kandidat / hotspotTotal) * 100) +
-          "% dari total"
-        : "Belum ada data pada rentang ini.";
-
-      renderFreshness(health);
+        dailyRows,
+        monthlyRows,
+        health,
+        cells: cells.rows || [],
+      };
+      renderAll(lastData);
     } catch (error) {
       showError("Data belum bisa dimuat. " + error.message);
       $("freshness").textContent = "Data gagal dimuat";
@@ -1269,6 +1394,7 @@
   }
 
   document.addEventListener("DOMContentLoaded", () => {
+    bindTheme();
     bindTabs();
     bindFilters();
     loadProvinces();
