@@ -1,11 +1,11 @@
 {% extends "base.html" %}
 {% block title %}Dashboard | JAGAHUTAN{% endblock %}
-{% block extra_head %}<link rel="stylesheet" href="/static/dashboard.css?v=20261122e">{% endblock %}
+{% block extra_head %}<link rel="stylesheet" href="/static/dashboard.css?v=20261122f">{% endblock %}
 {% block content %}
 <section class="hero hero-dash">
   <div class="hero-glow"></div>
   <svg class="treeline" viewBox="0 0 1440 300" preserveAspectRatio="none" aria-hidden="true" fill="#06130d">
-    <path d="M-20,300 L12,120 L43,300 L46,79 L83,300 L63,157 L87,300 L104,78 L144,300 L129,165 L158,300 L172,88 L203,300 L217,136 L242,300 L248,126 L271,300 L308,114 L339,300 L342,138 L373,300 L370,85 L394,300 L424,94 L458,300 L460,117 L487,300 L496,59 L526,300 L515,104 L537,300 L566,101 L604,300 L596,75 L631,300 L640,107 L676,300 L674,139 L703,300 L703,114 L726,300 L744,169 L781,300 L792,109 L831,300 L830,60 L862,300 L851,130 L875,300 L902,129 L938,300 L933,133 L966,300 L978,98 L1018,300 L996,98 L1021,300 L1052,165 L1081,300 L1082,120 L1108,300 L1124,135 L1155,300 L1156,174 L1179,300 L1201,159 L1232,300 L1242,97 L1264,300 L1287,107 L1319,300 L1309,75 L1333,300 L1356,131 L1392,300 L1385,146 L1415,300 L1426,140 L1458,300 Z"/>
+    <path d="M0,300 L0,215 C90,198 155,160 245,174 C335,188 390,142 485,155 C575,168 635,124 725,143 C815,162 875,118 965,136 C1055,154 1115,112 1205,132 C1295,152 1350,120 1440,142 L1440,300 Z"/>
   </svg>
 
   <div class="hero-inner">
@@ -17,10 +17,13 @@
     </div>
     <aside class="hero-rail" aria-label="Status data dashboard">
       <div class="dash-status"><i class="dot"></i><span id="freshness" aria-live="polite">Memuat status data…</span></div>
+      <div class="rail-total-block">
+        <span>Total hotspot</span>
+        <b id="rail-total">—</b>
+      </div>
       <div class="rail-divider"></div>
       <div class="rail-row"><span>Periode</span><b id="rail-period">September 2026</b></div>
       <div class="rail-row"><span>Cakupan</span><b id="rail-coverage">38 provinsi</b></div>
-      <div class="rail-row"><span>Total hotspot</span><b id="rail-total">—</b></div>
     </aside>
   </div>
 </section>
@@ -35,7 +38,7 @@
           <option value="">Semua provinsi</option>
         </select>
       </label>
-      <div class="dash-filter-hint">Filter berlaku untuk tab Ikhtisar dan Tren.</div>
+      <div class="dash-filter-hint">Filter berlaku untuk kedua tab.</div>
       <button class="btn btn-primary" id="dash-apply" type="submit">Terapkan</button>
     </form>
   </section>
@@ -44,18 +47,17 @@
 
   <div class="dash-tabbar">
     <div class="dash-tabs" role="tablist" aria-label="Bagian dashboard">
-      <button class="dash-tab" id="tab-ikhtisar" type="button" role="tab" aria-selected="true" aria-controls="panel-ikhtisar" data-tab="ikhtisar">Ikhtisar</button>
-      <button class="dash-tab" id="tab-tren" type="button" role="tab" aria-selected="false" aria-controls="panel-tren" data-tab="tren" tabindex="-1">Tren</button>
-      <button class="dash-tab" id="tab-prediksi" type="button" role="tab" aria-selected="false" aria-controls="panel-prediksi" data-tab="prediksi" tabindex="-1">Prediksi <span class="tab-pill">Menunggu ML</span></button>
+      <button class="dash-tab" id="tab-sebaran" type="button" role="tab" aria-selected="true" aria-controls="panel-sebaran" data-tab="sebaran">Sebaran &amp; dampak</button>
+      <button class="dash-tab" id="tab-tren" type="button" role="tab" aria-selected="false" aria-controls="panel-tren" data-tab="tren" tabindex="-1">Tren &amp; prediksi</button>
     </div>
     <span class="dash-badge tab-period" id="tabs-period">September 2026</span>
   </div>
 
-  <section class="dash-tabpanel" id="panel-ikhtisar" role="tabpanel" aria-labelledby="tab-ikhtisar" tabindex="0">
+  <section class="dash-tabpanel" id="panel-sebaran" role="tabpanel" aria-labelledby="tab-sebaran" tabindex="0">
     <div class="tab-head">
       <div>
-        <h2 class="tab-title serif">Kondisi hotspot dan luas terbakar.</h2>
-        <p class="tab-sub">Ringkasan periode terpilih: di mana hotspot terkonsentrasi, seberapa kuat buktinya, dan berapa luas terbakar.</p>
+        <h2 class="tab-title serif">Di mana hotspot terkonsentrasi?</h2>
+        <p class="tab-sub">Peta, peringkat provinsi, treemap, dan komposisi tier untuk periode terpilih.</p>
       </div>
     </div>
     <div class="tab-kpis">
@@ -141,8 +143,8 @@
   <section class="dash-tabpanel" id="panel-tren" role="tabpanel" aria-labelledby="tab-tren" tabindex="0" hidden>
     <div class="tab-head">
       <div>
-        <h2 class="tab-title serif">Perubahan harian dan mingguan.</h2>
-        <p class="tab-sub">Lihat ritme hotspot, intensitas FRP, dan hari-hari yang paling terbakar pada periode terpilih.</p>
+        <h2 class="tab-title serif">Bagaimana perubahannya, dan apa prediksinya?</h2>
+        <p class="tab-sub">Ritme hotspot, intensitas FRP, kalender harian, lalu kesiapan model untuk horizon D..D+2.</p>
       </div>
     </div>
     <div class="tab-kpis">
@@ -150,7 +152,7 @@
       <div class="tab-kpi"><span class="kicker">Rata-rata harian</span><b id="tab2-avg">—</b><span id="tab2-avg-sub">—</span></div>
       <div class="tab-kpi"><span class="kicker">Hari terdata</span><b id="tab2-days">—</b><span id="tab2-days-sub">—</span></div>
       <div class="tab-kpi"><span class="kicker">Puncak Σ FRP</span><b id="tab2-frp">—</b><span id="tab2-frp-sub">—</span></div>
-      <div class="tab-kpi"><span class="kicker">Tanggal puncak FRP</span><b id="tab2-frp-date">—</b><span id="tab2-frp-date-sub">—</span></div>
+      <div class="tab-kpi text"><span class="kicker">Kesiapan model</span><b class="todo">1/4</b><span>Checklist terpenuhi</span></div>
     </div>
     <div class="dash-grid">
       <article class="dash-panel span-7">
@@ -208,52 +210,6 @@
         </div>
       </article>
 
-      <article class="dash-panel span-6">
-        <div class="dash-head">
-          <div>
-            <div class="kicker">Luas terbakar</div>
-            <h2 class="dash-title">Top 5 provinsi</h2>
-            <p class="dash-sub" id="scar-period">September 2026 · km²</p>
-          </div>
-        </div>
-        <div class="rank-list" id="top-scar"></div>
-        <p class="panel-note" id="top-scar-note">—</p>
-      </article>
-
-      <article class="dash-panel span-6 is-sparse">
-        <div class="dash-head">
-          <div>
-            <div class="kicker">Ringkasan scar</div>
-            <h2 class="dash-title">Luas terbakar.</h2>
-            <p class="dash-sub" id="scar-summary-period">September 2026 · km²</p>
-          </div>
-          <span class="dash-badge" id="scar-total-badge">—</span>
-        </div>
-        <div class="scar-stats">
-          <div class="scar-stat"><b id="scar-total-km2">—</b><span>km² total</span></div>
-          <div class="scar-stat"><b id="scar-total-pixels">—</b><span>piksel MCD64A1</span></div>
-          <div class="scar-stat"><b id="scar-provinces">—</b><span>provinsi terdampak</span></div>
-        </div>
-        <p class="panel-note">Data scar saat ini hanya tersedia untuk September 2026. Bulan lain akan menampilkan empty state.</p>
-      </article>
-    </div>
-  </section>
-
-  <section class="dash-tabpanel" id="panel-prediksi" role="tabpanel" aria-labelledby="tab-prediksi" tabindex="0" hidden>
-    <div class="tab-head">
-      <div>
-        <h2 class="tab-title serif">Kesiapan model dan output.</h2>
-        <p class="tab-sub">Status integrasi ML, horizon prediksi, dan pratinjau tabel risiko yang akan dibaca dashboard.</p>
-      </div>
-    </div>
-    <div class="tab-kpis">
-      <div class="tab-kpi text"><span class="kicker">Horizon</span><b>D..D+2</b><span>Tiga hari ke depan</span></div>
-      <div class="tab-kpi text"><span class="kicker">Frekuensi</span><b>Harian</b><span>Satu baris per sel</span></div>
-      <div class="tab-kpi text"><span class="kicker">Granularitas</span><b>0,25°</b><span>Grid Gold cell_daily</span></div>
-      <div class="tab-kpi text accent"><span class="kicker">Status</span><b class="todo">Menunggu</b><span>Model ML</span></div>
-      <div class="tab-kpi text"><span class="kicker">Kesiapan</span><b class="todo">1/4</b><span>Checklist terpenuhi</span></div>
-    </div>
-    <div class="dash-grid">
       <article class="dash-panel span-7 dash-prediction">
         <div class="dash-head">
           <div>
@@ -268,6 +224,9 @@
           <div class="horizon-day"><span>D</span><div class="horizon-grid">{% for _ in range(8) %}<i></i>{% endfor %}</div></div>
           <div class="horizon-day"><span>D+1</span><div class="horizon-grid">{% for _ in range(8) %}<i></i>{% endfor %}</div></div>
           <div class="horizon-day"><span>D+2</span><div class="horizon-grid">{% for _ in range(8) %}<i></i>{% endfor %}</div></div>
+        </div>
+        <div class="pred-pipeline">
+          <span class="chip">cell_daily</span><span class="arrow">→</span><span class="chip">model</span><span class="arrow">→</span><span class="chip">risk_prediction_daily</span>
         </div>
         <p class="panel-note">Endpoint <span class="mono">/predictions/daily</span> akan mengembalikan 200 setelah model di-deploy.</p>
       </article>
@@ -289,51 +248,8 @@
         </ul>
         <p class="panel-note">Yang perlu disepakati dengan pemilik ML: grain sel, horizon label D..D+2, dan penulisan hasil ke tabel prediksi.</p>
       </article>
-
-      <article class="dash-panel span-5 is-sparse">
-        <div class="dash-head">
-          <div>
-            <div class="kicker">Pipeline</div>
-            <h2 class="dash-title">Alur prediksi.</h2>
-            <p class="dash-sub">Dari Gold ke tabel risiko</p>
-          </div>
-        </div>
-        <div class="pipeline-flow">
-          <div class="flow-node"><span>Input</span><b>cell_daily</b><em class="status done">Siap</em></div>
-          <div class="flow-arrow">→</div>
-          <div class="flow-node"><span>Model</span><b>risk model</b><em class="status todo">Belum</em></div>
-          <div class="flow-arrow">→</div>
-          <div class="flow-node"><span>Output</span><b>risk_prediction_daily</b><em class="status todo">Kosong</em></div>
-        </div>
-        <p class="panel-note">Model membaca <span class="mono">cell_daily</span> dari Iceberg, lalu menulis probabilitas D..D+2 ke Postgres/Iceberg.</p>
-      </article>
-
-      <article class="dash-panel span-7">
-        <div class="dash-head">
-          <div>
-            <div class="kicker">Output</div>
-            <h2 class="dash-title">Tabel risiko.</h2>
-            <p class="dash-sub">Pratinjau skema <span class="mono">risk_prediction_daily</span></p>
-          </div>
-          <span class="dash-badge warn">Kosong</span>
-        </div>
-        <div class="table-wrap">
-          <table class="data risk-table">
-            <thead><tr><th>cell_id</th><th>date</th><th>probabilitas</th><th>tier</th></tr></thead>
-            <tbody>
-              <tr><td class="mono">—</td><td class="mono">—</td><td class="mono">—</td><td>—</td></tr>
-              <tr><td class="mono">—</td><td class="mono">—</td><td class="mono">—</td><td>—</td></tr>
-              <tr><td class="mono">—</td><td class="mono">—</td><td class="mono">—</td><td>—</td></tr>
-              <tr><td class="mono">—</td><td class="mono">—</td><td class="mono">—</td><td>—</td></tr>
-              <tr><td class="mono">—</td><td class="mono">—</td><td class="mono">—</td><td>—</td></tr>
-            </tbody>
-          </table>
-        </div>
-        <p class="panel-note">Tabel ini akan terisi setelah inference berjalan; dashboard cukup membaca endpoint <span class="mono">/predictions/daily</span>.</p>
-      </article>
     </div>
   </section>
-
 </div>
 {% endblock %}
 {% block extra_scripts %}<script src="/static/dashboard.js?v=20261122d" defer></script>{% endblock %}

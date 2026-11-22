@@ -173,9 +173,7 @@
     $("tabs-period").textContent = periodLabel();
     $("rail-period").textContent = periodLabel();
     $("rail-coverage").textContent = provinceCount + " provinsi";
-    $("rail-total").textContent = number.format(total) + " hotspot";
-    $("scar-period").textContent =
-      scarPeriodLabel(monthlyRows) + " \u00b7 km\u00b2";
+    $("rail-total").textContent = number.format(total);
   }
 
   function renderTrendKpis(dailyRows) {
@@ -207,12 +205,9 @@
     $("tab2-frp").textContent = frpPeak
       ? compact(frpPeak.frp_sum)
       : "\u2014";
-    $("tab2-frp-sub").textContent = "Σ MW · gabungan provinsi";
-
-    $("tab2-frp-date").textContent = frpPeak
-      ? dateShort(frpPeak.date)
-      : "\u2014";
-    $("tab2-frp-date-sub").textContent = "puncak FRP";
+    $("tab2-frp-sub").textContent = frpPeak
+      ? "Σ MW · " + dateShort(frpPeak.date)
+      : "Belum ada data FRP";
   }
 
   function renderLineChart(svgId, rows, key, badgeId, color) {
@@ -1043,28 +1038,6 @@
       .join("");
   }
 
-  function renderScarSummary(rows) {
-    const km2 = sum(rows, "scar_area_km2");
-    const pixels = sum(rows, "scar_pixels");
-    const provinces = new Set(
-      (rows || []).map((row) => row.province).filter(Boolean),
-    ).size;
-    const hasData = (rows || []).length > 0;
-
-    $("scar-total-km2").textContent = hasData
-      ? number.format(Math.round(km2))
-      : "—";
-    $("scar-total-pixels").textContent = hasData
-      ? number.format(Math.round(pixels))
-      : "—";
-    $("scar-provinces").textContent = provinces || "—";
-    $("scar-total-badge").textContent = hasData
-      ? number.format(Math.round(km2)) + " km²"
-      : "Belum ada";
-    $("scar-summary-period").textContent =
-      scarPeriodLabel(rows) + " · km²";
-  }
-
   function renderFreshness(health) {
     const iceberg = health.iceberg || {};
     const latest = dateLong(health.latest_date);
@@ -1133,18 +1106,9 @@
         false,
         sum(summaryRows, "hotspot_count"),
       );
-      renderTop(
-        "top-scar",
-        monthlyRows,
-        "scar_area_km2",
-        true,
-        sum(monthlyRows, "scar_area_km2"),
-      );
       renderDonut(summaryRows);
-      renderScarSummary(monthlyRows);
 
       const hotspotTotal = sum(summaryRows, "hotspot_count");
-      const scarTotal = sum(monthlyRows, "scar_area_km2");
       const kandidat = sum(summaryRows, "hotspot_kandidat");
       $("top-hotspot-note").textContent = summaryRows.length
         ? summaryRows.length +
@@ -1152,12 +1116,6 @@
           number.format(hotspotTotal) +
           " hotspot"
         : "Belum ada data pada rentang ini.";
-      $("top-scar-note").textContent = monthlyRows.length
-        ? "Total " +
-          number.format(Math.round(scarTotal)) +
-          " km² · " +
-          scarPeriodLabel(monthlyRows)
-        : "Belum ada data scar bulan ini.";
       $("donut-note").textContent = hotspotTotal
         ? "Kandidat " +
           decimal.format((kandidat / hotspotTotal) * 100) +
@@ -1208,10 +1166,10 @@
     });
   }
 
-  const TABS = ["ikhtisar", "tren", "prediksi"];
+  const TABS = ["sebaran", "tren"];
 
   function activateTab(id, focus, updateHash) {
-    const next = TABS.includes(id) ? id : "ikhtisar";
+    const next = TABS.includes(id) ? id : "sebaran";
     TABS.forEach((key) => {
       const tab = $("tab-" + key);
       const panel = $("panel-" + key);

@@ -104,19 +104,17 @@ portal), lalu `src/serving/static/dashboard.css` dan `dashboard.js`.
    `/hotspots/summary`, `/hotspots/daily/total`, `/burn-scar/monthly`,
    `/cells/hotspots`, `/meta/provinces`, dan `/health`.
 2. KPI berbeda per tab:
-   - **Ikhtisar**: total hotspot, hotspot kuat, FRP total, luas terbakar,
-     sel aktif.
-   - **Tren**: puncak harian, rata-rata harian, hari terdata, puncak Σ FRP,
-     tanggal puncak FRP.
-   - **Prediksi**: horizon, frekuensi, granularitas, status model, kesiapan.
+   - **Sebaran & dampak**: total hotspot, hotspot kuat, FRP total, luas
+     terbakar, sel aktif.
+   - **Tren & prediksi**: puncak harian, rata-rata harian, hari terdata,
+     puncak Σ FRP, kesiapan model.
 3. Peta: sel hotspot pada tanggal akhir filter, diwarnai menurut tier dan
    diskalakan menurut `hotspot_count`; filter provinsi ikut diteruskan.
-4. Tiga tab: **Ikhtisar** (peta, donut tier, treemap provinsi, top 5),
-   **Tren** (hotspot per tier, FRP, kalender harian, scar), **Prediksi**
-   (status, checklist, pipeline, pratinjau tabel risiko).
+4. Dua tab: **Sebaran & dampak** (peta, donut tier, treemap provinsi, top 5)
+   dan **Tren & prediksi** (hotspot per tier, FRP, kalender harian, horizon
+   prediksi, checklist kesiapan).
 5. Grafik: tren hotspot mingguan per tier, tren FRP harian, kalender
-   intensitas harian, treemap provinsi, top 5 provinsi, komposisi tier, dan
-   top 5 luas terbakar.
+   intensitas harian, treemap provinsi, top 5 provinsi, dan komposisi tier.
 6. Kanvas dashboard memakai lebar sampai 1560 px dengan padding samping,
    lebih lebar dari portal tetapi tetap menyisakan ruang di monitor desktop.
 7. Filter bar: provinsi dan rentang tanggal. Filter pulau belum tersedia
@@ -126,8 +124,8 @@ portal), lalu `src/serving/static/dashboard.css` dan `dashboard.js`.
    `risk_prediction_daily` terisi.
 
 Data scar saat ini hanya tersedia untuk September 2026; dashboard mengambil
-bulan dari tanggal mulai filter. Metabase tetap opsional; service-nya ada di
-compose, tetapi bukan dashboard utama.
+bulan yang tersedia di dalam rentang filter. Metabase tetap opsional;
+service-nya ada di compose, tetapi bukan dashboard utama.
 
 ## Verifikasi
 
