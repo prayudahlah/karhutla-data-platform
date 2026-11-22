@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% block title %}Dashboard | JAGAHUTAN{% endblock %}
-{% block extra_head %}<link rel="stylesheet" href="/static/dashboard.css?v=20261122x">{% endblock %}
+{% block extra_head %}<link rel="stylesheet" href="/static/dashboard.css?v=20261122y">{% endblock %}
 {% block content %}
 <section class="hero hero-dash">
   <div class="hero-glow"></div>
@@ -35,7 +35,6 @@
         <button class="dash-tab" id="tab-sebaran" type="button" role="tab" aria-selected="true" aria-controls="panel-sebaran" data-tab="sebaran">Sebaran &amp; dampak</button>
         <button class="dash-tab" id="tab-tren" type="button" role="tab" aria-selected="false" aria-controls="panel-tren" data-tab="tren" tabindex="-1">Tren &amp; prediksi</button>
       </div>
-      <span class="dash-badge tab-period" id="tabs-period">September 2026</span>
     </div>
     <form class="dash-toolbar dash-form-row" id="dash-filter" aria-label="Filter data">
       <label class="dash-field">Mulai<input type="date" id="dash-start" value="2026-09-01"></label>
@@ -240,4 +239,4 @@
   </section>
 </div>
 {% endblock %}
-{% block extra_scripts %}<script src="/static/dashboard.js?v=20261122x" defer></script>{% endblock %}
+{% block extra_scripts %}<script src="/static/dashboard.js?v=20261122y" defer></script>{% endblock %}

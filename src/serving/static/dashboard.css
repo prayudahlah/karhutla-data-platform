@@ -312,7 +312,6 @@
   scrollbar-width: none;
 }
 .dash-tabs::-webkit-scrollbar { display: none; }
-.tab-period { flex: none; }
 .dash-tab {
   appearance: none;
   height: 34px;
@@ -810,7 +809,6 @@
   .dash-form-row { grid-template-columns: 1fr 1fr; }
   .dash-grid { gap: 14px; }
   .dash-tabbar { flex-wrap: wrap; }
-  .tab-period { margin-left: 0; }
   .map-frame {
     aspect-ratio: auto;
     height: auto;
@@ -852,7 +850,6 @@
     aspect-ratio: 1000 / 520;
   }
   .scroll-hint { display: block; }
-  .tab-period { display: none; }
 }
 
 @media (max-width: 520px) {
