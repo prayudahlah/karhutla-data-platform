@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% block title %}Dashboard | JAGAHUTAN{% endblock %}
-{% block extra_head %}<link rel="stylesheet" href="/static/dashboard.css?v=20261122f">{% endblock %}
+{% block extra_head %}<link rel="stylesheet" href="/static/dashboard.css?v=20261122x">{% endblock %}
 {% block content %}
 <section class="hero hero-dash">
   <div class="hero-glow"></div>
@@ -29,8 +29,15 @@
 </section>
 
 <div class="shell dash-wrap">
-  <section class="dash-toolbar" aria-label="Filter data">
-    <form class="dash-form dash-form-row" id="dash-filter">
+  <div class="dash-controlbar">
+    <div class="dash-tabbar">
+      <div class="dash-tabs" role="tablist" aria-label="Bagian dashboard">
+        <button class="dash-tab" id="tab-sebaran" type="button" role="tab" aria-selected="true" aria-controls="panel-sebaran" data-tab="sebaran">Sebaran &amp; dampak</button>
+        <button class="dash-tab" id="tab-tren" type="button" role="tab" aria-selected="false" aria-controls="panel-tren" data-tab="tren" tabindex="-1">Tren &amp; prediksi</button>
+      </div>
+      <span class="dash-badge tab-period" id="tabs-period">September 2026</span>
+    </div>
+    <form class="dash-toolbar dash-form-row" id="dash-filter" aria-label="Filter data">
       <label class="dash-field">Mulai<input type="date" id="dash-start" value="2026-09-01"></label>
       <label class="dash-field">Selesai<input type="date" id="dash-end" value="2026-09-30"></label>
       <label class="dash-field">Provinsi
@@ -38,28 +45,13 @@
           <option value="">Semua provinsi</option>
         </select>
       </label>
-      <div class="dash-filter-hint">Filter berlaku untuk kedua tab.</div>
       <button class="btn btn-primary" id="dash-apply" type="submit">Terapkan</button>
     </form>
-  </section>
+  </div>
 
   <div class="notice dash-error" id="dash-error" hidden role="alert"></div>
 
-  <div class="dash-tabbar">
-    <div class="dash-tabs" role="tablist" aria-label="Bagian dashboard">
-      <button class="dash-tab" id="tab-sebaran" type="button" role="tab" aria-selected="true" aria-controls="panel-sebaran" data-tab="sebaran">Sebaran &amp; dampak</button>
-      <button class="dash-tab" id="tab-tren" type="button" role="tab" aria-selected="false" aria-controls="panel-tren" data-tab="tren" tabindex="-1">Tren &amp; prediksi</button>
-    </div>
-    <span class="dash-badge tab-period" id="tabs-period">September 2026</span>
-  </div>
-
   <section class="dash-tabpanel" id="panel-sebaran" role="tabpanel" aria-labelledby="tab-sebaran" tabindex="0">
-    <div class="tab-head">
-      <div>
-        <h2 class="tab-title serif">Di mana hotspot terkonsentrasi?</h2>
-        <p class="tab-sub">Peta, peringkat provinsi, treemap, dan komposisi tier untuk periode terpilih.</p>
-      </div>
-    </div>
     <div class="tab-kpis">
       <div class="tab-kpi accent"><span class="kicker">Total hotspot</span><b id="tab1-total">—</b><span id="tab1-total-sub">—</span></div>
       <div class="tab-kpi"><span class="kicker">Hotspot kuat</span><b id="tab1-kuat">—</b><span id="tab1-kuat-sub">—</span></div>
@@ -91,9 +83,10 @@
             <span><i style="background:#ff5a2b"></i>Kuat</span>
             <span><i style="background:#ff8a3d"></i>Sedang</span>
             <span><i style="background:#ffb02e"></i>Lemah</span>
-            <span><i style="background:#6f9c83"></i>Kandidat</span>
+            <span><i style="background:#4f9c75"></i>Kandidat</span>
           </div>
         </div>
+        <p class="panel-note">Garis kepulauan disederhanakan (Natural Earth). Titik = 500 sel teratas pada tanggal terakhir periode.</p>
       </article>
 
       <article class="dash-panel span-5">
@@ -121,8 +114,9 @@
           <span class="dash-badge" id="treemap-share">Top 8</span>
         </div>
         <div class="treemap-frame">
-          <svg id="treemap" viewBox="0 0 1000 340" role="img" aria-label="Treemap hotspot per provinsi"></svg>
+          <svg id="treemap" viewBox="0 0 1000 520" role="img" aria-label="Treemap hotspot per provinsi"></svg>
         </div>
+        <p class="scroll-hint">Geser ke samping untuk provinsi lain →</p>
         <p class="panel-note" id="treemap-note">—</p>
       </article>
 
@@ -141,12 +135,6 @@
   </section>
 
   <section class="dash-tabpanel" id="panel-tren" role="tabpanel" aria-labelledby="tab-tren" tabindex="0" hidden>
-    <div class="tab-head">
-      <div>
-        <h2 class="tab-title serif">Bagaimana perubahannya, dan apa prediksinya?</h2>
-        <p class="tab-sub">Ritme hotspot, intensitas FRP, kalender harian, lalu kesiapan model untuk horizon D..D+2.</p>
-      </div>
-    </div>
     <div class="tab-kpis">
       <div class="tab-kpi accent"><span class="kicker">Puncak harian</span><b id="tab2-peak">—</b><span id="tab2-peak-sub">—</span></div>
       <div class="tab-kpi"><span class="kicker">Rata-rata harian</span><b id="tab2-avg">—</b><span id="tab2-avg-sub">—</span></div>
@@ -214,7 +202,7 @@
         <div class="dash-head">
           <div>
             <div class="kicker">Prediksi</div>
-            <h2 class="dash-title">Risiko D..D+2.</h2>
+            <h2 class="dash-title">Risiko D–D+2.</h2>
             <p class="dash-sub">Panel menunggu model ML</p>
           </div>
           <span class="dash-badge warn">Menunggu ML</span>
@@ -246,10 +234,10 @@
           <li><span>Tabel <span class="mono">risk_prediction_daily</span></span><b class="status todo">Kosong</b></li>
           <li><span>Panel dashboard</span><b class="status done">Siap</b></li>
         </ul>
-        <p class="panel-note">Yang perlu disepakati dengan pemilik ML: grain sel, horizon label D..D+2, dan penulisan hasil ke tabel prediksi.</p>
+        <p class="panel-note">Yang perlu disepakati dengan pemilik ML: grain sel, horizon label D–D+2, dan penulisan hasil ke tabel prediksi.</p>
       </article>
     </div>
   </section>
 </div>
 {% endblock %}
-{% block extra_scripts %}<script src="/static/dashboard.js?v=20261122d" defer></script>{% endblock %}
+{% block extra_scripts %}<script src="/static/dashboard.js?v=20261122x" defer></script>{% endblock %}
