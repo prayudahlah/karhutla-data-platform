@@ -173,7 +173,6 @@
     $("tab1-active").textContent = number.format(activeCells);
     $("tab1-active-sub").textContent = "sel-hari \u00b7 grid 0,25\u00b0";
 
-    $("period-label").textContent = "Dashboard \u00b7 " + periodLabel();
     $("tabs-period").textContent = periodLabel();
     $("rail-period").textContent = periodLabel();
     $("rail-coverage").textContent = provinceCount + " provinsi";
@@ -519,10 +518,10 @@
         const x = center - barWidth / 2;
         let y = padT + plotH;
         const parts = [
-          ["kuat", "#ff5a2b"],
-          ["sedang", "#ff8a3d"],
-          ["lemah", "#ffb02e"],
-          ["kandidat", "#315e49"],
+          ["kuat", "#E2402A"],
+          ["sedang", "#F2711C"],
+          ["lemah", "#E9A21B"],
+          ["kandidat", "#2F5E49"],
         ]
           .map(([key, color]) => {
             const value = bucket[key];
@@ -632,14 +631,14 @@
     }
 
     const colors = [
-      "#ff5a2b",
-      "#ff7a2d",
-      "#ff9a3d",
-      "#ffb02e",
-      "#e0a03a",
-      "#c98a35",
-      "#a87532",
-      "#8a6230",
+      "#D9581E",
+      "#1B4F36",
+      "#266044",
+      "#317054",
+      "#3D8062",
+      "#4F9070",
+      "#65A184",
+      "#7FB29A",
     ];
     const items = top.map((row, index) => ({
       name: row.province,
@@ -655,11 +654,11 @@
       items.push({
         name: "Lainnya · " + others.length + " provinsi",
         value: othersValue,
-        color: "#5c6b62",
+        color: "#B7AF9F",
       });
     }
     const boxes = [];
-    layoutTreemap(items, 0, 0, 1000, 340, true, boxes);
+    layoutTreemap(items, 0, 0, 1000, 570, true, boxes);
     const topTotal = items.reduce((value, item) => value + item.value, 0);
 
     svg.innerHTML = boxes
@@ -669,12 +668,44 @@
         const width = Math.max(0, box.width - 6);
         const height = Math.max(0, box.height - 6);
         const fill = contrastText(box.color);
+        const rawName = box.name;
         const name =
-          box.name.length > 20 ? box.name.slice(0, 19) + "…" : box.name;
-        const showName = width > 105 && height > 46;
+          rawName.length > 20 ? rawName.slice(0, 19) + "…" : rawName;
+        const showName = width > 115 && height > 74;
         const showInline = !showName && width > 180 && height > 30;
         const showValue =
           !showName && !showInline && width > 70 && height > 34;
+        const maxChars = Math.max(6, Math.floor((width - 18) / (21 * 0.53)));
+        const words = rawName.split(" ");
+        const lines = [];
+        let currentLine = words[0] || "";
+        for (let wordIndex = 1; wordIndex < words.length; wordIndex += 1) {
+          const candidate = currentLine + " " + words[wordIndex];
+          if (candidate.length <= maxChars) {
+            currentLine = candidate;
+          } else {
+            lines.push(currentLine);
+            currentLine = words[wordIndex];
+          }
+        }
+        lines.push(currentLine);
+        const labelLines = lines.slice(0, 2);
+        if (labelLines.length === 2 && labelLines[1].length > maxChars) {
+          labelLines[1] = labelLines[1].slice(0, maxChars - 1) + "…";
+        }
+        const labelSvg = labelLines
+          .map(
+            (lineText, lineIndex) =>
+              '<tspan x="' +
+              (x + 9).toFixed(1) +
+              '" y="' +
+              (y + 26 + lineIndex * 22).toFixed(1) +
+              '">' +
+              lineText +
+              "</tspan>",
+          )
+          .join("");
+        const valueY = y + 26 + (labelLines.length - 1) * 22 + 22;
         return (
           '<g><rect x="' +
           x.toFixed(1) +
@@ -686,7 +717,7 @@
           height.toFixed(1) +
           '" rx="4" fill="' +
           box.color +
-          '" opacity=".92"><title>' +
+          '" opacity=".94"><title>' +
           box.name +
           ": " +
           number.format(box.value) +
@@ -694,22 +725,18 @@
           decimal.format((box.value / topTotal) * 100) +
           "%)</title></rect>" +
           (showName
-            ? '<text x="' +
-              (x + 9).toFixed(1) +
-              '" y="' +
-              (y + 20).toFixed(1) +
-              '" fill="' +
+            ? '<text fill="' +
               fill +
-              '" font-size="14" font-weight="600">' +
-              name +
+              '" font-size="21" font-weight="600">' +
+              labelSvg +
               "</text>" +
               '<text x="' +
               (x + 9).toFixed(1) +
               '" y="' +
-              (y + 39).toFixed(1) +
+              valueY.toFixed(1) +
               '" fill="' +
               fill +
-              '" opacity=".84" font-size="11">' +
+              '" opacity=".82" font-size="15">' +
               number.format(box.value) +
               "</text>"
             : "") +
@@ -717,10 +744,10 @@
             ? '<text x="' +
               (x + 9).toFixed(1) +
               '" y="' +
-              (y + 21).toFixed(1) +
+              (y + 24).toFixed(1) +
               '" fill="' +
               fill +
-              '" font-size="11">' +
+              '" font-size="17">' +
               name +
               " · " +
               number.format(box.value) +
@@ -730,10 +757,10 @@
             ? '<text x="' +
               (x + 9).toFixed(1) +
               '" y="' +
-              (y + 22).toFixed(1) +
+              (y + 24).toFixed(1) +
               '" fill="' +
               fill +
-              '" opacity=".84" font-size="11">' +
+              '" opacity=".84" font-size="16">' +
               number.format(box.value) +
               "</text>"
             : "") +
@@ -753,11 +780,11 @@
   }
 
   function heatColor(ratio) {
-    if (ratio <= 0.001) return ["#173026", "#eaf3ec"];
-    if (ratio < 0.25) return ["#2f5e49", "#f4fbf6"];
-    if (ratio < 0.5) return ["#6f9c83", "#10241c"];
-    if (ratio < 0.75) return ["#ffb02e", "#1a0d03"];
-    if (ratio < 0.9) return ["#ff8a3d", "#1a0d03"];
+    if (ratio <= 0.001) return ["#f1ede2", "#8a978c"];
+    if (ratio < 0.25) return ["#e6efe5", "#3f5c4c"];
+    if (ratio < 0.5) return ["#c7ddc6", "#24402f"];
+    if (ratio < 0.75) return ["#9dc79b", "#16241c"];
+    if (ratio < 0.9) return ["#ffb02e", "#1a0d03"];
     return ["#ff5a2b", "#1a0d03"];
   }
 
@@ -878,6 +905,23 @@
       .join("");
   }
 
+  // Batas kepulauan: Natural Earth 1:110m (domain publik), diproyeksikan
+  // ke viewBox peta 640x320.
+  const ISLAND_PATHS =
+    "M365.5 284.0 L360.4 284.3 L344.6 273.3 L355.7 270.2 L362.0 275.0 L366.2 279.8 L365.5 284.0 Z" +
+    "M410.0 282.4 L399.7 285.9 L398.3 284.0 L399.4 278.7 L404.5 269.0 L416.3 262.8 L417.5 265.9 L417.8 270.7 L410.0 282.4 Z" +
+    "M331.8 250.2 L336.1 254.4 L343.5 253.1 L346.5 259.8 L332.6 263.0 L324.4 265.1 L317.9 265.0 L322.0 255.9 L328.6 255.8 L331.8 250.2 Z" +
+    "M391.6 250.2 L389.9 258.9 L371.9 263.4 L356.0 261.5 L356.0 255.7 L365.5 252.4 L373.0 257.2 L380.9 256.0 L391.6 250.2 Z" +
+    "M220.9 229.4 L243.8 231.0 L246.4 224.5 L268.6 232.1 L273.0 242.3 L290.9 245.2 L305.6 254.6 L291.9 260.6 L278.8 254.2 L267.9 254.6 L255.5 253.5 L244.3 250.6 L230.5 244.6 L221.7 243.1 L216.7 245.0 L194.9 238.5 L192.9 231.8 L181.9 230.6 L190.1 215.5 L204.6 216.5 L214.3 222.6 L219.2 223.8 L220.9 229.4 Z" +
+    "M533.0 220.6 L526.8 231.3 L525.7 219.4 L527.8 213.8 L530.3 208.4 L533.0 213.0 L533.0 220.6 Z" +
+    "M443.6 177.1 L439.1 182.4 L430.9 179.5 L428.5 172.7 L440.6 171.9 L443.6 177.1 Z" +
+    "M482.1 171.4 L486.5 183.4 L476.4 176.9 L466.4 175.6 L459.6 176.6 L451.4 176.1 L454.2 167.4 L469.0 166.8 L482.1 171.4 Z" +
+    "M526.0 140.7 L529.4 166.2 L541.8 175.7 L551.8 159.0 L565.5 149.4 L576.1 149.4 L586.3 154.9 L595.2 160.6 L608.0 163.6 L608.2 215.0 L608.4 266.3 L597.8 253.4 L585.7 250.2 L582.7 254.7 L567.6 255.2 L572.6 242.4 L580.2 238.0 L577.0 220.8 L571.3 207.6 L548.1 194.3 L538.3 192.9 L520.3 178.4 L516.8 186.0 L512.2 187.4 L509.5 181.6 L509.4 174.8 L500.3 167.1 L513.2 161.4 L521.7 161.7 L520.7 157.5 L503.2 157.5 L498.5 148.1 L487.8 145.2 L482.7 137.4 L498.8 133.6 L505.0 128.4 L524.2 134.9 L526.0 140.7 Z" +
+    "M419.6 100.2 L410.0 115.8 L401.0 118.9 L389.5 115.8 L369.6 116.6 L359.1 118.8 L357.4 130.8 L368.1 144.8 L374.6 137.7 L396.9 132.3 L395.9 139.6 L390.7 137.3 L385.5 146.5 L375.0 152.6 L386.3 172.8 L384.1 178.2 L394.8 196.4 L394.7 206.8 L388.3 211.4 L383.7 205.9 L389.4 193.0 L377.7 199.1 L374.7 194.7 L376.3 188.6 L367.7 179.4 L368.5 164.0 L360.6 168.8 L361.6 187.2 L362.1 209.7 L354.5 212.0 L349.3 207.4 L352.8 192.9 L350.9 177.7 L345.9 177.6 L342.2 166.8 L347.1 156.4 L348.8 143.9 L354.8 120.2 L357.3 113.7 L367.5 101.9 L376.8 106.6 L391.9 108.8 L405.7 108.1 L417.5 96.7 L419.6 100.2 Z" +
+    "M460.8 104.7 L460.2 118.5 L454.0 117.0 L452.2 126.6 L457.1 134.9 L453.8 136.8 L449.0 126.8 L445.4 106.6 L447.8 94.0 L451.8 88.3 L452.6 96.9 L459.7 98.3 L460.8 104.7 Z" +
+    "M331.5 93.8 L344.9 108.4 L330.8 110.2 L326.8 121.0 L327.3 135.3 L315.8 146.0 L315.5 161.7 L310.9 185.8 L309.1 180.2 L295.5 187.3 L290.8 177.7 L282.2 176.8 L276.3 171.8 L262.1 177.4 L257.7 169.8 L249.9 170.7 L240.0 168.8 L238.2 147.7 L232.2 143.3 L226.5 129.8 L224.8 116.0 L226.2 101.4 L233.3 91.0 L235.3 101.5 L243.5 110.4 L251.2 107.2 L258.8 108.3 L265.8 100.4 L271.5 99.0 L282.8 103.4 L292.6 100.0 L298.7 78.1 L303.3 72.6 L307.5 54.7 L321.2 54.7 L331.6 57.4 L324.8 71.6 L333.6 86.5 L331.5 93.8 Z" +
+    "M187.3 214.8 L174.1 215.2 L164.0 202.0 L148.7 189.1 L143.5 179.6 L134.5 166.7 L128.5 154.9 L119.4 132.8 L108.9 119.7 L105.4 106.1 L101.0 93.8 L90.2 83.9 L84.0 70.4 L75.0 61.6 L62.5 44.2 L61.5 36.2 L69.2 36.8 L87.7 39.9 L98.2 55.3 L107.5 66.0 L114.1 72.5 L125.4 89.5 L137.6 89.7 L147.6 100.5 L154.5 113.7 L163.7 120.9 L158.9 133.8 L165.7 139.3 L170.0 139.7 L172.0 150.7 L176.2 159.5 L185.0 160.9 L190.8 170.9 L187.8 190.5 L187.3 214.8 Z";
+
   function renderMap(rows, summaryRows) {
     const svg = $("map-hotspot");
     const total = sum(summaryRows, "hotspot_count");
@@ -899,21 +943,18 @@
 
     const land =
       '<rect width="640" height="320" fill="url(#mapGrid)" />' +
-      '<g fill="#1a3a2a" stroke="#35604a" stroke-width="1.3">' +
-      '<path d="M80 55 L115 70 L130 100 L120 130 L145 165 L138 198 L118 208 L102 180 L92 148 L75 112 L65 80 Z" />' +
-      '<path d="M150 225 L195 220 L245 228 L295 220 L320 230 L300 240 L245 243 L195 238 L160 237 Z" />' +
-      '<path d="M270 75 L315 60 L365 70 L400 95 L408 130 L388 165 L355 185 L320 188 L288 165 L270 130 Z" />' +
-      '<path d="M420 80 L438 70 L450 95 L442 120 L462 148 L452 180 L438 196 L425 178 L432 150 L416 125 L412 100 Z" />' +
-      '<path d="M505 120 L550 100 L590 105 L625 125 L635 155 L615 180 L580 195 L545 185 L515 165 L500 140 Z" />' +
-      '<circle cx="340" cy="250" r="3.5" /><circle cx="365" cy="255" r="3" /><circle cx="390" cy="252" r="3.5" /><circle cx="415" cy="248" r="3" />' +
+      '<g fill="#dce5c9" stroke="#a8b996" stroke-width="1.3" stroke-linejoin="round">' +
+      '<path fill-rule="evenodd" d="' +
+      ISLAND_PATHS +
+      '" />' +
       "</g>" +
-      '<g fill="#9ab5a5" font-size="10" text-anchor="middle" opacity=".82">' +
-      '<text x="95" y="223">Sumatera</text><text x="235" y="260">Jawa</text><text x="338" y="206">Kalimantan</text><text x="440" y="218">Sulawesi</text><text x="568" y="216">Papua</text>' +
+      '<g fill="#6d7f72" font-size="9.5" font-weight="600" letter-spacing="1.4" text-anchor="middle" opacity=".85">' +
+      '<text x="95" y="223">SUMATERA</text><text x="235" y="260">JAWA</text><text x="338" y="206">KALIMANTAN</text><text x="440" y="218">SULAWESI</text><text x="568" y="216">PAPUA</text>' +
       "</g>";
 
     if (!rows.length) {
       svg.innerHTML =
-        '<defs><pattern id="mapGrid" width="26" height="26" patternUnits="userSpaceOnUse"><path d="M 26 0 L 0 0 0 26" fill="none" stroke="#173026" stroke-width="1" /></pattern></defs>' +
+        '<defs><pattern id="mapGrid" width="26" height="26" patternUnits="userSpaceOnUse"><path d="M 26 0 L 0 0 0 26" fill="none" stroke="#e6dfd1" stroke-width="1" /></pattern></defs>' +
         land +
         '<text x="320" y="168" text-anchor="middle" fill="var(--label)" font-size="13">Tidak ada sel pada tanggal ini.</text>';
       return;
@@ -928,10 +969,10 @@
       28 + ((6 - Number(lat)) / 17) * 268,
     ];
     const color = (row) => {
-      if (Number(row.hotspot_kuat) > 0) return "#ff5a2b";
-      if (Number(row.hotspot_sedang) > 0) return "#ff8a3d";
-      if (Number(row.hotspot_lemah) > 0) return "#ffb02e";
-      return "#6f9c83";
+      if (Number(row.hotspot_kuat) > 0) return "#E2402A";
+      if (Number(row.hotspot_sedang) > 0) return "#F2711C";
+      if (Number(row.hotspot_lemah) > 0) return "#E9A21B";
+      return "#2F5E49";
     };
     const radius = (count) =>
       Math.min(7, Math.max(1.6, 1.4 + Math.sqrt(count) * 0.42));
@@ -983,7 +1024,7 @@
       .join("");
 
     svg.innerHTML =
-      '<defs><pattern id="mapGrid" width="26" height="26" patternUnits="userSpaceOnUse"><path d="M 26 0 L 0 0 0 26" fill="none" stroke="#173026" stroke-width="1" /></pattern></defs>' +
+      '<defs><pattern id="mapGrid" width="26" height="26" patternUnits="userSpaceOnUse"><path d="M 26 0 L 0 0 0 26" fill="none" stroke="#e6dfd1" stroke-width="1" /></pattern></defs>' +
       land +
       glows +
       dots;
@@ -993,10 +1034,10 @@
     const svg = $("donut");
     const legend = $("donut-legend");
     const segments = [
-      { label: "Kuat", value: sum(summaryRows, "hotspot_kuat"), color: "#ff5a2b" },
-      { label: "Sedang", value: sum(summaryRows, "hotspot_sedang"), color: "#ff8a3d" },
-      { label: "Lemah", value: sum(summaryRows, "hotspot_lemah"), color: "#ffb02e" },
-      { label: "Kandidat", value: sum(summaryRows, "hotspot_kandidat"), color: "#315e49" },
+      { label: "Kuat", value: sum(summaryRows, "hotspot_kuat"), color: "#E2402A" },
+      { label: "Sedang", value: sum(summaryRows, "hotspot_sedang"), color: "#F2711C" },
+      { label: "Lemah", value: sum(summaryRows, "hotspot_lemah"), color: "#E9A21B" },
+      { label: "Kandidat", value: sum(summaryRows, "hotspot_kandidat"), color: "#2F5E49" },
     ].filter((segment) => segment.value > 0);
 
     const total = segments.reduce((acc, segment) => acc + segment.value, 0);
@@ -1117,7 +1158,7 @@
         dailyRows,
         "frp_sum",
         "frp-peak",
-        "#ffb02e",
+        "#D9581E",
       );
       renderTop(
         "top-hotspot",
@@ -1206,7 +1247,7 @@
   }
 
   function bindTabs() {
-    const tabs = [...document.querySelectorAll(".dash-tab")];
+    const tabs = [...document.querySelectorAll(".side-tab, .dash-tab")];
     tabs.forEach((tab) => {
       tab.addEventListener("click", () => {
         activateTab(tab.dataset.tab, false, true);
@@ -1214,8 +1255,9 @@
       tab.addEventListener("keydown", (event) => {
         const index = TABS.indexOf(tab.dataset.tab);
         let next = null;
-        if (event.key === "ArrowRight") next = (index + 1) % TABS.length;
-        if (event.key === "ArrowLeft")
+        if (event.key === "ArrowRight" || event.key === "ArrowDown")
+          next = (index + 1) % TABS.length;
+        if (event.key === "ArrowLeft" || event.key === "ArrowUp")
           next = (index - 1 + TABS.length) % TABS.length;
         if (event.key === "Home") next = 0;
         if (event.key === "End") next = TABS.length - 1;
