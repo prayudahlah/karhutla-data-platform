@@ -6,6 +6,7 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
+import pytest
 
 from batch.silver.mcd64a1_coverage import (
     PeriodObservation,
@@ -19,6 +20,11 @@ from batch.silver.mcd64a1_pixel import (
 )
 
 NORMALIZED_ROOT = Path(os.getenv("SILVER_NORMALIZED_ROOT", "data/silver/_normalized")) / "mcd64a1"
+
+pytestmark = pytest.mark.skipif(
+    not NORMALIZED_ROOT.exists(),
+    reason="data Silver normalized tidak tersedia; tes ini butuh hasil Batch 2A",
+)
 
 
 def _table(name: str) -> pd.DataFrame:

@@ -318,3 +318,26 @@ menggeser split, fitur, atau hasil model. Artefak:
 Catatan: label dan agregat deteksi tetap milik dbt. `ml.feature_publish`
 hanya menambahkan fitur turunan (provinsi, jarak, rasio, waktu) dan konteks
 cuaca/AQ di atas `hotspot_cell_day`.
+
+## Rebase dev + unifikasi grid (22 November 2026)
+
+Branch `integrasi/ml-dev` menggabungkan pipeline ML dengan Gold/serving dari
+`dev`. Dua perubahan yang memengaruhi angka:
+
+1. `cell_id` disatukan ke grid `rrrr_cccc` milik `cell_daily`.
+2. `hour_of_max_frp` dibuat deterministik: tie-break `frp` tertinggi, lalu
+   `acq_ts_utc` paling awal, lalu `event_id`.
+
+Validasi pada data yang sama (train/valid/test 8.554/6.332/5.302):
+
+| Model | Fitur | PR-AUC valid |
+|---|---:|---:|
+| LR C=10 | 29 | 0,6830 |
+| LightGBM | 29 | 0,7641 |
+
+LightGBM tetap unggul dan perbandingan pipeline tetap `accepted`. Selisih
+terhadap angka 0,7675 sebelumnya berasal dari tie-break `hour_of_max_frp` dan
+sensitivitas urutan baris LightGBM; beberapa run validasi LightGBM bergerak di
+kisaran 0,764–0,769. Test tidak dievaluasi. Angka ini menggantikan klaim
+0,7675 untuk kondisi setelah unifikasi grid, tetapi konfigurasi beku
+(`experiments/lgbm-baseline.yaml`) tidak diubah.

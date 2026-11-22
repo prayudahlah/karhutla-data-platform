@@ -47,6 +47,7 @@ event_completeness as (
 
 hotspots as (
     select
+        l.event_id,
         l.date,
         l.tier,
         l.frp,
@@ -68,23 +69,36 @@ hotspots as (
         l.satellite,
         l.tile,
         l.acq_ts_utc,
-        cast(floor(l.latitude / 0.25) as integer) as cell_y,
-        cast(floor(l.longitude / 0.25) as integer) as cell_x,
-        cast(floor(l.latitude / 0.25) as integer)::varchar || '_'
-            || cast(floor(l.longitude / 0.25) as integer)::varchar as cell_id,
+        cast(floor((cast(l.latitude as double) - ({{ grid_lat_min() }})) / {{ grid_cell_size() }}) as integer)
+            as cell_y,
+        cast(floor((cast(l.longitude as double) - ({{ grid_lon_min() }})) / {{ grid_cell_size() }}) as integer)
+            as cell_x,
+        {{ grid_cell_id('l.latitude', 'l.longitude') }} as cell_id,
         (c.n_period_needed is not null
             and c.n_period_covered = c.n_period_needed) as label_complete
     from labeled l
     left join event_completeness c
         on c.event_id = l.event_id
+),
+
+ranked as (
+    select
+        *,
+        row_number() over (
+            partition by cell_id, date
+            order by frp desc nulls last, acq_ts_utc asc, event_id asc
+        ) as frp_rank
+    from hotspots
 )
 
 select
     cell_id,
     cell_y,
     cell_x,
-    cast(cell_y as double) * 0.25 + 0.125 as center_lat,
-    cast(cell_x as double) * 0.25 + 0.125 as center_lon,
+    round(cast({{ grid_lat_min() }} as double)
+        + (cast(cell_y as double) + 0.5) * {{ grid_cell_size() }}, 6) as center_lat,
+    round(cast({{ grid_lon_min() }} as double)
+        + (cast(cell_x as double) + 0.5) * {{ grid_cell_size() }}, 6) as center_lon,
     date,
     count(*) as n_hotspot,
     count(*) filter (where daynight = 'N') as n_night,
@@ -100,7 +114,7 @@ select
     avg(confidence_norm) as confidence_mean,
     max(scan) as scan_max,
     max(track) as track_max,
-    arg_max(extract('hour' from acq_ts_utc), frp) as hour_of_max_frp,
+    max(case when frp_rank = 1 then extract('hour' from acq_ts_utc) end) as hour_of_max_frp,
     avg(sin(2 * pi() * extract('hour' from acq_ts_utc) / 24.0)) as hour_sin_mean,
     avg(cos(2 * pi() * extract('hour' from acq_ts_utc) / 24.0)) as hour_cos_mean,
     max(case when tier in ('kuat', 'sedang') then 1 else 0 end) as label,
@@ -110,5 +124,5 @@ select
     count(*) filter (where tier = 'lemah') as audit_n_weak,
     count(*) filter (where tier = 'kandidat') as audit_n_candidate,
     count(distinct tile) as audit_n_tile
-from hotspots
+from ranked
 group by cell_id, cell_y, cell_x, date

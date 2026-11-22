@@ -52,7 +52,9 @@ Semua kontrak Silver dan Gold saat ini berstatus `implemented`.
 
 Gold dibangun dbt dari Silver dengan `dbt build --select tag:gold`. Tabel
 `risk_prediction_daily` disiapkan sebagai folder tujuan inference ML, jadi belum
-punya kontrak sampai modelnya ada.
+punya kontrak sampai modelnya ada. Tabel ML `hotspot_cell_day` (label same-day)
+juga berada di luar kontrak Gold serving; kontrak dan alurnya ada di
+`docs/ml-temporal-pipeline.md`.
 
 Gold memakai **Iceberg v2 sebagai jalur resmi** lewat `task gold-publish`
 (ADR-002): snapshot 30 hari, partisi `date`/`burn_month`, katalog SQLite.

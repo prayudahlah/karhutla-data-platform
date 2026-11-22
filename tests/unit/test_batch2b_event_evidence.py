@@ -4,6 +4,7 @@ from datetime import date
 from pathlib import Path
 
 import pandas as pd
+import pytest
 
 from batch.silver.mcd64a1_event_evidence import (
     _burned_without_scar_candidate,
@@ -14,6 +15,11 @@ from batch.silver.mcd64a1_event_evidence import (
 )
 
 ROOT = Path("data/silver/_normalized/mcd64a1")
+
+pytestmark = pytest.mark.skipif(
+    not ROOT.exists(),
+    reason="data Silver normalized tidak tersedia; tes ini butuh hasil Batch 2B",
+)
 
 
 def _table(name: str) -> pd.DataFrame:
@@ -440,7 +446,7 @@ def test_b44_boundary_bbox_event_and_cell_are_consistent() -> None:
     assert event.iloc[0]["primary_gap_days"] == 2
 
     cell = _table("hotspot_cell_day_labeled")
-    row = cell[(cell["cell_id"] == "-34_563") & (cell["date"].astype(str) == "2026-09-23")]
+    row = cell[(cell["cell_id"] == "0010_0183") & (cell["date"].astype(str) == "2026-09-23")]
     assert len(row) == 1
     assert row.iloc[0]["label"] == 1
     assert row.iloc[0]["n_positive"] == 4

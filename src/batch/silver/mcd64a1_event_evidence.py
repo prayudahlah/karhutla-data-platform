@@ -27,6 +27,7 @@ from batch.silver.mcd64a1_coverage import (
     period_bounds,
 )
 from common.config import load_dotenv
+from common.grid import grid_cell_ids, grid_indices
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
 DEFAULT_PUBLISH_ROOT = REPO_ROOT / "data" / "silver" / "published"
@@ -101,9 +102,10 @@ def _events(publish_root: Path) -> pd.DataFrame:
     frame["tile"] = frame["tile"].astype(str)
     frame["pixel_row"] = frame["pixel_row"].astype("int32")
     frame["pixel_col"] = frame["pixel_col"].astype("int32")
-    frame["cell_y"] = np.floor(frame["latitude"] / 0.25).astype("int32")
-    frame["cell_x"] = np.floor(frame["longitude"] / 0.25).astype("int32")
-    frame["cell_id"] = frame["cell_y"].astype(str) + "_" + frame["cell_x"].astype(str)
+    rows, cols = grid_indices(frame["latitude"], frame["longitude"])
+    frame["cell_y"] = rows.astype("int32")
+    frame["cell_x"] = cols.astype("int32")
+    frame["cell_id"] = grid_cell_ids(rows, cols)
     return frame.reset_index(drop=True)
 
 

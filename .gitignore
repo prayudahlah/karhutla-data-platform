@@ -6,7 +6,7 @@
 # data dan model
 /data/
 /models/
-mlruns/
+mlruns*/
 *.parquet
 !tests/fixtures/**/*.parquet
 

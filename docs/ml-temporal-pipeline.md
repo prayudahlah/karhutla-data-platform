@@ -42,6 +42,21 @@ MLflow: parent run + 2 nested run + registered model
 Gold: data/gold/models/temporal/<run_id>/
 ```
 
+## Hubungan dengan Gold `cell_daily`
+
+Setelah integrasi `dev`, layer Gold punya dua produk dengan tujuan berbeda:
+
+| Tabel | Label | Konsumen | Format |
+|---|---|---|---|
+| `hotspot_cell_day` | same-day, kuat/sedang | pipeline ML 29 fitur | Parquet staging |
+| `cell_daily` | risiko D..D+2 | serving/dashboard | Iceberg canonical |
+
+Keduanya memakai grid dan `cell_id` yang sama (`rrrr_cccc`) setelah migrasi
+grid. Pipeline ML sengaja belum pindah ke `cell_daily` karena horizon labelnya
+berbeda dan akan mengubah baseline beku. Migrasi ML ke Iceberg `cell_daily`
+adalah pekerjaan lanjutan; sampai itu selesai, `hotspot_cell_day` adalah
+pengecualian transisi terhadap ADR-002.
+
 ## Mengapa 39 fitur di Feast, 29 di model?
 
 Feast menyimpan **39 fitur kandidat**: 24 fitur sel (termasuk `province`) dan

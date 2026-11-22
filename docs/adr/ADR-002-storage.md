@@ -67,6 +67,9 @@ Keputusan: **Iceberg menjadi jalur resmi Gold.** Parquet hanya staging dbt.
 
 ## Bukti dan batasan
 
+- **Pengecualian transisi:** pipeline ML temporal masih membaca Parquet
+  `hotspot_cell_day` (label same-day) untuk menjaga baseline 29 fitur. Migrasi
+  ke `cell_daily`/Iceberg dan label D..D+2 dicatat sebagai pekerjaan lanjutan.
 - Bukti F-07 saat ini memakai **warehouse lokal**
   (`data/gold/_iceberg_evidence`).
 - Jalur Garage `s3://lakehouse/gold/iceberg` belum diuji. Sampai integration
