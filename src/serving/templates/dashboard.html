@@ -11,7 +11,7 @@
   } catch (error) {}
 })();
 </script>
-<link rel="stylesheet" href="/static/dashboard.css?v=20261123f">
+<link rel="stylesheet" href="/static/dashboard.css?v=20261123i">
 {% endblock %}
 {% block content %}
 <section class="dash-hero">
@@ -63,7 +63,12 @@
 
   <section class="dash-tabpanel" id="panel-sebaran" role="tabpanel" aria-labelledby="tab-sebaran" tabindex="0">
     <div class="tab-kpis">
-      <div class="tab-kpi accent"><span class="kicker">Total hotspot</span><b id="tab1-total">—</b><span id="tab1-total-sub">—</span></div>
+      <div class="tab-kpi accent">
+        <span class="kicker">Total hotspot</span>
+        <b id="tab1-total">—</b>
+        <span id="tab1-total-sub">—</span>
+        <svg class="kpi-spark" id="spark-total" viewBox="0 0 120 30" aria-hidden="true"></svg>
+      </div>
       <div class="tab-kpi"><span class="kicker">Hotspot kuat</span><b id="tab1-kuat">—</b><span id="tab1-kuat-sub">—</span></div>
       <div class="tab-kpi"><span class="kicker">FRP total</span><b id="tab1-frp">—</b><span id="tab1-frp-sub">—</span></div>
       <div class="tab-kpi"><span class="kicker">Luas terbakar</span><b id="tab1-scar">—</b><span id="tab1-scar-sub">—</span></div>
@@ -96,7 +101,7 @@
             <span><i style="background:var(--tier-kandidat)"></i>Kandidat</span>
           </div>
         </div>
-        <p class="panel-note">Garis kepulauan disederhanakan (Natural Earth). Titik = 500 sel teratas pada tanggal terakhir periode.</p>
+        <p class="panel-note">Garis kepulauan disederhanakan (Natural Earth). Titik = 500 sel teratas pada tanggal terakhir periode. Arahkan kursor ke titik untuk fokus provinsi.</p>
       </article>
 
       <article class="dash-panel span-5">
@@ -251,4 +256,4 @@
 </div>
 </div>
 {% endblock %}
-{% block extra_scripts %}<script src="/static/dashboard.js?v=20261123f" defer></script>{% endblock %}
+{% block extra_scripts %}<script src="/static/dashboard.js?v=20261123i" defer></script>{% endblock %}

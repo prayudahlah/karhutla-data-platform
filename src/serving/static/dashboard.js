@@ -225,6 +225,7 @@
   function renderAll(data) {
     const { summaryRows, dailyRows, monthlyRows, health, cells } = data;
     renderSummary(summaryRows, monthlyRows);
+    renderSparkline(dailyRows);
     renderTrendKpis(dailyRows);
     renderTierChart(dailyRows);
     renderDailyStrip(dailyRows);
@@ -296,8 +297,7 @@
     const provinceCount = (summaryRows || []).length;
 
     $("tab1-total").textContent = number.format(total);
-    $("tab1-total-sub").textContent =
-      periodLabel() + " \u00b7 " + provinceCount + " provinsi";
+    $("tab1-total-sub").textContent = periodLabel();
 
     $("tab1-kuat").textContent = number.format(kuat);
     $("tab1-kuat-sub").textContent = total
@@ -321,6 +321,53 @@
 
     $("rail-period").textContent = periodLabel();
     $("rail-coverage").textContent = provinceCount + " provinsi";
+  }
+
+  function renderSparkline(rows) {
+    const svg = $("spark-total");
+    if (!svg) return;
+    const values = [...(rows || [])]
+      .sort((a, b) => String(a.date).localeCompare(String(b.date)))
+      .map((row) => Number(row.hotspot_count || 0));
+    if (values.length < 2) {
+      svg.innerHTML = "";
+      return;
+    }
+    const width = 120;
+    const height = 30;
+    const pad = 3;
+    const maxValue = Math.max(...values, 1);
+    const step = (width - pad * 2) / (values.length - 1);
+    const points = values.map((value, index) => {
+      const x = pad + index * step;
+      const y = height - pad - (value / maxValue) * (height - pad * 2);
+      return [x, y];
+    });
+    const line = points
+      .map(
+        ([x, y], index) =>
+          (index ? "L" : "M") + x.toFixed(1) + " " + y.toFixed(1),
+      )
+      .join(" ");
+    const lastX = points[points.length - 1][0].toFixed(1);
+    const area =
+      line +
+      " L" +
+      lastX +
+      " " +
+      (height - pad) +
+      " L" +
+      pad +
+      " " +
+      (height - pad) +
+      " Z";
+    svg.innerHTML =
+      '<path d="' +
+      area +
+      '" fill="var(--amber)" opacity=".14"></path>' +
+      '<path d="' +
+      line +
+      '" fill="none" stroke="var(--amber)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"></path>';
   }
 
   function renderTrendKpis(dailyRows) {
@@ -719,31 +766,78 @@
       dateShort(isoDate(buckets[peakIndex].start));
   }
 
-  function layoutTreemap(items, x, y, width, height, vertical, out) {
-    if (items.length === 1) {
-      out.push({ ...items[0], x, y, width, height });
-      return;
-    }
+  function treemapWorst(row, side) {
+    const total = row.reduce((value, item) => value + item.area, 0);
+    const maxArea = Math.max(...row.map((item) => item.area));
+    const minArea = Math.min(...row.map((item) => item.area));
+    return Math.max(
+      (side * side * maxArea) / (total * total),
+      (total * total) / (side * side * minArea),
+    );
+  }
+
+  function layoutTreemap(items, x, y, width, height, out) {
     const total = items.reduce((value, item) => value + item.value, 0);
-    let accumulated = 0;
-    let split = 1;
-    for (let index = 0; index < items.length - 1; index += 1) {
-      accumulated += items[index].value;
-      if (accumulated >= total / 2) {
-        split = index + 1;
-        break;
+    if (!total || width <= 0 || height <= 0) return;
+    const scale = (width * height) / total;
+    const queue = items.map((item) => ({ ...item, area: item.value * scale }));
+    const rect = { x, y, width, height };
+
+    while (queue.length && rect.width > 0 && rect.height > 0) {
+      const side = Math.min(rect.width, rect.height);
+      const row = [queue[0]];
+      let index = 1;
+      let worst = treemapWorst(row, side);
+      while (index < queue.length) {
+        const candidate = row.concat(queue[index]);
+        const candidateWorst = treemapWorst(candidate, side);
+        if (candidateWorst > worst) break;
+        row.push(queue[index]);
+        worst = candidateWorst;
+        index += 1;
       }
-    }
-    const left = items.slice(0, split);
-    const right = items.slice(split);
-    const leftTotal = left.reduce((value, item) => value + item.value, 0);
-    const ratio = leftTotal / total;
-    if (vertical) {
-      layoutTreemap(left, x, y, width * ratio, height, !vertical, out);
-      layoutTreemap(right, x + width * ratio, y, width * (1 - ratio), height, !vertical, out);
-    } else {
-      layoutTreemap(left, x, y, width, height * ratio, !vertical, out);
-      layoutTreemap(right, x, y + height * ratio, width, height * (1 - ratio), !vertical, out);
+      queue.splice(0, row.length);
+      const rowArea = row.reduce((value, item) => value + item.area, 0);
+
+      if (rect.width >= rect.height) {
+        const columnWidth = Math.min(rect.width, rowArea / rect.height);
+        let cursorY = rect.y;
+        row.forEach((item, rowIndex) => {
+          const itemHeight =
+            rowIndex === row.length - 1
+              ? rect.y + rect.height - cursorY
+              : item.area / columnWidth;
+          out.push({
+            ...item,
+            x: rect.x,
+            y: cursorY,
+            width: columnWidth,
+            height: itemHeight,
+          });
+          cursorY += itemHeight;
+        });
+        rect.x += columnWidth;
+        rect.width -= columnWidth;
+      } else {
+        const rowHeight = Math.min(rect.height, rowArea / rect.width);
+        let cursorX = rect.x;
+        row.forEach((item, rowIndex) => {
+          const itemWidth =
+            rowIndex === row.length - 1
+              ? rect.x + rect.width - cursorX
+              : item.area / rowHeight;
+          out.push({
+            ...item,
+            x: cursorX,
+            y: rect.y,
+            width: itemWidth,
+            height: rowHeight,
+          });
+          cursorX += itemWidth;
+        });
+        rect.y += rowHeight;
+        rect.height -= rowHeight;
+      }
     }
   }
 
@@ -755,6 +849,26 @@
     const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
     return luminance > 0.55 ? "#1a0d03" : "#f4fbf6";
   }
+
+  const SHORT_PROVINCE = {
+    "Kalimantan Barat": "Kalbar",
+    "Kalimantan Tengah": "Kalteng",
+    "Kalimantan Selatan": "Kalsel",
+    "Kalimantan Timur": "Kaltim",
+    "Kalimantan Utara": "Kaltara",
+    "Sumatera Barat": "Sumbar",
+    "Sumatera Selatan": "Sumsel",
+    "Sumatera Utara": "Sumut",
+    "Nusa Tenggara Barat": "NTB",
+    "Nusa Tenggara Timur": "NTT",
+    "Kepulauan Bangka Belitung": "Babel",
+    "Kepulauan Riau": "Kepri",
+    "DI Yogyakarta": "DIY",
+    "DKI Jakarta": "DKI",
+    "Papua Barat Daya": "PBD",
+    "Papua Pegunungan": "Pegunungan",
+    "Papua Selatan": "Papua Sel.",
+  };
 
   function renderTreemap(rows) {
     const svg = $("treemap");
@@ -793,7 +907,8 @@
       });
     }
     const boxes = [];
-    layoutTreemap(items, 0, 0, 1000, 520, true, boxes);
+    const ordered = [...items].sort((a, b) => b.value - a.value);
+    layoutTreemap(ordered, 0, 0, 1000, 520, boxes);
     const topTotal = items.reduce((value, item) => value + item.value, 0);
 
     svg.innerHTML = boxes
@@ -808,14 +923,22 @@
         const height = Math.max(0, box.height - inset * 2);
         const fill = contrastText(box.color);
         const rawName = box.name;
+        const narrow = width < 115;
+        const labelName = narrow
+          ? SHORT_PROVINCE[rawName] || rawName
+          : rawName;
         const name =
-          rawName.length > 20 ? rawName.slice(0, 19) + "…" : rawName;
-        const showName = width > 115 && height > 74;
+          labelName.length > 20 ? labelName.slice(0, 19) + "…" : labelName;
+        const fontSize = narrow ? 17 : 21;
+        const showName = width > 88 && height > 64;
         const showInline = !showName && width > 180 && height > 30;
         const showValue =
           !showName && !showInline && width > 70 && height > 34;
-        const maxChars = Math.max(6, Math.floor((width - 18) / (21 * 0.53)));
-        const words = rawName.split(" ");
+        const maxChars = Math.max(
+          5,
+          Math.floor((width - 18) / (fontSize * 0.53)),
+        );
+        const words = labelName.split(" ");
         const lines = [];
         let currentLine = words[0] || "";
         for (let wordIndex = 1; wordIndex < words.length; wordIndex += 1) {
@@ -866,7 +989,9 @@
           (showName
             ? '<text fill="' +
               fill +
-              '" font-size="21" font-weight="600">' +
+              '" font-size="' +
+              fontSize +
+              '" font-weight="600">' +
               labelSvg +
               "</text>" +
               '<text x="' +
@@ -875,7 +1000,9 @@
               valueY.toFixed(1) +
               '" fill="' +
               fill +
-              '" opacity=".82" font-size="15">' +
+              '" opacity=".82" font-size="' +
+              (narrow ? 14 : 15) +
+              '">' +
               number.format(box.value) +
               "</text>"
             : "") +
@@ -1072,14 +1199,22 @@
     $("map-date").textContent = dateLong(state.end);
     $("map-count").textContent =
       rows.length >= 500 ? "500 sel teratas" : rows.length + " sel";
-    $("map-focus-name").textContent = top ? top.province : "—";
-    $("map-focus-hotspot").textContent = top
-      ? number.format(Math.round(Number(top.hotspot_count)))
-      : "—";
-    $("map-focus-share").textContent =
-      top && total
-        ? decimal.format((Number(top.hotspot_count) / total) * 100) + "%"
+    const byProvince = new Map(
+      (summaryRows || []).map((row) => [row.province, row]),
+    );
+    const defaultProvince = top ? top.province : "";
+    const setFocus = (province) => {
+      const row = byProvince.get(province) || top;
+      $("map-focus-name").textContent = row ? row.province : "—";
+      $("map-focus-hotspot").textContent = row
+        ? number.format(Math.round(Number(row.hotspot_count)))
         : "—";
+      $("map-focus-share").textContent =
+        row && total
+          ? decimal.format((Number(row.hotspot_count) / total) * 100) + "%"
+          : "—";
+    };
+    setFocus(defaultProvince);
 
     const colors = palette();
     const land =
@@ -1153,7 +1288,9 @@
         if (x < 8 || x > 632 || y < 8 || y > 312) return "";
         const opacity = 0.3 + 0.55 * (count / maxCount);
         return (
-          '<circle cx="' +
+          '<circle class="map-dot" data-province="' +
+          row.province +
+          '" cx="' +
           x.toFixed(1) +
           '" cy="' +
           y.toFixed(1) +
@@ -1179,6 +1316,21 @@
       land +
       glows +
       dots;
+
+    svg.querySelectorAll(".map-dot").forEach((dot) => {
+      const province = dot.dataset.province;
+      dot.addEventListener("pointerenter", (event) => {
+        if (event.pointerType === "touch") return;
+        dot.classList.add("is-focus");
+        setFocus(province);
+      });
+      dot.addEventListener("pointerleave", (event) => {
+        if (event.pointerType === "touch") return;
+        dot.classList.remove("is-focus");
+        setFocus(defaultProvince);
+      });
+      dot.addEventListener("click", () => setFocus(province));
+    });
   }
 
   function renderDonut(summaryRows) {
