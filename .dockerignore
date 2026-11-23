@@ -10,7 +10,7 @@
 data/
 stream/data/
 models/
-mlruns/
+mlruns*/
 logs/
 minio-data/
 postgres-data/
@@ -34,3 +34,8 @@ htmlcov/
 
 # notebook dan dokumen besar
 *.ipynb_checkpoints/
+.ipynb_checkpoints/
+*.log
+*.db
+*.sqlite
+*.sqlite3

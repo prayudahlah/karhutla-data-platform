@@ -1,0 +1,7 @@
+# Profil Prefect untuk run manual lokal tanpa server.
+# Task `ml-pipeline` memakai profil ini supaya Prefect menjalankan API
+# ephemeral, bukan mencoba http://core:4200/api dari .env.
+active = "local-ephemeral"
+
+[profiles.local-ephemeral]
+PREFECT_SERVER_ALLOW_EPHEMERAL_MODE = "true"

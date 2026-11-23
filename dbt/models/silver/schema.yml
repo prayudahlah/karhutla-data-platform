@@ -112,7 +112,7 @@ models:
         data_tests: [not_null]
 
   - name: mcd64a1_burn_scar
-    description: Burned pixels inside the study bbox.
+    description: Burned pixels whose 500 m footprint intersects the study bbox.
     columns:
       - name: tile
         data_tests: [not_null]

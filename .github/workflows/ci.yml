@@ -28,7 +28,7 @@ jobs:
 
       - name: Install
         run: |
-          pip install -e ".[dev,silver]"
+          pip install -e ".[dev,silver,ml,feast]"
           # Tes unit menyentuh kode node stream, yang dependensinya dipisah
           # karena image-nya sendiri (lihat docker/Dockerfile.stream).
           pip install -r stream/requirements.txt

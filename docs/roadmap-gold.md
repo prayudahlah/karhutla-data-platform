@@ -50,7 +50,7 @@ Katalog memuat 4 tabel Gold (3 `implemented`, `risk_prediction_daily` masih
 | Provinsi | centroid provinsi terdekat dari `resources/indonesia_provinces.csv` |
 | Semesta sel | sel yang pernah punya hotspot (2.980), laut otomatis keluar |
 | Label | tier `kuat`/`sedang` pada D..D+2; `lemah`/`kandidat` bukan positif |
-| Fitur model | jendela D-7..D-1, dihitung di `src/ml/features.py` (belum ada) |
+| Fitur model | jendela D-7..D-1, dihitung di `src/ml/features.py` |
 | Partisi | `date=` untuk harian, `burn_month=` untuk scar bulanan |
 | Format Gold | Iceberg v2 canonical; Parquet staging dbt; Postgres serving cache |
 | Determinisme | agregat uang/float memakai `decimal(18,3)` agar tidak berubah antar run |
@@ -75,6 +75,9 @@ Kontrak Gold (3 tabel `implemented`), `catalog.json`/`lineage.json`, Iceberg v2
 Postgres yang disalin dari Iceberg. Yang belum:
 
 1. Dashboard HTML (bukan Metabase) + info freshness; panel prediksi menunggu ML.
-2. ML membaca `cell_daily` dari Iceberg; helper menyusul.
+2. Migrasi pipeline ML ke `cell_daily` dari Iceberg. Saat ini pipeline temporal
+   masih membaca Parquet `hotspot_cell_day` (label same-day) agar baseline 29
+   fitur tidak berubah; lihat `docs/ml-temporal-pipeline.md`.
 
-ML (`F-11`, `F-12`) ditunda atas permintaan pemilik project.
+Pipeline ML temporal (`F-11`/`F-12` tahap training) sudah ada. Inference dan
+penyajian prediksi ke API/portal masih pekerjaan lanjutan.

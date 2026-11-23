@@ -1,0 +1,36 @@
+id: lr-2026-09-vif-protected
+model: logistic_regression
+feature_group: t3
+vif:
+  limit: 10.0
+  protected:
+    - n_hotspot
+c: 10.0
+class_weight: null
+threshold:
+  method: f1_valid
+  value: 0.45127235022902185
+split:
+  train:
+    - "2026-09-01"
+    - "2026-09-07"
+  valid:
+    - "2026-09-11"
+    - "2026-09-15"
+  test:
+    - "2026-09-19"
+    - "2026-09-23"
+  purge_days: 3
+metrics:
+  valid:
+    pr_auc: 0.6820
+    roc_auc: 0.8978
+    brier: 0.0850
+    f1: 0.6180
+  test:
+    pr_auc: 0.6311
+    roc_auc: 0.9041
+    brier: 0.0865
+    f1: 0.5707
+test_status: seen
+supersedes: lr-2026-09-vif-plain

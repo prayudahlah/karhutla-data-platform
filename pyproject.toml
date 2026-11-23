@@ -31,6 +31,17 @@ dlt = [
 silver = [
     "dbt-duckdb>=1.8",
 ]
+ml = [
+    "lightgbm>=4.5",
+    "matplotlib>=3.9",
+    "mlflow>=2.17,<3",
+    "numpy>=1.26",
+    "pandas>=2.2",
+    "scikit-learn>=1.5",
+]
+feast = [
+    "feast[duckdb]>=0.68,<0.69",
+]
 dev = [
     "pytest>=8.0",
     "pytest-cov>=5.0",
@@ -48,7 +59,7 @@ where = ["src"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-q"
-pythonpath = ["src", "stream/src"]
+pythonpath = ["src", "stream/src", "."]
 markers = [
     "integration: tests that require a live Garage/S3-compatible endpoint",
 ]

@@ -52,7 +52,9 @@ Semua kontrak Silver dan Gold saat ini berstatus `implemented`.
 
 Gold dibangun dbt dari Silver dengan `dbt build --select tag:gold`. Tabel
 `risk_prediction_daily` disiapkan sebagai folder tujuan inference ML, jadi belum
-punya kontrak sampai modelnya ada.
+punya kontrak sampai modelnya ada. Tabel ML `hotspot_cell_day` (label same-day)
+juga berada di luar kontrak Gold serving; kontrak dan alurnya ada di
+`docs/ml-temporal-pipeline.md`.
 
 Gold memakai **Iceberg v2 sebagai jalur resmi** lewat `task gold-publish`
 (ADR-002): snapshot 30 hari, partisi `date`/`burn_month`, katalog SQLite.
@@ -107,6 +109,15 @@ di `silver/_dq/...`, baris ditolak di `silver/_quarantine/...`, dan manifest di
 - Baris yang ditolak masuk `silver/_quarantine/...` beserta alasan.
 - Jumlah baris Bronze harus cocok dengan hasil normalisasi; selisihnya
   dijelaskan di laporan DQ.
+
+## Kontrak label Phase 01
+
+Kontrak label temporal (QA/coverage MCD64A1, label Silver event-level, label
+Gold cell-day, lineage, fingerprint) berada di:
+
+- `docs/adr/ADR-008-phase-01-label-contract.md`
+- `docs/ml-label-contract.md`
+- `docs/ml-phase-01-batch-1-audit.md`
 
 ## Perubahan kontrak
 

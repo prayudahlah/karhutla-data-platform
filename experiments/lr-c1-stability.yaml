@@ -1,0 +1,37 @@
+id: lr-2026-09-vif-protected-c1
+model: logistic_regression
+feature_group: t3
+vif:
+  limit: 10.0
+  protected:
+    - n_hotspot
+c: 1.0
+class_weight: null
+threshold:
+  method: f1_valid
+  value: 0.47761918462317887
+split:
+  train:
+    - "2026-09-01"
+    - "2026-09-07"
+  valid:
+    - "2026-09-11"
+    - "2026-09-15"
+  test:
+    - "2026-09-19"
+    - "2026-09-23"
+  purge_days: 3
+metrics:
+  valid:
+    pr_auc: 0.6801
+    roc_auc: 0.8964
+    brier: 0.0865
+    f1: 0.6175
+  test: null
+test_status: pending_new_window
+role: stability_variant
+supersedes: lr-2026-09-vif-protected
+note: >
+  Dipilih lewat aturan tie-break: selisih PR-AUC valid -0,0019 dan simpangan
+  baku koefisien provinsi 0,2525 berbanding 0,4237 pada C=10. Angka test
+  September 0,6311 milik C=10 di lr-baseline.yaml, bukan konfigurasi ini.

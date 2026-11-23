@@ -1,4 +1,5 @@
-# Node batch: Garage (object storage), garage-webui (browser), dan consumer FIRMS.
+# Node batch: Garage (object storage), garage-webui (browser), consumer FIRMS,
+# Prefect worker, dan MLflow.
 #
 # Kredensial diambil dari `.env` di root repo (gitignored). File itu berisi
 # GARAGE_DEFAULT_ACCESS_KEY / GARAGE_DEFAULT_SECRET_KEY yang dipakai Garage saat
@@ -149,6 +150,7 @@ services:
       PREFECT_API_URL: http://core:4200/api
       GARAGE_ENDPOINT: http://garage:3900
       GARAGE_FORCE_PATH_STYLE: "true"
+      MLFLOW_TRACKING_URI: http://mlflow:5000
       BURNED_AREA_BBOX: ${BURNED_AREA_BBOX:-95,-11,141,6}
       TZ: ${TZ:-Asia/Jakarta}
     volumes:
@@ -164,11 +166,52 @@ services:
         max-size: "10m"
         max-file: "3"
 
+  mlflow:
+    image: ghcr.io/mlflow/mlflow:v2.17.2
+    container_name: karhutla-mlflow
+    restart: unless-stopped
+    # Root supaya SQLite dan artifact volume bisa ditulis tanpa mengatur izin.
+    user: "0:0"
+    entrypoint: ["mlflow"]
+    command:
+      - server
+      - --backend-store-uri
+      - sqlite:////mlflow/mlflow.db
+      - --default-artifact-root
+      - /mlflow/artifacts
+      - --host
+      - 0.0.0.0
+      - --port
+      - "5000"
+    ports:
+      - "127.0.0.1:5000:5000"
+    volumes:
+      - mlflow-data:/mlflow
+    networks:
+      - karhutla
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - >-
+          python -c "import urllib.request,sys;
+          sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:5000/health', timeout=5).status == 200 else 1)"
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
 volumes:
   garage-meta:
     name: karhutla-garage-meta
   garage-data:
     name: karhutla-garage-data
+  mlflow-data:
+    name: karhutla-mlflow-data
 
 # Dideklarasikan di sini supaya file ini tetap valid tanpa compose/base.yml.
 networks:

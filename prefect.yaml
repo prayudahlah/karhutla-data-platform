@@ -27,3 +27,16 @@ deployments:
     work_pool:
       name: default
     parameters: {}
+
+  # Training temporal sengaja manual: Gold dibangun ulang di luar jadwal ini,
+  # dan test 19-23 September 2026 sudah seen. Jalankan lewat UI Prefect atau
+  # `prefect deployment run`.
+  - name: ml-temporal-training
+    description: Latih LR dan LightGBM temporal dari fitur Gold via Feast, catat ke MLflow
+    entrypoint: flows/ml_training.py:training_pipeline
+    work_pool:
+      name: default
+    parameters:
+      model_configs: null
+      promote: false
+      mlflow_required: true

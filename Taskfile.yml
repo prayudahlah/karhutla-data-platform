@@ -218,6 +218,7 @@ tasks:
     env:
       SILVER_NORMALIZED_ROOT: data/silver/_normalized
       SILVER_PUBLISH_ROOT: data/silver/published
+      GOLD_PUBLISH_ROOT: data/gold/published
     cmds:
       - 'python -m batch.silver.prepare --clean'
       - 'dbt build --project-dir dbt --profiles-dir dbt'
@@ -265,6 +266,59 @@ tasks:
       - task: lint
       - task: test
       - task: dbt-build
+
+  # ------------------------------------------------------------------- ml
+  ml-audit:
+    desc: Audit dataset Gold sel-hari untuk ML
+    cmds:
+      - 'python -m ml.audit {{.CLI_ARGS}}'
+
+  ml-dataset:
+    desc: Siapkan split temporal dan manifest dataset ML dari Gold
+    cmds:
+      - 'python -m ml.dataset {{.CLI_ARGS}}'
+
+  ml-train:
+    desc: Latih baseline LR atau pembanding LightGBM dari Gold sel-hari, mis. task ml-train -- --model lr --features t3
+    cmds:
+      - 'python -m ml.train {{.CLI_ARGS}}'
+
+  ml-check:
+    desc: Lint dan test modul ML
+    cmds:
+      - task: lint
+      - task: test
+
+  ml-features:
+    desc: Bangun tabel fitur Gold untuk Feast (sel-hari + konteks provinsi)
+    cmds:
+      - 'python -m ml.feature_publish {{.CLI_ARGS}}'
+
+  feast-apply:
+    desc: Daftarkan entity, feature view, dan feature service ke Feast
+    cmds:
+      - 'python -m ml.feast_store apply'
+
+  feast-materialize:
+    desc: Muat fitur terbaru ke online store Feast (SQLite)
+    cmds:
+      - 'python -m ml.feast_store materialize {{.CLI_ARGS}}'
+
+  ml-train-feast:
+    desc: Latih satu model dari fitur Feast, mis. task ml-train-feast -- --model lr
+    cmds:
+      - 'python -m ml.train --feature-source feast {{.CLI_ARGS}}'
+
+  ml-pipeline:
+    desc: Jalankan flow Prefect training temporal (LR + LGBM) secara manual
+    env:
+      # Taskfile memuat .env; profil ini memaksa API ephemeral, bukan core.
+      PREFECT_PROFILES_PATH: 'prefect-profiles.toml'
+      PREFECT_API_URL: ''
+      # Dari host, MLflow container terbuka di port 5000.
+      MLFLOW_TRACKING_URI: 'http://127.0.0.1:5000'
+    cmds:
+      - 'python -m flows.ml_training {{.CLI_ARGS}}'
 
   # ----------------------------------------------------------------- gold
   gold-build:

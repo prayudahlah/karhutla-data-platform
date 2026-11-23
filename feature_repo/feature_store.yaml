@@ -1,0 +1,8 @@
+project: karhutla_features
+registry: ../data/feast/registry.db
+provider: local
+offline_store:
+  type: duckdb
+online_store:
+  path: ../data/feast/online_store.db
+entity_key_serialization_version: 3

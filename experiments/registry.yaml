@@ -1,0 +1,625 @@
+families:
+  lr-baseline:
+    test_window:
+    - '2026-09-19'
+    - '2026-09-23'
+    test_looks: 2
+    sealed: true
+    config_file: experiments/lr-baseline.yaml
+    note: test 19-23 Sep sudah dipakai 2x; tuning berikutnya di valid
+  lr-spatial-kalimantan:
+    test_window: &id001
+    - '2026-09-19'
+    - '2026-09-23'
+    test_looks: 1
+    sealed: true
+    holdout_region: Kalimantan
+    note: ditutup; hasil dipakai sebagai bukti generalisasi spasial
+    closed_at: '2026-11-17'
+  lr-spatial-kalimantan-noloc:
+    test_window: *id001
+    test_looks: 1
+    sealed: true
+    holdout_region: Kalimantan
+    note: ditutup; hasil dipakai sebagai bukti generalisasi spasial
+    closed_at: '2026-11-17'
+  lr-spatial-sumatra:
+    test_window: *id001
+    test_looks: 1
+    sealed: true
+    holdout_region: Sumatra
+    note: ditutup; hasil dipakai sebagai bukti generalisasi spasial
+    closed_at: '2026-11-17'
+  lr-spatial-sumatra-noloc:
+    test_window: *id001
+    test_looks: 1
+    sealed: true
+    holdout_region: Sumatra
+    note: ditutup; hasil dipakai sebagai bukti generalisasi spasial
+    closed_at: '2026-11-17'
+  lr-spatial-papua:
+    test_window: *id001
+    test_looks: 1
+    sealed: true
+    holdout_region: Papua
+    note: ditutup; hasil dipakai sebagai bukti generalisasi spasial
+    closed_at: '2026-11-17'
+  lr-spatial-papua-noloc:
+    test_window: *id001
+    test_looks: 1
+    sealed: true
+    holdout_region: Papua
+    note: ditutup; hasil dipakai sebagai bukti generalisasi spasial
+    closed_at: '2026-11-17'
+  lr-spatial-maluku:
+    test_window: *id001
+    test_looks: 1
+    sealed: true
+    holdout_region: Maluku
+    note: ditutup; hasil dipakai sebagai bukti generalisasi spasial
+    closed_at: '2026-11-17'
+  lr-spatial-maluku-noloc:
+    test_window: *id001
+    test_looks: 1
+    sealed: true
+    holdout_region: Maluku
+    note: ditutup; hasil dipakai sebagai bukti generalisasi spasial
+    closed_at: '2026-11-17'
+  lr-spatial-sulawesi:
+    test_window: *id001
+    test_looks: 0
+    sealed: true
+    holdout_region: Sulawesi
+    note: ditutup; hasil dipakai sebagai bukti generalisasi spasial
+    closed_at: '2026-11-17'
+  lr-spatial-kalimantan-nhotspot:
+    test_window:
+    - '2026-09-19'
+    - '2026-09-23'
+    test_looks: 1
+    sealed: true
+    holdout_region: Kalimantan
+    note: ditutup; hasil dipakai sebagai bukti generalisasi spasial
+    closed_at: '2026-11-17'
+  lr-spatial-sumatra-nhotspot:
+    test_window:
+    - '2026-09-19'
+    - '2026-09-23'
+    test_looks: 1
+    sealed: true
+    holdout_region: Sumatra
+    note: ditutup; hasil dipakai sebagai bukti generalisasi spasial
+    closed_at: '2026-11-17'
+  lr-spatial-papua-nhotspot:
+    test_window:
+    - '2026-09-19'
+    - '2026-09-23'
+    test_looks: 1
+    sealed: true
+    holdout_region: Papua
+    note: ditutup; hasil dipakai sebagai bukti generalisasi spasial
+    closed_at: '2026-11-17'
+  lr-spatial-maluku-nhotspot:
+    test_window:
+    - '2026-09-19'
+    - '2026-09-23'
+    test_looks: 1
+    sealed: true
+    holdout_region: Maluku
+    note: ditutup; hasil dipakai sebagai bukti generalisasi spasial
+    closed_at: '2026-11-17'
+  lr-tuning-history:
+    test_window: []
+    test_looks: 0
+    sealed: false
+  lr-tuning-region:
+    test_window: []
+    test_looks: 0
+    sealed: false
+  lgbm-baseline:
+    test_window:
+    - '2026-09-19'
+    - '2026-09-23'
+    test_looks: 1
+    sealed: false
+    vif: true
+    note: pembanding LightGBM; jendela test sama dan sudah seen untuk LR
+  lgbm-baseline-all:
+    test_window:
+    - '2026-09-19'
+    - '2026-09-23'
+    test_looks: 1
+    sealed: false
+    vif: false
+    note: pembanding LightGBM; jendela test sama dan sudah seen untuk LR
+runs:
+- id: lr-2026-09-vif-plain
+  freeze_id: null
+  config_hash: null
+  features: t3
+  c: 10.0
+  class_weight: null
+  threshold: 0.45127235022902185
+  valid_pr_auc: 0.6634
+  test_pr_auc: 0.5979
+  test_status: evaluated
+  test_reason: run pertama, sebelum kebijakan VIF protected
+  output: null
+  note: artefak MLflow dihapus saat pembersihan; angka dipertahankan di log
+- id: lr-2026-09-vif-protected
+  freeze_id: lr-2026-09-vif-protected
+  config_hash: null
+  features: t3
+  c: 10.0
+  class_weight: null
+  threshold: 0.45127235022902185
+  valid_pr_auc: 0.682
+  test_pr_auc: 0.6311
+  test_status: evaluated
+  test_reason: run setelah kebijakan VIF protected, dijadikan baseline
+  output: data/gold/models/lr-t3
+  note: test dievaluasi setelah perubahan kebijakan VIF
+- id: lr-baseline-c10-2026-11-16T10:04:26Z
+  freeze_id: lr-2026-09-vif-protected
+  config_hash: c59bce3ae074ac4b71ad895b62fd14f51ccbf45481f26cf39c206fcad4ee9f2b
+  features: t3
+  c: 10.0
+  class_weight: null
+  threshold: 0.45127235022902185
+  valid_pr_auc: 0.682015767796589
+  test_pr_auc: 0.6311334188090056
+  test_status: evaluated
+  test_reason: laporan final tahap 1
+  output: data/gold/models/lr-t3
+- id: lr-baseline-c1-2026-11-16T10:04:42Z
+  freeze_id: null
+  config_hash: null
+  features: t3
+  c: 1.0
+  class_weight: null
+  threshold: 0.47761918462317887
+  valid_pr_auc: 0.6801377547465064
+  test_pr_auc: null
+  test_status: not_evaluated
+  test_reason: null
+  output: data/gold/models/lr-c1
+- id: lr-baseline-c1-2026-11-16T10:09:46Z
+  freeze_id: lr-2026-09-vif-protected-c1
+  config_hash: aed4b860afd6661e7e86727235daaf112564994fce201a8516a8d79f524e0c17
+  features: t3
+  c: 1.0
+  class_weight: null
+  threshold: 0.47761918462317887
+  valid_pr_auc: 0.6801377547465064
+  test_pr_auc: null
+  test_status: not_evaluated
+  test_reason: null
+  output: data/gold/models/lr-c1
+- id: lr-spatial-sulawesi-c1-2026-11-16T10:29:57Z
+  freeze_id: lr-2026-09-vif-protected-c1
+  config_hash: aed4b860afd6661e7e86727235daaf112564994fce201a8516a8d79f524e0c17
+  features: t3
+  c: 1.0
+  class_weight: null
+  threshold: 0.4687191030395719
+  valid_pr_auc: 0.6970065671626576
+  test_pr_auc: null
+  test_status: not_evaluated
+  test_reason: null
+  holdout_region: Sulawesi
+  drop_location_features: false
+  output: data/gold/models/lr-spatial-sulawesi
+- id: lr-spatial-kalimantan-c1-2026-11-16T10:30:11Z
+  freeze_id: lr-2026-09-vif-protected-c1
+  config_hash: aed4b860afd6661e7e86727235daaf112564994fce201a8516a8d79f524e0c17
+  features: t3
+  c: 1.0
+  class_weight: null
+  threshold: 0.42022036371162597
+  valid_pr_auc: 0.6888434011040864
+  test_pr_auc: 0.37269598469843374
+  test_status: evaluated
+  test_reason: null
+  holdout_region: Kalimantan
+  drop_location_features: false
+  output: data/gold/models/lr-spatial-kalimantan
+- id: lr-spatial-sumatra-c1-2026-11-16T10:30:41Z
+  freeze_id: lr-2026-09-vif-protected-c1
+  config_hash: aed4b860afd6661e7e86727235daaf112564994fce201a8516a8d79f524e0c17
+  features: t3
+  c: 1.0
+  class_weight: null
+  threshold: 0.4697616533313188
+  valid_pr_auc: 0.6554261301653075
+  test_pr_auc: 0.7249657372263669
+  test_status: evaluated
+  test_reason: null
+  holdout_region: Sumatra
+  drop_location_features: false
+  output: data/gold/models/lr-spatial-sumatra
+- id: lr-spatial-papua-c1-2026-11-16T10:30:56Z
+  freeze_id: lr-2026-09-vif-protected-c1
+  config_hash: aed4b860afd6661e7e86727235daaf112564994fce201a8516a8d79f524e0c17
+  features: t3
+  c: 1.0
+  class_weight: null
+  threshold: 0.4293777674946671
+  valid_pr_auc: 0.6963826770983572
+  test_pr_auc: 0.26551778718345365
+  test_status: evaluated
+  test_reason: null
+  holdout_region: Papua
+  drop_location_features: false
+  output: data/gold/models/lr-spatial-papua
+- id: lr-spatial-maluku-c1-2026-11-16T10:31:11Z
+  freeze_id: lr-2026-09-vif-protected-c1
+  config_hash: aed4b860afd6661e7e86727235daaf112564994fce201a8516a8d79f524e0c17
+  features: t3
+  c: 1.0
+  class_weight: null
+  threshold: 0.4267219401167915
+  valid_pr_auc: 0.6643329730626896
+  test_pr_auc: 0.5991361096467561
+  test_status: evaluated
+  test_reason: null
+  holdout_region: Maluku
+  drop_location_features: false
+  output: data/gold/models/lr-spatial-maluku
+- id: lr-spatial-kalimantan-noloc-c1-2026-11-16T10:31:36Z
+  freeze_id: lr-2026-09-vif-protected-c1
+  config_hash: aed4b860afd6661e7e86727235daaf112564994fce201a8516a8d79f524e0c17
+  features: t3
+  c: 1.0
+  class_weight: null
+  threshold: 0.32429813525107937
+  valid_pr_auc: 0.6039523664132824
+  test_pr_auc: 0.37782345972467163
+  test_status: evaluated
+  test_reason: null
+  holdout_region: Kalimantan
+  drop_location_features: true
+  output: data/gold/models/lr-spatial-kalimantan-noloc
+- id: lr-spatial-sumatra-noloc-c1-2026-11-16T10:31:49Z
+  freeze_id: lr-2026-09-vif-protected-c1
+  config_hash: aed4b860afd6661e7e86727235daaf112564994fce201a8516a8d79f524e0c17
+  features: t3
+  c: 1.0
+  class_weight: null
+  threshold: 0.5418219768178414
+  valid_pr_auc: 0.526168437068816
+  test_pr_auc: 0.7015694121240134
+  test_status: evaluated
+  test_reason: null
+  holdout_region: Sumatra
+  drop_location_features: true
+  output: data/gold/models/lr-spatial-sumatra-noloc
+- id: lr-spatial-papua-noloc-c1-2026-11-16T10:32:04Z
+  freeze_id: lr-2026-09-vif-protected-c1
+  config_hash: aed4b860afd6661e7e86727235daaf112564994fce201a8516a8d79f524e0c17
+  features: t3
+  c: 1.0
+  class_weight: null
+  threshold: 0.6073589877655603
+  valid_pr_auc: 0.583428153903816
+  test_pr_auc: 0.3376227339579584
+  test_status: evaluated
+  test_reason: null
+  holdout_region: Papua
+  drop_location_features: true
+  output: data/gold/models/lr-spatial-papua-noloc
+- id: lr-spatial-maluku-noloc-c1-2026-11-16T10:32:20Z
+  freeze_id: lr-2026-09-vif-protected-c1
+  config_hash: aed4b860afd6661e7e86727235daaf112564994fce201a8516a8d79f524e0c17
+  features: t3
+  c: 1.0
+  class_weight: null
+  threshold: 0.6036283116420729
+  valid_pr_auc: 0.5621485966522466
+  test_pr_auc: 0.7389954197419177
+  test_status: evaluated
+  test_reason: null
+  holdout_region: Maluku
+  drop_location_features: true
+  output: data/gold/models/lr-spatial-maluku-noloc
+- id: lr-spatial-kalimantan-nhotspot-c1-2026-11-16T10:32:56Z
+  freeze_id: null
+  config_hash: null
+  features: nhotspot
+  c: 1.0
+  class_weight: null
+  threshold: 0.31823969351621567
+  valid_pr_auc: 0.6166600640255081
+  test_pr_auc: 0.4460674816028869
+  test_status: evaluated
+  test_reason: null
+  holdout_region: Kalimantan
+  drop_location_features: false
+  output: data/gold/models/lr-spatial-kalimantan-nhotspot
+- id: lr-spatial-sumatra-nhotspot-c1-2026-11-16T10:33:08Z
+  freeze_id: null
+  config_hash: null
+  features: nhotspot
+  c: 1.0
+  class_weight: null
+  threshold: 0.23401235645427315
+  valid_pr_auc: 0.4514066030095662
+  test_pr_auc: 0.7452206406156461
+  test_status: evaluated
+  test_reason: null
+  holdout_region: Sumatra
+  drop_location_features: false
+  output: data/gold/models/lr-spatial-sumatra-nhotspot
+- id: lr-spatial-papua-nhotspot-c1-2026-11-16T10:33:19Z
+  freeze_id: null
+  config_hash: null
+  features: nhotspot
+  c: 1.0
+  class_weight: null
+  threshold: 0.23771110037887053
+  valid_pr_auc: 0.47351741409034476
+  test_pr_auc: 0.2859891260857678
+  test_status: evaluated
+  test_reason: null
+  holdout_region: Papua
+  drop_location_features: false
+  output: data/gold/models/lr-spatial-papua-nhotspot
+- id: lr-spatial-maluku-nhotspot-c1-2026-11-16T10:33:29Z
+  freeze_id: null
+  config_hash: null
+  features: nhotspot
+  c: 1.0
+  class_weight: null
+  threshold: 0.22303945497257321
+  valid_pr_auc: 0.46485937534685295
+  test_pr_auc: 0.7319384045237991
+  test_status: evaluated
+  test_reason: null
+  holdout_region: Maluku
+  drop_location_features: false
+  output: data/gold/models/lr-spatial-maluku-nhotspot
+- id: lr-baseline-c1-2026-11-16T21:35:36Z
+  freeze_id: lr-2026-09-vif-protected-c1
+  config_hash: 66a20a464b02e5857b570a55e7b877ef4f58a92a28a463075838585bc642c51d
+  features: t3
+  c: 1.0
+  class_weight: null
+  threshold: 0.4713878295210975
+  valid_pr_auc: 0.6798697168714629
+  test_pr_auc: null
+  test_status: not_evaluated
+  test_reason: null
+  holdout_region: null
+  drop_location_features: false
+  output: data/gold/models/lr-c1
+- id: lr-baseline-c10-2026-11-16T21:46:36Z
+  freeze_id: lr-2026-09-vif-protected
+  config_hash: c59bce3ae074ac4b71ad895b62fd14f51ccbf45481f26cf39c206fcad4ee9f2b
+  features: t3
+  c: 10.0
+  class_weight: null
+  threshold: 0.4482322810228454
+  valid_pr_auc: 0.68268592863923
+  test_pr_auc: null
+  test_status: not_evaluated
+  test_reason: null
+  holdout_region: null
+  drop_location_features: false
+  output: data/gold/models/lr-baseline-valid
+- id: lr-tuning-history-c10-2026-11-16T21:46:54Z
+  freeze_id: null
+  config_hash: null
+  features: t3h
+  c: 10.0
+  class_weight: null
+  threshold: 0.5525555279704966
+  valid_pr_auc: 0.6815829335033092
+  test_pr_auc: null
+  test_status: not_evaluated
+  test_reason: null
+  holdout_region: null
+  drop_location_features: false
+  output: data/gold/models/tuning-01-history
+- id: lr-tuning-region-c10-2026-11-16T21:58:37Z
+  freeze_id: null
+  config_hash: null
+  features: t3r
+  c: 10.0
+  class_weight: null
+  threshold: 0.62132616978085
+  valid_pr_auc: 0.6094402139144431
+  test_pr_auc: null
+  test_status: not_evaluated
+  test_reason: null
+  holdout_region: null
+  drop_location_features: false
+  output: data/gold/models/tuning-02-region
+- id: lgbm-baseline-2026-11-16T22:34:38Z
+  model: lgbm
+  vif: true
+  features: t3
+  params:
+    num_leaves: 31
+    min_child_samples: 50
+  best_iteration: 300
+  threshold: 0.43394453572010405
+  valid_pr_auc: 0.7675065188402558
+  test_pr_auc: null
+  test_status: not_evaluated
+  test_reason: null
+  output: data/gold/models/lgbm-t3
+- id: lgbm-baseline-all-2026-11-16T22:34:58Z
+  model: lgbm
+  vif: false
+  features: t3
+  params:
+    num_leaves: 15
+    min_child_samples: 20
+  best_iteration: 442
+  threshold: 0.4890975310197619
+  valid_pr_auc: 0.7645352231117505
+  test_pr_auc: null
+  test_status: not_evaluated
+  test_reason: null
+  output: data/gold/models/lgbm-t3all
+- id: lgbm-baseline-2026-11-16T22:35:41Z
+  model: lgbm
+  vif: true
+  features: t3
+  params:
+    num_leaves: 31
+    min_child_samples: 50
+    feature_fraction: 0.8
+    learning_rate: 0.03
+    lambda_l2: 1.0
+  best_iteration: 300
+  threshold: 0.43394453572010405
+  valid_pr_auc: 0.7675065188402558
+  test_pr_auc: null
+  test_status: not_evaluated
+  test_reason: null
+  output: data/gold/models/lgbm-t3
+- id: lgbm-baseline-all-2026-11-16T22:36:01Z
+  model: lgbm
+  vif: false
+  features: t3
+  params:
+    num_leaves: 15
+    min_child_samples: 20
+    feature_fraction: 0.8
+    learning_rate: 0.03
+    lambda_l2: 1.0
+  best_iteration: 442
+  threshold: 0.4890975310197619
+  valid_pr_auc: 0.7645352231117505
+  test_pr_auc: null
+  test_status: not_evaluated
+  test_reason: null
+  output: data/gold/models/lgbm-t3all
+- id: lgbm-baseline-2026-11-16T22:37:15Z
+  model: lgbm
+  vif: true
+  features: t3
+  params:
+    num_leaves: 31
+    min_child_samples: 50
+    feature_fraction: 0.8
+    learning_rate: 0.03
+    lambda_l2: 1.0
+  best_iteration: 300
+  threshold: 0.43394453572010405
+  valid_pr_auc: 0.7675065188402558
+  test_pr_auc: 0.7156119226904192
+  test_status: evaluated
+  test_reason: perbandingan pengembangan dengan LR
+  output: data/gold/models/lgbm-t3
+- id: lgbm-baseline-all-2026-11-16T22:37:36Z
+  model: lgbm
+  vif: false
+  features: t3
+  params:
+    num_leaves: 15
+    min_child_samples: 20
+    feature_fraction: 0.8
+    learning_rate: 0.03
+    lambda_l2: 1.0
+  best_iteration: 442
+  threshold: 0.4890975310197619
+  valid_pr_auc: 0.7645352231117505
+  test_pr_auc: 0.7099224074300572
+  test_status: evaluated
+  test_reason: perbandingan pengembangan sekunder 39 fitur
+  output: data/gold/models/lgbm-t3all
+decisions:
+- id: lr-c1-over-c10
+  date: '2026-11-16'
+  rule: delta PR-AUC valid >= -0.002 dan stabilitas koefisien lebih baik
+  delta_valid_pr_auc: -0.0019
+  sd_province_c1: 0.2525
+  sd_province_c10: 0.4237
+  sd_n_hotspot_c1: 0.0709
+  sd_n_hotspot_c10: 0.0726
+  bootstrap_resamples: 200
+  result: 'C=1 menjadi konfigurasi kerja. Test 19-23 September tetap milik C=10 (0,6311)
+    dan tidak diklaim untuk C=1. Evaluasi C=1 menunggu jendela baru.
+
+    '
+- id: spatial-closed
+  date: '2026-11-17'
+  result: Semua family lr-spatial-* ditutup. Hasilnya menjadi bukti generalisasi spasial,
+    bukan dasar tuning.
+- id: c10-baseline
+  date: '2026-11-17'
+  result: 'Model temporal penuh C=10 dikunci sebagai baseline. Alasan: PR-AUC valid
+    tertinggi (0,6820) dan satu-satunya yang punya bukti test (0,6311). C=1 dipindah
+    ke lr-c1-stability.yaml sebagai varian stabilitas.'
+  config_file: experiments/lr-baseline.yaml
+  config_hash: c59bce3ae074ac4b71ad895b62fd14f51ccbf45481f26cf39c206fcad4ee9f2b
+  stability_variant: experiments/lr-c1-stability.yaml
+- id: tuning-valid-only
+  date: '2026-11-17'
+  result: Tuning berikutnya hanya memakai valid. Test 19-23 September berstatus seen
+    (2 look) dan tidak dipakai memilih konfigurasi.
+- id: tuning-01-history-rejected
+  date: '2026-11-17'
+  experiment: lr-tuning-history
+  result: rejected
+  baseline_valid_pr_auc: 0.682686
+  candidate_valid_pr_auc: 0.681583
+  delta_pr_auc: -0.001103
+  ci_low: -0.004761
+  ci_high: 0.003137
+  days_better: 2
+  brier_baseline: 0.084946
+  brier_candidate: 0.091726
+  variant_two_valid_pr_auc: 0.667679
+  variant_two_delta: -0.015007
+  note: 'Ditolak: delta negatif, CI melewati nol, hanya 2/5 hari membaik, Brier memburuk.
+    Riwayat 23 hari terlalu pendek dan lag kolinear dengan n_hotspot.'
+  artifact: data/gold/models/tuning-01-history/comparison.json
+- id: tuning-02-region-rejected
+  date: '2026-11-17'
+  experiment: lr-tuning-region
+  result: rejected
+  baseline_valid_pr_auc: 0.682686
+  candidate_valid_pr_auc: 0.60944
+  delta_pr_auc: -0.073246
+  ci_low: -0.112961
+  ci_high: -0.031119
+  days_better: 1
+  brier_baseline: 0.084946
+  brier_candidate: 0.127252
+  note: 'Ditolak: mengganti 38 dummy provinsi dengan 7 wilayah menghilangkan prior
+    spasial yang besar. Ini menjelaskan mengapa spatial holdout lemah.'
+  artifact: data/gold/models/tuning-02-region/comparison.json
+- id: lgbm-baseline-accepted
+  date: '2026-11-17'
+  experiment: lgbm-baseline
+  result: accepted_development
+  baseline: lr-2026-09-vif-protected
+  candidate_valid_pr_auc: 0.767507
+  baseline_valid_pr_auc: 0.682686
+  delta_valid_pr_auc: 0.084821
+  ci_low: 0.0642
+  ci_high: 0.11
+  days_better: 5
+  brier_candidate: 0.07206
+  brier_baseline: 0.084946
+  test_pr_auc_development: 0.715612
+  test_pr_auc_baseline: 0.631133
+  note: LightGBM 29 fitur unggul di valid (CI tidak melewati nol, 5/5 tanggal) dan
+    di test pengembangan. Baseline formal tetap LR sampai ada jendela test baru.
+  artifact: data/gold/models/lgbm-t3/comparison.json
+  config_file: experiments/lgbm-baseline.yaml
+- id: lgbm-all-secondary
+  date: '2026-11-17'
+  experiment: lgbm-baseline-all
+  result: accepted_development_secondary
+  candidate_valid_pr_auc: 0.764535
+  delta_valid_pr_auc: 0.081849
+  ci_low: 0.0635
+  ci_high: 0.1044
+  days_better: 5
+  test_pr_auc_development: 0.709922
+  note: 39 fitur tidak lebih baik dari 29 fitur; seleksi VIF tidak merugikan LightGBM.
+    Dilaporkan sebagai sekunder.
+  artifact: data/gold/models/lgbm-t3all/comparison.json
