@@ -128,7 +128,7 @@ prefect deployment run "ml-temporal-training/default" \
 
 Tracking URI mengikuti `MLFLOW_TRACKING_URI`. Di Compose, worker memakai
 `http://mlflow:5000`; `task ml-pipeline` dari host memakai
-`http://127.0.0.1:5000` (port MLflow dipublikasikan). Untuk menulis ke
+`http://127.0.0.1:5000` (port MLflow hanya terbuka di localhost). Untuk menulis ke
 `mlruns/` lokal, jalankan flow dengan `MLFLOW_TRACKING_URI` kosong. Tanpa
 server, flow tetap menulis artefak Gold dan hanya melewati pencatatan MLflow.
 

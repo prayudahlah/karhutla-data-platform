@@ -7,6 +7,13 @@
 /data/
 /models/
 mlruns*/
+*.db
+*.sqlite
+*.sqlite3
+*.log
+.ipynb_checkpoints/
+.mypy_cache/
+.pyright/
 *.parquet
 !tests/fixtures/**/*.parquet
 

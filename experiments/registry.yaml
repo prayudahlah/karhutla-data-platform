@@ -170,7 +170,7 @@ runs:
   test_pr_auc: 0.6311334188090056
   test_status: evaluated
   test_reason: laporan final tahap 1
-  output: data\gold\models\lr-t3
+  output: data/gold/models/lr-t3
 - id: lr-baseline-c1-2026-11-16T10:04:42Z
   freeze_id: null
   config_hash: null
@@ -182,7 +182,7 @@ runs:
   test_pr_auc: null
   test_status: not_evaluated
   test_reason: null
-  output: data\gold\models\lr-c1
+  output: data/gold/models/lr-c1
 - id: lr-baseline-c1-2026-11-16T10:09:46Z
   freeze_id: lr-2026-09-vif-protected-c1
   config_hash: aed4b860afd6661e7e86727235daaf112564994fce201a8516a8d79f524e0c17
@@ -194,7 +194,7 @@ runs:
   test_pr_auc: null
   test_status: not_evaluated
   test_reason: null
-  output: data\gold\models\lr-c1
+  output: data/gold/models/lr-c1
 - id: lr-spatial-sulawesi-c1-2026-11-16T10:29:57Z
   freeze_id: lr-2026-09-vif-protected-c1
   config_hash: aed4b860afd6661e7e86727235daaf112564994fce201a8516a8d79f524e0c17
@@ -208,7 +208,7 @@ runs:
   test_reason: null
   holdout_region: Sulawesi
   drop_location_features: false
-  output: data\gold\models\lr-spatial-sulawesi
+  output: data/gold/models/lr-spatial-sulawesi
 - id: lr-spatial-kalimantan-c1-2026-11-16T10:30:11Z
   freeze_id: lr-2026-09-vif-protected-c1
   config_hash: aed4b860afd6661e7e86727235daaf112564994fce201a8516a8d79f524e0c17
@@ -222,7 +222,7 @@ runs:
   test_reason: null
   holdout_region: Kalimantan
   drop_location_features: false
-  output: data\gold\models\lr-spatial-kalimantan
+  output: data/gold/models/lr-spatial-kalimantan
 - id: lr-spatial-sumatra-c1-2026-11-16T10:30:41Z
   freeze_id: lr-2026-09-vif-protected-c1
   config_hash: aed4b860afd6661e7e86727235daaf112564994fce201a8516a8d79f524e0c17
@@ -236,7 +236,7 @@ runs:
   test_reason: null
   holdout_region: Sumatra
   drop_location_features: false
-  output: data\gold\models\lr-spatial-sumatra
+  output: data/gold/models/lr-spatial-sumatra
 - id: lr-spatial-papua-c1-2026-11-16T10:30:56Z
   freeze_id: lr-2026-09-vif-protected-c1
   config_hash: aed4b860afd6661e7e86727235daaf112564994fce201a8516a8d79f524e0c17
@@ -250,7 +250,7 @@ runs:
   test_reason: null
   holdout_region: Papua
   drop_location_features: false
-  output: data\gold\models\lr-spatial-papua
+  output: data/gold/models/lr-spatial-papua
 - id: lr-spatial-maluku-c1-2026-11-16T10:31:11Z
   freeze_id: lr-2026-09-vif-protected-c1
   config_hash: aed4b860afd6661e7e86727235daaf112564994fce201a8516a8d79f524e0c17
@@ -264,7 +264,7 @@ runs:
   test_reason: null
   holdout_region: Maluku
   drop_location_features: false
-  output: data\gold\models\lr-spatial-maluku
+  output: data/gold/models/lr-spatial-maluku
 - id: lr-spatial-kalimantan-noloc-c1-2026-11-16T10:31:36Z
   freeze_id: lr-2026-09-vif-protected-c1
   config_hash: aed4b860afd6661e7e86727235daaf112564994fce201a8516a8d79f524e0c17
@@ -278,7 +278,7 @@ runs:
   test_reason: null
   holdout_region: Kalimantan
   drop_location_features: true
-  output: data\gold\models\lr-spatial-kalimantan-noloc
+  output: data/gold/models/lr-spatial-kalimantan-noloc
 - id: lr-spatial-sumatra-noloc-c1-2026-11-16T10:31:49Z
   freeze_id: lr-2026-09-vif-protected-c1
   config_hash: aed4b860afd6661e7e86727235daaf112564994fce201a8516a8d79f524e0c17
@@ -292,7 +292,7 @@ runs:
   test_reason: null
   holdout_region: Sumatra
   drop_location_features: true
-  output: data\gold\models\lr-spatial-sumatra-noloc
+  output: data/gold/models/lr-spatial-sumatra-noloc
 - id: lr-spatial-papua-noloc-c1-2026-11-16T10:32:04Z
   freeze_id: lr-2026-09-vif-protected-c1
   config_hash: aed4b860afd6661e7e86727235daaf112564994fce201a8516a8d79f524e0c17
@@ -306,7 +306,7 @@ runs:
   test_reason: null
   holdout_region: Papua
   drop_location_features: true
-  output: data\gold\models\lr-spatial-papua-noloc
+  output: data/gold/models/lr-spatial-papua-noloc
 - id: lr-spatial-maluku-noloc-c1-2026-11-16T10:32:20Z
   freeze_id: lr-2026-09-vif-protected-c1
   config_hash: aed4b860afd6661e7e86727235daaf112564994fce201a8516a8d79f524e0c17
@@ -320,7 +320,7 @@ runs:
   test_reason: null
   holdout_region: Maluku
   drop_location_features: true
-  output: data\gold\models\lr-spatial-maluku-noloc
+  output: data/gold/models/lr-spatial-maluku-noloc
 - id: lr-spatial-kalimantan-nhotspot-c1-2026-11-16T10:32:56Z
   freeze_id: null
   config_hash: null
@@ -334,7 +334,7 @@ runs:
   test_reason: null
   holdout_region: Kalimantan
   drop_location_features: false
-  output: data\gold\models\lr-spatial-kalimantan-nhotspot
+  output: data/gold/models/lr-spatial-kalimantan-nhotspot
 - id: lr-spatial-sumatra-nhotspot-c1-2026-11-16T10:33:08Z
   freeze_id: null
   config_hash: null
@@ -348,7 +348,7 @@ runs:
   test_reason: null
   holdout_region: Sumatra
   drop_location_features: false
-  output: data\gold\models\lr-spatial-sumatra-nhotspot
+  output: data/gold/models/lr-spatial-sumatra-nhotspot
 - id: lr-spatial-papua-nhotspot-c1-2026-11-16T10:33:19Z
   freeze_id: null
   config_hash: null
@@ -362,7 +362,7 @@ runs:
   test_reason: null
   holdout_region: Papua
   drop_location_features: false
-  output: data\gold\models\lr-spatial-papua-nhotspot
+  output: data/gold/models/lr-spatial-papua-nhotspot
 - id: lr-spatial-maluku-nhotspot-c1-2026-11-16T10:33:29Z
   freeze_id: null
   config_hash: null
@@ -376,7 +376,7 @@ runs:
   test_reason: null
   holdout_region: Maluku
   drop_location_features: false
-  output: data\gold\models\lr-spatial-maluku-nhotspot
+  output: data/gold/models/lr-spatial-maluku-nhotspot
 - id: lr-baseline-c1-2026-11-16T21:35:36Z
   freeze_id: lr-2026-09-vif-protected-c1
   config_hash: 66a20a464b02e5857b570a55e7b877ef4f58a92a28a463075838585bc642c51d
@@ -390,7 +390,7 @@ runs:
   test_reason: null
   holdout_region: null
   drop_location_features: false
-  output: data\gold\models\lr-c1
+  output: data/gold/models/lr-c1
 - id: lr-baseline-c10-2026-11-16T21:46:36Z
   freeze_id: lr-2026-09-vif-protected
   config_hash: c59bce3ae074ac4b71ad895b62fd14f51ccbf45481f26cf39c206fcad4ee9f2b
@@ -404,7 +404,7 @@ runs:
   test_reason: null
   holdout_region: null
   drop_location_features: false
-  output: data\gold\models\lr-baseline-valid
+  output: data/gold/models/lr-baseline-valid
 - id: lr-tuning-history-c10-2026-11-16T21:46:54Z
   freeze_id: null
   config_hash: null
@@ -418,7 +418,7 @@ runs:
   test_reason: null
   holdout_region: null
   drop_location_features: false
-  output: data\gold\models\tuning-01-history
+  output: data/gold/models/tuning-01-history
 - id: lr-tuning-region-c10-2026-11-16T21:58:37Z
   freeze_id: null
   config_hash: null
@@ -432,7 +432,7 @@ runs:
   test_reason: null
   holdout_region: null
   drop_location_features: false
-  output: data\gold\models\tuning-02-region
+  output: data/gold/models/tuning-02-region
 - id: lgbm-baseline-2026-11-16T22:34:38Z
   model: lgbm
   vif: true
@@ -446,7 +446,7 @@ runs:
   test_pr_auc: null
   test_status: not_evaluated
   test_reason: null
-  output: data\gold\models\lgbm-t3
+  output: data/gold/models/lgbm-t3
 - id: lgbm-baseline-all-2026-11-16T22:34:58Z
   model: lgbm
   vif: false
@@ -460,7 +460,7 @@ runs:
   test_pr_auc: null
   test_status: not_evaluated
   test_reason: null
-  output: data\gold\models\lgbm-t3all
+  output: data/gold/models/lgbm-t3all
 - id: lgbm-baseline-2026-11-16T22:35:41Z
   model: lgbm
   vif: true
@@ -477,7 +477,7 @@ runs:
   test_pr_auc: null
   test_status: not_evaluated
   test_reason: null
-  output: data\gold\models\lgbm-t3
+  output: data/gold/models/lgbm-t3
 - id: lgbm-baseline-all-2026-11-16T22:36:01Z
   model: lgbm
   vif: false
@@ -494,7 +494,7 @@ runs:
   test_pr_auc: null
   test_status: not_evaluated
   test_reason: null
-  output: data\gold\models\lgbm-t3all
+  output: data/gold/models/lgbm-t3all
 - id: lgbm-baseline-2026-11-16T22:37:15Z
   model: lgbm
   vif: true
@@ -511,7 +511,7 @@ runs:
   test_pr_auc: 0.7156119226904192
   test_status: evaluated
   test_reason: perbandingan pengembangan dengan LR
-  output: data\gold\models\lgbm-t3
+  output: data/gold/models/lgbm-t3
 - id: lgbm-baseline-all-2026-11-16T22:37:36Z
   model: lgbm
   vif: false
@@ -528,7 +528,7 @@ runs:
   test_pr_auc: 0.7099224074300572
   test_status: evaluated
   test_reason: perbandingan pengembangan sekunder 39 fitur
-  output: data\gold\models\lgbm-t3all
+  output: data/gold/models/lgbm-t3all
 decisions:
 - id: lr-c1-over-c10
   date: '2026-11-16'
