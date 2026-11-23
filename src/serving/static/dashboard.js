@@ -414,6 +414,21 @@
     syncThemeButton();
   }
 
+  // The treemap lays itself out against the frame's aspect ratio, so redraw
+  // it when the viewport width changes enough to resize the panel.
+  function bindResize() {
+    let timer = 0;
+    let lastWidth = window.innerWidth;
+    window.addEventListener("resize", () => {
+      if (Math.abs(window.innerWidth - lastWidth) < 40) return;
+      lastWidth = window.innerWidth;
+      window.clearTimeout(timer);
+      timer = window.setTimeout(() => {
+        if (lastData) renderTreemap(lastData.summaryRows);
+      }, 180);
+    });
+  }
+
   function renderSummary(summaryRows, monthlyRows) {
     const total = sum(summaryRows, "hotspot_count");
     const kuat = sum(summaryRows, "hotspot_kuat");
@@ -1127,7 +1142,18 @@
     }
     const boxes = [];
     const ordered = [...items].sort((a, b) => b.value - a.value);
-    layoutTreemap(ordered, 0, 0, 1000, 520, boxes);
+    // Keep the 1000-unit coordinate space but match the frame's aspect ratio,
+    // so the treemap fills the panel instead of being letterboxed.
+    const frame = svg.parentElement;
+    const layoutWidth = 1000;
+    const frameWidth = (frame && frame.clientWidth) || 1000;
+    const frameHeight = (frame && frame.clientHeight) || 520;
+    const layoutHeight = Math.max(
+      160,
+      Math.round((layoutWidth * frameHeight) / frameWidth),
+    );
+    svg.setAttribute("viewBox", "0 0 " + layoutWidth + " " + layoutHeight);
+    layoutTreemap(ordered, 0, 0, layoutWidth, layoutHeight, boxes);
     const topTotal = items.reduce((value, item) => value + item.value, 0);
 
     svg.innerHTML = boxes
@@ -1151,8 +1177,15 @@
         const fontSize = narrow ? 17 : 21;
         const showName = width > 88 && height > 64;
         const showInline = !showName && width > 180 && height > 30;
+        const tinyLabel = SHORT_PROVINCE[rawName] || rawName;
+        const showTiny =
+          !showName &&
+          !showInline &&
+          width > 64 &&
+          height > 46 &&
+          tinyLabel.length * 8 <= width - 12;
         const showValue =
-          !showName && !showInline && width > 70 && height > 34;
+          !showName && !showInline && !showTiny && width > 70 && height > 34;
         const maxChars = Math.max(
           5,
           Math.floor((width - 18) / (fontSize * 0.53)),
@@ -1246,6 +1279,26 @@
               '" font-size="17">' +
               name +
               " · " +
+              number.format(box.value) +
+              "</text>"
+            : "") +
+          (showTiny
+            ? '<text x="' +
+              (x + 8).toFixed(1) +
+              '" y="' +
+              (y + 18).toFixed(1) +
+              '" fill="' +
+              fill +
+              '" font-size="15" font-weight="600">' +
+              escapeText(tinyLabel) +
+              "</text>" +
+              '<text x="' +
+              (x + 8).toFixed(1) +
+              '" y="' +
+              (y + 35).toFixed(1) +
+              '" fill="' +
+              fill +
+              '" opacity=".82" font-size="14">' +
               number.format(box.value) +
               "</text>"
             : "") +
@@ -1769,6 +1822,9 @@
     });
     if (focus) $("tab-" + next).focus();
     if (updateHash) history.replaceState(null, "", "#" + next);
+    // The treemap sizes itself from its frame, which has no width while the
+    // Sebaran panel is hidden, so redraw it when that panel comes back.
+    if (next === "sebaran" && lastData) renderTreemap(lastData.summaryRows);
   }
 
   function bindTabs() {
@@ -1798,6 +1854,7 @@
 
   document.addEventListener("DOMContentLoaded", () => {
     bindTheme();
+    bindResize();
     bindTooltips();
     bindTabs();
     bindFilters();

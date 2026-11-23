@@ -1155,6 +1155,80 @@ html[data-theme="light"] .map-focus {
   .dash-panel { padding: 16px; }
 }
 
+/* Desktop one-screen: 5 KPI cards + 4 visuals in a 2x2 grid. */
+@media (min-width: 1201px) {
+  .dash-hero-inner { padding: 5px clamp(32px, 4vw, 64px) 4px; }
+  .dash-hero .breadcrumb { display: none; }
+  .dash-hero h1 { font-size: clamp(1.38rem, 1.55vw, 1.6rem); margin-top: 0; }
+  .dash-hero .hero-lead { max-width: 980px; margin-top: 2px; font-size: 0.7rem; }
+  .hero-meta { gap: 6px; margin-top: 3px; }
+  .hero-meta .dash-status { padding: 2px 7px; font-size: 0.62rem; }
+  .hero-meta-row { padding: 2px 6px; font-size: 0.58rem; }
+  .hero-meta-row b { font-size: 0.62rem; }
+
+  .dash-wrap { padding-block: 8px 0; }
+  .dash-controlbar { margin: 0 0 5px; padding: 3px 8px; gap: 14px; }
+  .dash-controlbar .dash-tabbar { gap: 8px; padding-bottom: 0; border: 0; }
+  .dash-tab { height: 28px; padding: 0 9px; font-size: 0.76rem; }
+  .theme-toggle { height: 28px; margin-left: 4px; font-size: 0.66rem; }
+  .dash-controlbar .dash-form-row { grid-template-columns: 138px 138px minmax(145px, 1fr) max-content; gap: 8px; }
+  .dash-field { gap: 3px; font-size: 0.58rem; }
+  .dash-field input,
+  .dash-field select { height: 28px; font-size: 0.75rem; }
+  .dash-form-row .btn { min-height: 28px; padding: 0 12px; font-size: 0.72rem; }
+
+  .dash-insight { margin: 0 0 6px; padding: 0 0 0 9px; border-left-width: 2px; }
+  .insight-label { font-size: 0.55rem; }
+  .dash-insight p { font-size: 0.71rem; }
+
+  .tab-kpis { margin: 5px 0 7px; gap: 8px; }
+  .tab-kpi { height: 76px; min-height: 76px; padding: 6px 10px; overflow: hidden; }
+  .tab-kpi b { margin-top: 3px; font-size: 1.2rem; }
+  .tab-kpi.accent b { font-size: clamp(1.42rem, 1.55vw, 1.6rem); }
+  .tab-kpi > span:last-child { margin-top: 2px; font-size: 0.58rem; -webkit-line-clamp: 1; }
+  .kpi-spark { top: 7px; right: 8px; width: 54px; height: 15px; }
+  .kpi-tier { height: 3px; margin-top: 4px; }
+
+  .dash-grid { gap: 8px; }
+  #panel-sebaran .dash-grid > .dash-panel { grid-column: span 6; }
+  .dash-panel { padding: 11px 13px 9px; }
+  .dash-head { margin-bottom: 6px; }
+  .dash-title { margin-top: 2px; font-size: 1.08rem; }
+  .dash-sub { margin-top: 2px; font-size: 0.65rem; }
+  .dash-badge { padding: 2px 6px; font-size: 0.58rem; }
+  .panel-note { margin-top: 4px; padding-top: 4px; font-size: 0.6rem; }
+
+  .map-frame { height: 210px; aspect-ratio: auto; margin-bottom: 4px; }
+  .map-focus { top: 7px; right: 7px; width: 148px; padding: 7px 8px; }
+  .map-focus .focus-kicker { font-size: 0.52rem; }
+  .map-focus .focus-name { font-size: 0.82rem; }
+  .map-focus .focus-stats { gap: 5px; margin-top: 5px; }
+  .map-focus .focus-stats b { font-size: 0.68rem; }
+  .map-focus .focus-stats span { font-size: 0.52rem; }
+  .map-chips { top: 7px; left: 7px; gap: 4px; }
+  .map-chip { padding: 2px 5px; font-size: 0.55rem; }
+  .map-chip b { font-size: 0.6rem; }
+  .map-legend { bottom: 7px; left: 7px; gap: 7px; padding: 3px 6px; font-size: 0.56rem; }
+
+  .donut-svg { width: 150px; }
+  .donut-wrap { gap: 0; }
+  .donut-legend { gap: 3px; margin-top: 5px; }
+  .donut-item { font-size: 0.62rem; }
+  .donut-item b { font-size: 0.6rem; }
+  .donut-item small { font-size: 0.52rem; }
+
+  .treemap-frame { height: 140px; aspect-ratio: auto; }
+  .treemap-frame svg { height: 100%; }
+
+  .rank-list { gap: 5px; padding-block: 0; }
+  .rank-row { gap: 2px 6px; }
+  .rank-no { font-size: 0.58rem; }
+  .rank-name { font-size: 0.72rem; }
+  .rank-val { font-size: 0.64rem; }
+  .rank-val small { font-size: 0.52rem; }
+  .rank-track { height: 3px; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .map-glow { animation: none; }
 }
