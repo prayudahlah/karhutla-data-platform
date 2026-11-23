@@ -1,13 +1,271 @@
 {% extends "base.html" %}
 {% block title %}Dashboard | JAGAHUTAN{% endblock %}
+{% block extra_head %}
+<script>
+(function () {
+  try {
+    var theme = localStorage.getItem("jagahutan-theme");
+    if (theme === "light" || theme === "dark") {
+      document.documentElement.dataset.theme = theme;
+    }
+  } catch (error) {}
+})();
+</script>
+<link rel="stylesheet" href="/static/dashboard.css?v=20261123V">
+{% endblock %}
 {% block content %}
-<div class="shell">
-  <div class="page-head">
-    <div class="breadcrumb"><a href="/">Ringkasan</a> / Dashboard</div>
-    <div class="kicker">Belum tersedia</div>
-    <h1 class="serif">Dashboard belum diimplementasikan.</h1>
-    <p class="lead">Tombol ini sudah disiapkan agar alurnya jelas. Panel Metabase akan dipasang setelah sinkronisasi mart ke Postgres selesai.</p>
-    <a class="link-arrow" href="/" style="margin-top:24px">&larr; Kembali ke ringkasan</a>
+<section class="dash-hero">
+  <div class="dash-hero-inner">
+    <div class="hero-copy">
+      <div class="breadcrumb"><a href="/">Ringkasan</a> / Dashboard</div>
+      <h1 class="serif">Pantau Karhutla</h1>
+    </div>
   </div>
+</section>
+
+<div class="dash-workspace">
+<div class="shell dash-wrap">
+  <div class="dash-controlbar">
+    <div class="dash-tabbar">
+      <div class="dash-tabs" role="tablist" aria-label="Bagian dashboard">
+        <button class="dash-tab" id="tab-sebaran" type="button" role="tab" aria-selected="true" aria-controls="panel-sebaran" data-tab="sebaran">Ringkasan visual</button>
+        <button class="dash-tab" id="tab-tren" type="button" role="tab" aria-selected="false" aria-controls="panel-tren" data-tab="tren" tabindex="-1">Detail &amp; prediksi</button>
+      </div>
+      <button class="theme-toggle" id="theme-toggle" type="button" aria-pressed="false" aria-label="Ganti tema" title="Ganti ke tema terang">
+        <svg class="theme-icon sun" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M19.1 4.9l-1.4 1.4M6.3 17.7l-1.4 1.4"/></svg>
+        <svg class="theme-icon moon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3 7 7 0 0 0 21 12.8z"/></svg>
+        <span class="theme-label">Terang</span>
+      </button>
+    </div>
+    <form class="dash-toolbar dash-form-row" id="dash-filter" aria-label="Filter data">
+      <label class="dash-field">Mulai<input type="date" id="dash-start" value="2026-09-01"></label>
+      <label class="dash-field">Selesai<input type="date" id="dash-end" value="2026-09-30"></label>
+      <label class="dash-field">Provinsi
+        <select id="dash-province">
+          <option value="">Semua provinsi</option>
+        </select>
+      </label>
+      <button class="btn btn-primary" id="dash-apply" type="submit">Terapkan</button>
+    </form>
+  </div>
+
+  <div class="notice dash-error" id="dash-error" hidden role="alert"></div>
+
+  <section class="dash-tabpanel" id="panel-sebaran" role="tabpanel" aria-labelledby="tab-sebaran" tabindex="0">
+    <div class="tab-kpis">
+      <div class="tab-kpi accent">
+        <span class="kicker">Total hotspot</span>
+        <b id="tab1-total">—</b>
+        <span id="tab1-total-sub">—</span>
+        <svg class="kpi-spark" id="spark-total" viewBox="0 0 120 30" aria-hidden="true"></svg>
+        <div class="kpi-tier" id="kpi-tier" aria-hidden="true"></div>
+      </div>
+      <div class="tab-kpi"><span class="kicker">Hotspot kuat</span><b id="tab1-kuat">—</b><span id="tab1-kuat-sub">—</span></div>
+      <div class="tab-kpi"><span class="kicker">FRP total</span><b id="tab1-frp">—</b><span id="tab1-frp-sub">—</span></div>
+      <div class="tab-kpi"><span class="kicker">Luas terbakar</span><b id="tab1-scar">—</b><span id="tab1-scar-sub">—</span></div>
+      <div class="tab-kpi"><span class="kicker">Sel aktif</span><b id="tab1-active">—</b><span id="tab1-active-sub">—</span></div>
+    </div>
+    <div class="dash-grid">
+      <article class="dash-panel span-6 dash-map-panel">
+        <div class="dash-head">
+          <div>
+            <div class="kicker">Lokasi</div>
+            <h2 class="dash-title">Peta sebaran hotspot</h2>
+            <p class="dash-sub" id="map-date">30 Sep 2026</p>
+          </div>
+        </div>
+        <div class="map-frame">
+          <svg id="map-hotspot" viewBox="-30 0 700 320" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Peta sebaran sel hotspot"></svg>
+          <div class="map-chips">
+            <span class="map-chip"><b id="map-provinces">—</b> provinsi</span>
+            <span class="map-chip"><b id="map-count">—</b> sel</span>
+            <span class="map-chip"><b id="map-dominant">—</b><span id="map-dominant-share"></span></span>
+          </div>
+          <div class="map-focus">
+            <div class="focus-kicker">Fokus provinsi</div>
+            <div class="focus-name" id="map-focus-name">—</div>
+            <div class="focus-stats">
+              <div><b id="map-focus-hotspot">—</b><span>hotspot</span></div>
+              <div><b id="map-focus-share">—</b><span>dari total</span></div>
+            </div>
+          </div>
+          <div class="map-legend">
+            <span><i style="background:var(--tier-kuat)"></i>Kuat</span>
+            <span><i style="background:var(--tier-sedang)"></i>Sedang</span>
+            <span><i style="background:var(--tier-lemah)"></i>Lemah</span>
+            <span><i style="background:var(--tier-kandidat)"></i>Kandidat</span>
+          </div>
+        </div>
+        <p class="panel-note">Natural Earth · 500 sel teratas pada tanggal terakhir periode.</p>
+      </article>
+
+      <article class="dash-panel span-6">
+        <div class="dash-head">
+          <div>
+            <div class="kicker">Waktu</div>
+            <h2 class="dash-title">Tren hotspot harian</h2>
+            <p class="dash-sub">Harian · garis putus rata-rata 7 hari</p>
+          </div>
+          <span class="dash-badge" id="daily-badge">—</span>
+        </div>
+        <div class="trend-frame">
+          <svg id="chart-daily" viewBox="0 0 720 270" role="img" aria-label="Tren hotspot harian"></svg>
+        </div>
+        <p class="panel-note" id="daily-note">—</p>
+      </article>
+
+      <article class="dash-panel span-4">
+        <div class="dash-head">
+          <div>
+            <div class="kicker">Provinsi</div>
+            <h2 class="dash-title">Top 10 provinsi penyumbang hotspot</h2>
+            <p class="dash-sub">Peringkat pangsa dari total hotspot</p>
+          </div>
+        </div>
+        <div class="rank-list" id="top-hotspot"></div>
+        <p class="panel-note" id="top-hotspot-note">—</p>
+      </article>
+
+      <article class="dash-panel span-4">
+        <div class="dash-head">
+          <div>
+            <div class="kicker">Tingkat bukti</div>
+            <h2 class="dash-title">Komposisi tingkat bukti</h2>
+            <p class="dash-sub">Kuat + sedang + lemah + kandidat</p>
+          </div>
+        </div>
+        <div class="donut-wrap">
+          <svg class="donut-svg" id="donut" viewBox="0 0 200 200" role="img" aria-label="Komposisi tingkat bukti hotspot"></svg>
+          <div class="donut-legend" id="donut-legend"></div>
+        </div>
+        <p class="panel-note" id="donut-note">—</p>
+      </article>
+
+      <article class="dash-panel span-4">
+        <div class="dash-head">
+          <div>
+            <div class="kicker">Luas terbakar</div>
+            <h2 class="dash-title">Top 5 provinsi luas terbakar</h2>
+            <p class="dash-sub">Luas scar · km²</p>
+          </div>
+        </div>
+        <div class="rank-list" id="top-scar"></div>
+        <p class="panel-note" id="top-scar-note">—</p>
+      </article>
+    </div>
+  </section>
+
+  <section class="dash-tabpanel" id="panel-tren" role="tabpanel" aria-labelledby="tab-tren" tabindex="0" hidden>
+    <div class="tab-kpis">
+      <div class="tab-kpi accent">
+        <span class="kicker">Puncak harian</span>
+        <b id="tab2-peak">—</b>
+        <span id="tab2-peak-sub">—</span>
+        <svg class="kpi-spark" id="spark-peak" viewBox="0 0 120 30" aria-hidden="true"></svg>
+      </div>
+      <div class="tab-kpi"><span class="kicker">Rata-rata harian</span><b id="tab2-avg">—</b><span id="tab2-avg-sub">—</span></div>
+      <div class="tab-kpi"><span class="kicker">Hari terdata</span><b id="tab2-days">—</b><span id="tab2-days-sub">—</span></div>
+      <div class="tab-kpi"><span class="kicker">Puncak Σ FRP</span><b id="tab2-frp">—</b><span id="tab2-frp-sub">—</span></div>
+      <div class="tab-kpi text"><span class="kicker">Kesiapan model</span><b class="todo">1/4</b><span>Checklist terpenuhi</span></div>
+    </div>
+    <div class="dash-grid">
+      <article class="dash-panel span-7">
+        <div class="dash-head">
+          <div>
+            <div class="kicker">Tren hotspot</div>
+            <h2 class="dash-title">Mingguan per tier.</h2>
+            <p class="dash-sub">Kuat, sedang, lemah, kandidat</p>
+          </div>
+          <span class="dash-badge" id="tier-peak">—</span>
+        </div>
+        <div class="chart-frame">
+          <svg id="chart-tier" viewBox="0 0 640 260" role="img" aria-label="Grafik tren hotspot mingguan per tier"></svg>
+        </div>
+        <div class="chart-legend">
+          <span><i class="tier-kuat"></i>Kuat</span>
+          <span><i class="tier-sedang"></i>Sedang</span>
+          <span><i class="tier-lemah"></i>Lemah</span>
+          <span><i class="tier-kandidat"></i>Kandidat</span>
+        </div>
+      </article>
+
+      <article class="dash-panel span-5">
+        <div class="dash-head">
+          <div>
+            <div class="kicker">Tren FRP</div>
+            <h2 class="dash-title">FRP harian.</h2>
+            <p class="dash-sub">Energi radiasi api · MW</p>
+          </div>
+          <span class="dash-badge" id="frp-peak">—</span>
+        </div>
+        <div class="chart-frame frp">
+          <svg id="chart-frp" viewBox="0 0 480 260" role="img" aria-label="Grafik tren FRP harian"></svg>
+        </div>
+        <div class="chart-legend">
+          <span><i class="frp"></i>FRP</span>
+          <span>MW · harian</span>
+        </div>
+      </article>
+
+      <article class="dash-panel span-12">
+        <div class="dash-head">
+          <div>
+            <div class="kicker">Kalender hotspot</div>
+            <h2 class="dash-title">Intensitas harian.</h2>
+            <p class="dash-sub">Warna = jumlah hotspot; arahkan kursor untuk detail</p>
+          </div>
+          <span class="dash-badge" id="strip-peak">—</span>
+        </div>
+        <div class="day-strip" id="day-strip"></div>
+        <div class="strip-legend">
+          <span>rendah</span>
+          <i class="heat-1"></i><i class="heat-2"></i><i class="heat-3"></i><i class="heat-4"></i><i class="heat-5"></i>
+          <span>tinggi</span>
+        </div>
+      </article>
+
+      <article class="dash-panel span-7 dash-prediction">
+        <div class="dash-head">
+          <div>
+            <div class="kicker">Prediksi</div>
+            <h2 class="dash-title">Risiko D–D+2.</h2>
+            <p class="dash-sub">Panel menunggu model ML</p>
+          </div>
+          <span class="dash-badge warn">Menunggu ML</span>
+        </div>
+        <p class="pred-copy">Setelah <span class="mono">risk_prediction_daily</span> terisi, panel ini menampilkan probabilitas per sel dan provinsi. <span class="mono">label_risk</span> di Gold adalah label historis untuk latihan, bukan prediksi.</p>
+        <div class="pred-horizon" aria-label="Pratinjau horizon prediksi D sampai D+2">
+          <div class="horizon-day"><span>D</span><div class="horizon-grid">{% for _ in range(8) %}<i></i>{% endfor %}</div></div>
+          <div class="horizon-day"><span>D+1</span><div class="horizon-grid">{% for _ in range(8) %}<i></i>{% endfor %}</div></div>
+          <div class="horizon-day"><span>D+2</span><div class="horizon-grid">{% for _ in range(8) %}<i></i>{% endfor %}</div></div>
+        </div>
+        <div class="pred-pipeline">
+          <span class="chip">cell_daily</span><span class="arrow">→</span><span class="chip">model</span><span class="arrow">→</span><span class="chip">risk_prediction_daily</span>
+        </div>
+        <p class="panel-note">Endpoint <span class="mono">/predictions/daily</span> akan mengembalikan 200 setelah model di-deploy.</p>
+      </article>
+
+      <article class="dash-panel span-5">
+        <div class="dash-head">
+          <div>
+            <div class="kicker">Kesiapan</div>
+            <h2 class="dash-title">Menuju prediksi.</h2>
+            <p class="dash-sub">Checklist integrasi ML</p>
+          </div>
+          <span class="dash-badge warn">Belum aktif</span>
+        </div>
+        <ul class="readiness-list">
+          <li><span>Model artifact</span><b class="status todo">Belum</b></li>
+          <li><span>Endpoint <span class="mono">/predictions/daily</span></span><b class="status todo">503</b></li>
+          <li><span>Tabel <span class="mono">risk_prediction_daily</span></span><b class="status todo">Kosong</b></li>
+          <li><span>Panel dashboard</span><b class="status done">Siap</b></li>
+        </ul>
+        <p class="panel-note">Yang perlu disepakati dengan pemilik ML: grain sel, horizon label D–D+2, dan penulisan hasil ke tabel prediksi.</p>
+      </article>
+    </div>
+  </section>
+</div>
+<div class="chart-tooltip" id="chart-tooltip" role="tooltip" aria-hidden="true"></div>
 </div>
 {% endblock %}
+{% block extra_scripts %}<script src="/static/dashboard.js?v=20261123V" defer></script>{% endblock %}

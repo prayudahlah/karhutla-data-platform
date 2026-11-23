@@ -12,6 +12,7 @@ Postgres diisi oleh ``sync_marts.py`` dari snapshot Iceberg aktif.
 
 from __future__ import annotations
 
+import threading
 from collections.abc import Sequence
 from decimal import Decimal
 from pathlib import Path
@@ -46,6 +47,9 @@ class GoldStore:
         self.dsn = dsn or None
         self.schema = schema
         self._con: duckdb.DuckDBPyConnection | None = None
+        # FastAPI menjalankan endpoint sync di threadpool. Satu koneksi DuckDB
+        # tidak boleh dipakai bersamaan, jadi query diserialkan.
+        self._lock = threading.Lock()
 
     @property
     def connection(self) -> duckdb.DuckDBPyConnection:
@@ -111,12 +115,13 @@ class GoldStore:
         params: Sequence[Any] | None = None,
     ) -> list[dict[str, Any]]:
         """Jalankan SQL dan kembalikan list of dict."""
-        cursor = self.connection.execute(sql, list(params or []))
-        columns = [description[0] for description in cursor.description]
-        return [
-            {column: _json_scalar(value) for column, value in zip(columns, row, strict=True)}
-            for row in cursor.fetchall()
-        ]
+        with self._lock:
+            cursor = self.connection.execute(sql, list(params or []))
+            columns = [description[0] for description in cursor.description]
+            return [
+                {column: _json_scalar(value) for column, value in zip(columns, row, strict=True)}
+                for row in cursor.fetchall()
+            ]
 
     def query_one(
         self,
