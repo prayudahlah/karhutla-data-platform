@@ -762,19 +762,19 @@ html[data-theme="light"] .map-focus {
 .map-legend span { display: inline-flex; align-items: center; gap: 5px; }
 .map-legend i { width: 7px; height: 7px; border-radius: 50%; display: inline-block; }
 
-.treemap-frame {
-  width: 100%;
-  aspect-ratio: 1000 / 520;
-  min-height: 0;
+.trend-frame { display: flex; flex: 1; min-height: 0; align-items: center; }
+.trend-frame svg { display: block; width: 100%; height: auto; }
+.trend-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 6px;
+  color: var(--label);
+  font-size: 0.7rem;
 }
-.treemap-frame svg { display: block; width: 100%; height: 100%; }
-.treemap-frame text { font-family: "Inter", ui-sans-serif, system-ui, sans-serif; }
-.treemap-tile { cursor: default; outline: none; }
-.treemap-tile:hover rect,
-.treemap-tile:focus-visible rect {
-  stroke: var(--text);
-  stroke-width: 1.6;
-}
+.trend-legend span { display: inline-flex; align-items: center; gap: 6px; }
+.trend-legend i.dot { width: 7px; height: 7px; border-radius: 50%; background: var(--amber); }
+.trend-legend i.dash { width: 16px; border-top: 2px dashed currentColor; }
 
 .day-strip {
   display: grid;
@@ -966,12 +966,6 @@ html[data-theme="light"] .map-focus {
   font-size: 0.78rem;
   line-height: 1.45;
 }
-.scroll-hint {
-  display: none;
-  margin: 10px 0 0;
-  color: var(--label);
-  font-size: 0.7rem;
-}
 .dash-empty { margin: 8px 0 0; color: var(--label); font-size: 0.82rem; line-height: 1.5; }
 
 .dash-prediction { border-style: dashed; }
@@ -1057,6 +1051,7 @@ html[data-theme="light"] .map-focus {
   .span-7,
   .span-6,
   .span-5,
+  .span-4,
   .span-3 { grid-column: span 12; }
   .tab-kpis { grid-template-columns: repeat(6, minmax(0, 1fr)); }
   .tab-kpi { grid-column: span 2; }
@@ -1123,17 +1118,6 @@ html[data-theme="light"] .map-focus {
     border: 0;
     background: transparent;
   }
-  .treemap-frame {
-    aspect-ratio: auto;
-    overflow-x: auto;
-    overflow-y: hidden;
-  }
-  .treemap-frame svg {
-    min-width: 560px;
-    height: auto;
-    aspect-ratio: 1000 / 520;
-  }
-  .scroll-hint { display: block; }
   .theme-label { display: none; }
   .theme-toggle { padding: 0 9px; }
 }
@@ -1190,7 +1174,6 @@ html[data-theme="light"] .map-focus {
   .kpi-tier { height: 3px; margin-top: 4px; }
 
   .dash-grid { gap: 8px; }
-  #panel-sebaran .dash-grid > .dash-panel { grid-column: span 6; }
   .dash-panel { padding: 11px 13px 9px; }
   .dash-head { margin-bottom: 6px; }
   .dash-title { margin-top: 2px; font-size: 1.08rem; }
@@ -1198,35 +1181,35 @@ html[data-theme="light"] .map-focus {
   .dash-badge { padding: 2px 6px; font-size: 0.58rem; }
   .panel-note { margin-top: 4px; padding-top: 4px; font-size: 0.6rem; }
 
-  .map-frame { height: 210px; aspect-ratio: auto; margin-bottom: 4px; }
-  .map-focus { top: 7px; right: 7px; width: 148px; padding: 7px 8px; }
+  .map-frame { height: 205px; aspect-ratio: auto; margin-bottom: 4px; }
+  .map-focus { top: 7px; right: 7px; width: 132px; padding: 6px 7px; }
   .map-focus .focus-kicker { font-size: 0.52rem; }
-  .map-focus .focus-name { font-size: 0.82rem; }
+  .map-focus .focus-name { font-size: 0.74rem; }
   .map-focus .focus-stats { gap: 5px; margin-top: 5px; }
   .map-focus .focus-stats b { font-size: 0.68rem; }
   .map-focus .focus-stats span { font-size: 0.52rem; }
   .map-chips { top: 7px; left: 7px; gap: 4px; }
   .map-chip { padding: 2px 5px; font-size: 0.55rem; }
   .map-chip b { font-size: 0.6rem; }
-  .map-legend { bottom: 7px; left: 7px; gap: 7px; padding: 3px 6px; font-size: 0.56rem; }
+  .map-legend { bottom: 7px; left: 7px; gap: 6px; padding: 3px 6px; font-size: 0.52rem; }
 
   .donut-svg { width: 150px; }
-  .donut-wrap { gap: 0; }
-  .donut-legend { gap: 3px; margin-top: 5px; }
+  .donut-wrap { flex-direction: row; align-items: center; justify-content: flex-start; gap: 20px; }
+  .donut-legend { flex: 1; max-width: none; gap: 4px; margin-top: 0; }
   .donut-item { font-size: 0.62rem; }
   .donut-item b { font-size: 0.6rem; }
   .donut-item small { font-size: 0.52rem; }
 
-  .treemap-frame { height: 140px; aspect-ratio: auto; }
-  .treemap-frame svg { height: 100%; }
+  .trend-frame { margin-top: 2px; }
+  .trend-legend { gap: 9px; margin-top: 4px; font-size: 0.56rem; }
 
-  .rank-list { gap: 5px; padding-block: 0; }
-  .rank-row { gap: 2px 6px; }
+  .rank-list { gap: 2px; padding-block: 0; }
+  .rank-row { gap: 0 6px; }
   .rank-no { font-size: 0.58rem; }
-  .rank-name { font-size: 0.72rem; }
-  .rank-val { font-size: 0.64rem; }
+  .rank-name { font-size: 0.7rem; }
+  .rank-val { font-size: 0.62rem; }
   .rank-val small { font-size: 0.52rem; }
-  .rank-track { height: 3px; }
+  .rank-track { height: 4px; margin-top: 1px; }
 }
 
 @media (prefers-reduced-motion: reduce) {

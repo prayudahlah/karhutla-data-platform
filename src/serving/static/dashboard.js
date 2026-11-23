@@ -147,17 +147,6 @@
         kandidat: "#4f9c75",
       },
       frp: "#ffb02e",
-      treemap: [
-        "#E8681F",
-        "#2F7D57",
-        "#3A8F66",
-        "#4F9C75",
-        "#67AD88",
-        "#82BF9D",
-        "#A0D0B4",
-        "#BFE0C9",
-      ],
-      treemapOthers: "#5C6B62",
       mapLand: "#153a2b",
       mapStroke: "#3d7657",
       mapGrid: "#1b3a2d",
@@ -179,17 +168,6 @@
         kandidat: "#2f7d57",
       },
       frp: "#d9581e",
-      treemap: [
-        "#D9581E",
-        "#1B4F36",
-        "#266044",
-        "#317054",
-        "#3D8062",
-        "#4F9070",
-        "#65A184",
-        "#7FB29A",
-      ],
-      treemapOthers: "#B7AF9F",
       mapLand: "#d8e2c5",
       mapStroke: "#9fb28e",
       mapGrid: "#e6e2d3",
@@ -357,7 +335,7 @@
     renderTierChart(dailyRows);
     renderDailyStrip(dailyRows);
     renderMap(cells, summaryRows);
-    renderTreemap(summaryRows);
+    renderDailyTrend(dailyRows);
     renderLineChart(
       "chart-frp",
       dailyRows,
@@ -371,17 +349,37 @@
       "hotspot_count",
       false,
       sum(summaryRows, "hotspot_count"),
+      10,
     );
+    renderScarTop(monthlyRows);
     renderDonut(summaryRows);
 
     const hotspotTotal = sum(summaryRows, "hotspot_count");
     const kandidat = sum(summaryRows, "hotspot_kandidat");
-    $("top-hotspot-note").textContent = summaryRows.length
-      ? summaryRows.length +
+    const sortedRows = [...summaryRows].sort(
+      (a, b) => Number(b.hotspot_count || 0) - Number(a.hotspot_count || 0),
+    );
+    const top10Total = sortedRows
+      .slice(0, 10)
+      .reduce((value, row) => value + Number(row.hotspot_count || 0), 0);
+    if (!hotspotTotal) {
+      $("top-hotspot-note").textContent = "Belum ada data pada rentang ini.";
+    } else if (summaryRows.length <= 10) {
+      $("top-hotspot-note").textContent =
+        summaryRows.length +
         " provinsi · " +
         number.format(hotspotTotal) +
-        " hotspot"
-      : "Belum ada data pada rentang ini.";
+        " hotspot";
+    } else {
+      $("top-hotspot-note").textContent =
+        "Top 10 = " +
+        decimal.format((top10Total / hotspotTotal) * 100) +
+        "% · " +
+        (summaryRows.length - 10) +
+        " provinsi sisanya " +
+        decimal.format(((hotspotTotal - top10Total) / hotspotTotal) * 100) +
+        "%";
+    }
     $("donut-note").textContent = hotspotTotal
       ? "Kandidat " +
         decimal.format((kandidat / hotspotTotal) * 100) +
@@ -412,21 +410,6 @@
       applyTheme(isLight() ? "dark" : "light", true);
     });
     syncThemeButton();
-  }
-
-  // The treemap lays itself out against the frame's aspect ratio, so redraw
-  // it when the viewport width changes enough to resize the panel.
-  function bindResize() {
-    let timer = 0;
-    let lastWidth = window.innerWidth;
-    window.addEventListener("resize", () => {
-      if (Math.abs(window.innerWidth - lastWidth) < 40) return;
-      lastWidth = window.innerWidth;
-      window.clearTimeout(timer);
-      timer = window.setTimeout(() => {
-        if (lastData) renderTreemap(lastData.summaryRows);
-      }, 180);
-    });
   }
 
   function renderSummary(summaryRows, monthlyRows) {
@@ -847,6 +830,255 @@
       dateShort(domain[peak.index]);
   }
 
+  function renderDailyTrend(rows) {
+    const svg = $("chart-daily");
+    const badge = $("daily-badge");
+    const note = $("daily-note");
+    const byDate = new Map(
+      (rows || []).filter((row) => row.date).map((row) => [row.date, row]),
+    );
+
+    const domain = [];
+    const cursor = new Date(state.start + "T00:00:00");
+    const last = new Date(state.end + "T00:00:00");
+    while (cursor <= last) {
+      domain.push(isoDate(cursor));
+      cursor.setDate(cursor.getDate() + 1);
+    }
+    const series = domain.map((date) => {
+      const row = byDate.get(date);
+      return row ? Number(row.hotspot_count || 0) : null;
+    });
+    const present = series
+      .map((value, index) => ({ value, index }))
+      .filter((point) => point.value !== null);
+
+    if (!present.length) {
+      svg.innerHTML =
+        '<text x="240" y="126" text-anchor="middle" fill="var(--label)" font-size="13">Belum ada data.</text>';
+      badge.textContent = "Tidak ada data";
+      note.textContent = "Belum ada data pada rentang ini.";
+      return;
+    }
+
+    const width = 480;
+    const height = 240;
+    const padL = 46;
+    const padR = 16;
+    const padT = 22;
+    const padB = 28;
+    const plotW = width - padL - padR;
+    const plotH = height - padT - padB;
+    const peak = present.reduce(
+      (best, point) => (point.value > best.value ? point : best),
+      present[0],
+    );
+    const yMax = niceMax(peak.value * 1.06);
+
+    const xFor = (index) =>
+      padL + (index * plotW) / Math.max(domain.length - 1, 1);
+    const yFor = (value) => padT + plotH - (value / yMax) * plotH;
+
+    const rolling = series.map((value, index) => {
+      if (value === null) return null;
+      const window = series
+        .slice(Math.max(0, index - 6), index + 1)
+        .filter((item) => item !== null);
+      return window.reduce((total, item) => total + item, 0) / window.length;
+    });
+
+    const toSegments = (values) => {
+      const segments = [];
+      let segment = [];
+      values.forEach((value, index) => {
+        if (value === null) {
+          if (segment.length) segments.push(segment);
+          segment = [];
+        } else {
+          segment.push({ index, value });
+        }
+      });
+      if (segment.length) segments.push(segment);
+      return segments;
+    };
+
+    const pathOf = (points) =>
+      points
+        .map(
+          (point, index) =>
+            (index ? "L" : "M") +
+            xFor(point.index).toFixed(1) +
+            " " +
+            yFor(point.value).toFixed(1),
+        )
+        .join(" ");
+
+    const lineSegments = toSegments(series);
+    const areaPaths = lineSegments
+      .filter((points) => points.length > 1)
+      .map((points) => {
+        const first = points[0];
+        const lastPoint = points[points.length - 1];
+        return (
+          '<path d="' +
+          pathOf(points) +
+          " L" +
+          xFor(lastPoint.index).toFixed(1) +
+          " " +
+          (padT + plotH) +
+          " L" +
+          xFor(first.index).toFixed(1) +
+          " " +
+          (padT + plotH) +
+          ' Z" fill="url(#chart-daily-fill)" />'
+        );
+      })
+      .join("");
+    const linePaths = lineSegments
+      .map(
+        (points) =>
+          '<path d="' +
+          pathOf(points) +
+          '" fill="none" stroke="var(--amber)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" />',
+      )
+      .join("");
+    const averagePath = toSegments(rolling)
+      .map(
+        (points) =>
+          '<path d="' +
+          pathOf(points) +
+          '" fill="none" stroke="var(--label)" stroke-width="1.6" stroke-dasharray="5 4" opacity=".9" />',
+      )
+      .join("");
+
+    const grid = [0, 1 / 3, 2 / 3, 1]
+      .map((fraction) => {
+        const y = padT + plotH - fraction * plotH;
+        return (
+          '<line x1="' +
+          padL +
+          '" y1="' +
+          y.toFixed(1) +
+          '" x2="' +
+          (width - padR) +
+          '" y2="' +
+          y.toFixed(1) +
+          '" stroke="var(--line)" stroke-width="1" />' +
+          '<text x="' +
+          (padL - 9) +
+          '" y="' +
+          (y + 4).toFixed(1) +
+          '" text-anchor="end" fill="var(--label)" font-size="10">' +
+          compact(yMax * fraction) +
+          "</text>"
+        );
+      })
+      .join("");
+
+    const labelIndexes = [
+      0,
+      Math.round((domain.length - 1) * 0.25),
+      Math.round((domain.length - 1) * 0.5),
+      Math.round((domain.length - 1) * 0.75),
+      domain.length - 1,
+    ].filter((index, position, list) => list.indexOf(index) === position);
+    const xLabels = labelIndexes
+      .map((index) => {
+        const anchor =
+          index === 0
+            ? "start"
+            : index === domain.length - 1
+              ? "end"
+              : "middle";
+        return (
+          '<text x="' +
+          xFor(index).toFixed(1) +
+          '" y="' +
+          (height - 8) +
+          '" text-anchor="' +
+          anchor +
+          '" fill="var(--label)" font-size="10">' +
+          dateShort(domain[index]) +
+          "</text>"
+        );
+      })
+      .join("");
+
+    const peakX = xFor(peak.index);
+    const peakY = yFor(peak.value);
+    const peakAnchor =
+      peakX < padL + 52 ? "start" : peakX > width - padR - 52 ? "end" : "middle";
+
+    const hits = present
+      .map((point) => {
+        const row = byDate.get(domain[point.index]) || {};
+        const kuat = Number(row.hotspot_kuat || 0);
+        const kandidat = Number(row.hotspot_kandidat || 0);
+        return (
+          '<circle cx="' +
+          xFor(point.index).toFixed(1) +
+          '" cy="' +
+          yFor(point.value).toFixed(1) +
+          '" r="9" fill="transparent" pointer-events="all" data-tt-kicker="Hotspot harian" data-tt-title="' +
+          escapeText(dateLong(domain[point.index])) +
+          '" data-tt-value="' +
+          number.format(Math.round(point.value)) +
+          ' hotspot" data-tt-sub="Kuat ' +
+          number.format(kuat) +
+          " · Kandidat " +
+          number.format(kandidat) +
+          '" />'
+        );
+      })
+      .join("");
+
+    svg.innerHTML =
+      '<defs><linearGradient id="chart-daily-fill" x1="0" y1="0" x2="0" y2="1">' +
+      '<stop offset="0%" stop-color="var(--amber)" stop-opacity=".26" />' +
+      '<stop offset="100%" stop-color="var(--amber)" stop-opacity="0" />' +
+      "</linearGradient></defs>" +
+      grid +
+      areaPaths +
+      linePaths +
+      averagePath +
+      '<circle cx="' +
+      peakX.toFixed(1) +
+      '" cy="' +
+      peakY.toFixed(1) +
+      '" r="3.6" fill="var(--amber)" stroke="var(--panel)" stroke-width="1.5" />' +
+      '<text x="' +
+      peakX.toFixed(1) +
+      '" y="' +
+      (peakY - 9).toFixed(1) +
+      '" text-anchor="' +
+      peakAnchor +
+      '" fill="var(--text)" font-size="10">' +
+      compact(peak.value) +
+      "</text>" +
+      xLabels +
+      hits;
+
+    badge.textContent =
+      "Puncak " +
+      number.format(Math.round(peak.value)) +
+      " · " +
+      dateShort(domain[peak.index]);
+
+    const lastSeven = series.slice(-7).filter((value) => value !== null);
+    if (!lastSeven.length) {
+      note.textContent = "Belum ada data pada rentang ini.";
+      return;
+    }
+    const average =
+      lastSeven.reduce((total, value) => total + value, 0) / lastSeven.length;
+    note.textContent =
+      "Rata-rata 7 hari terakhir " +
+      number.format(Math.round(average)) +
+      " · puncak " +
+      number.format(Math.round(peak.value)) +
+      ".";
+  }
+
   function renderTierChart(rows) {
     const svg = $("chart-tier");
     const badge = $("tier-peak");
@@ -1000,334 +1232,6 @@
       dateShort(isoDate(buckets[peakIndex].start));
   }
 
-  function treemapWorst(row, side) {
-    const total = row.reduce((value, item) => value + item.area, 0);
-    const maxArea = Math.max(...row.map((item) => item.area));
-    const minArea = Math.min(...row.map((item) => item.area));
-    return Math.max(
-      (side * side * maxArea) / (total * total),
-      (total * total) / (side * side * minArea),
-    );
-  }
-
-  function layoutTreemap(items, x, y, width, height, out) {
-    const total = items.reduce((value, item) => value + item.value, 0);
-    if (!total || width <= 0 || height <= 0) return;
-    const scale = (width * height) / total;
-    const queue = items.map((item) => ({ ...item, area: item.value * scale }));
-    const rect = { x, y, width, height };
-
-    while (queue.length && rect.width > 0 && rect.height > 0) {
-      const side = Math.min(rect.width, rect.height);
-      const row = [queue[0]];
-      let index = 1;
-      let worst = treemapWorst(row, side);
-      while (index < queue.length) {
-        const candidate = row.concat(queue[index]);
-        const candidateWorst = treemapWorst(candidate, side);
-        if (candidateWorst > worst) break;
-        row.push(queue[index]);
-        worst = candidateWorst;
-        index += 1;
-      }
-      queue.splice(0, row.length);
-      const rowArea = row.reduce((value, item) => value + item.area, 0);
-
-      if (rect.width >= rect.height) {
-        const columnWidth = Math.min(rect.width, rowArea / rect.height);
-        let cursorY = rect.y;
-        row.forEach((item, rowIndex) => {
-          const itemHeight =
-            rowIndex === row.length - 1
-              ? rect.y + rect.height - cursorY
-              : item.area / columnWidth;
-          out.push({
-            ...item,
-            x: rect.x,
-            y: cursorY,
-            width: columnWidth,
-            height: itemHeight,
-          });
-          cursorY += itemHeight;
-        });
-        rect.x += columnWidth;
-        rect.width -= columnWidth;
-      } else {
-        const rowHeight = Math.min(rect.height, rowArea / rect.width);
-        let cursorX = rect.x;
-        row.forEach((item, rowIndex) => {
-          const itemWidth =
-            rowIndex === row.length - 1
-              ? rect.x + rect.width - cursorX
-              : item.area / rowHeight;
-          out.push({
-            ...item,
-            x: cursorX,
-            y: rect.y,
-            width: itemWidth,
-            height: rowHeight,
-          });
-          cursorX += itemWidth;
-        });
-        rect.y += rowHeight;
-        rect.height -= rowHeight;
-      }
-    }
-  }
-
-  function contrastText(hex) {
-    const value = hex.replace("#", "");
-    const r = parseInt(value.slice(0, 2), 16);
-    const g = parseInt(value.slice(2, 4), 16);
-    const b = parseInt(value.slice(4, 6), 16);
-    const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
-    return luminance > 0.55 ? "#1a0d03" : "#f4fbf6";
-  }
-
-  const SHORT_PROVINCE = {
-    "Kalimantan Barat": "Kalbar",
-    "Kalimantan Tengah": "Kalteng",
-    "Kalimantan Selatan": "Kalsel",
-    "Kalimantan Timur": "Kaltim",
-    "Kalimantan Utara": "Kaltara",
-    "Sumatera Barat": "Sumbar",
-    "Sumatera Selatan": "Sumsel",
-    "Sumatera Utara": "Sumut",
-    "Nusa Tenggara Barat": "NTB",
-    "Nusa Tenggara Timur": "NTT",
-    "Kepulauan Bangka Belitung": "Babel",
-    "Kepulauan Riau": "Kepri",
-    "DI Yogyakarta": "DIY",
-    "DKI Jakarta": "DKI",
-    "Papua Barat Daya": "PBD",
-    "Papua Pegunungan": "Pegunungan",
-    "Papua Selatan": "Papua Sel.",
-  };
-
-  function renderTreemap(rows) {
-    const svg = $("treemap");
-    const note = $("treemap-note");
-    const badge = $("treemap-share");
-    const total = sum(rows, "hotspot_count");
-    const all = [...(rows || [])]
-      .filter((row) => Number(row.hotspot_count || 0) > 0)
-      .sort((a, b) => Number(b.hotspot_count) - Number(a.hotspot_count));
-    const top = all.slice(0, 8);
-
-    if (!top.length) {
-      svg.innerHTML =
-        '<text x="500" y="170" text-anchor="middle" fill="var(--label)" font-size="14">Belum ada data.</text>';
-      note.textContent = "Belum ada hotspot pada rentang ini.";
-      badge.textContent = "Top 8";
-      return;
-    }
-
-    const colors = palette().treemap;
-    const items = top.map((row, index) => ({
-      name: row.province,
-      value: Number(row.hotspot_count || 0),
-      color: colors[index] || colors[colors.length - 1],
-    }));
-    const others = all.slice(top.length);
-    const othersValue = others.reduce(
-      (value, row) => value + Number(row.hotspot_count || 0),
-      0,
-    );
-    if (othersValue > 0) {
-      items.push({
-        name: "Lainnya · " + others.length + " provinsi",
-        value: othersValue,
-        color: palette().treemapOthers,
-      });
-    }
-    const boxes = [];
-    const ordered = [...items].sort((a, b) => b.value - a.value);
-    // Keep the 1000-unit coordinate space but match the frame's aspect ratio,
-    // so the treemap fills the panel instead of being letterboxed.
-    const frame = svg.parentElement;
-    const layoutWidth = 1000;
-    const frameWidth = (frame && frame.clientWidth) || 1000;
-    const frameHeight = (frame && frame.clientHeight) || 520;
-    const layoutHeight = Math.max(
-      160,
-      Math.round((layoutWidth * frameHeight) / frameWidth),
-    );
-    svg.setAttribute("viewBox", "0 0 " + layoutWidth + " " + layoutHeight);
-    layoutTreemap(ordered, 0, 0, layoutWidth, layoutHeight, boxes);
-    const topTotal = items.reduce((value, item) => value + item.value, 0);
-
-    svg.innerHTML = boxes
-      .map((box) => {
-        const inset = Math.min(
-          3,
-          Math.max(1, Math.min(box.width, box.height) * 0.08),
-        );
-        const x = box.x + inset;
-        const y = box.y + inset;
-        const width = Math.max(0, box.width - inset * 2);
-        const height = Math.max(0, box.height - inset * 2);
-        const fill = contrastText(box.color);
-        const rawName = box.name;
-        const narrow = width < 115;
-        const labelName = narrow
-          ? SHORT_PROVINCE[rawName] || rawName
-          : rawName;
-        const name =
-          labelName.length > 20 ? labelName.slice(0, 19) + "…" : labelName;
-        const fontSize = narrow ? 17 : 21;
-        const showName = width > 88 && height > 64;
-        const showInline = !showName && width > 180 && height > 30;
-        const tinyLabel = SHORT_PROVINCE[rawName] || rawName;
-        const showTiny =
-          !showName &&
-          !showInline &&
-          width > 64 &&
-          height > 46 &&
-          tinyLabel.length * 8 <= width - 12;
-        const showValue =
-          !showName && !showInline && !showTiny && width > 70 && height > 34;
-        const maxChars = Math.max(
-          5,
-          Math.floor((width - 18) / (fontSize * 0.53)),
-        );
-        const words = labelName.split(" ");
-        const lines = [];
-        let currentLine = words[0] || "";
-        for (let wordIndex = 1; wordIndex < words.length; wordIndex += 1) {
-          const candidate = currentLine + " " + words[wordIndex];
-          if (candidate.length <= maxChars) {
-            currentLine = candidate;
-          } else {
-            lines.push(currentLine);
-            currentLine = words[wordIndex];
-          }
-        }
-        lines.push(currentLine);
-        const labelLines = lines.slice(0, 2);
-        if (labelLines.length === 2 && labelLines[1].length > maxChars) {
-          labelLines[1] = labelLines[1].slice(0, maxChars - 1) + "…";
-        }
-        const labelSvg = labelLines
-          .map(
-            (lineText, lineIndex) =>
-              '<tspan x="' +
-              (x + 9).toFixed(1) +
-              '" y="' +
-              (y + 26 + lineIndex * 22).toFixed(1) +
-              '">' +
-              lineText +
-              "</tspan>",
-          )
-          .join("");
-        const valueY = y + 26 + (labelLines.length - 1) * 22 + 22;
-        const share = (box.value / topTotal) * 100;
-        const labelText =
-          box.name +
-          ": " +
-          number.format(box.value) +
-          " hotspot (" +
-          decimal.format(share) +
-          "%)";
-        return (
-          '<g class="treemap-tile" tabindex="0" role="img" aria-label="' +
-          escapeText(labelText) +
-          '" data-tt-kicker="Provinsi" data-tt-title="' +
-          escapeText(box.name) +
-          '" data-tt-value="' +
-          number.format(box.value) +
-          ' hotspot" data-tt-sub="' +
-          decimal.format(share) +
-          '% dari total">' +
-          '<rect x="' +
-          x.toFixed(1) +
-          '" y="' +
-          y.toFixed(1) +
-          '" width="' +
-          width.toFixed(1) +
-          '" height="' +
-          height.toFixed(1) +
-          '" rx="4" fill="' +
-          box.color +
-          '" opacity=".94"></rect>' +
-          (showName
-            ? '<text fill="' +
-              fill +
-              '" font-size="' +
-              fontSize +
-              '" font-weight="600">' +
-              labelSvg +
-              "</text>" +
-              '<text x="' +
-              (x + 9).toFixed(1) +
-              '" y="' +
-              valueY.toFixed(1) +
-              '" fill="' +
-              fill +
-              '" opacity=".82" font-size="' +
-              (narrow ? 14 : 15) +
-              '">' +
-              number.format(box.value) +
-              "</text>"
-            : "") +
-          (showInline
-            ? '<text x="' +
-              (x + 9).toFixed(1) +
-              '" y="' +
-              (y + 24).toFixed(1) +
-              '" fill="' +
-              fill +
-              '" font-size="17">' +
-              name +
-              " · " +
-              number.format(box.value) +
-              "</text>"
-            : "") +
-          (showTiny
-            ? '<text x="' +
-              (x + 8).toFixed(1) +
-              '" y="' +
-              (y + 18).toFixed(1) +
-              '" fill="' +
-              fill +
-              '" font-size="15" font-weight="600">' +
-              escapeText(tinyLabel) +
-              "</text>" +
-              '<text x="' +
-              (x + 8).toFixed(1) +
-              '" y="' +
-              (y + 35).toFixed(1) +
-              '" fill="' +
-              fill +
-              '" opacity=".82" font-size="14">' +
-              number.format(box.value) +
-              "</text>"
-            : "") +
-          (showValue
-            ? '<text x="' +
-              (x + 9).toFixed(1) +
-              '" y="' +
-              (y + 24).toFixed(1) +
-              '" fill="' +
-              fill +
-              '" opacity=".84" font-size="16">' +
-              number.format(box.value) +
-              "</text>"
-            : "") +
-          "</g>"
-        );
-      })
-      .join("");
-
-    badge.textContent = "Top " + top.length + " + lainnya";
-    note.textContent =
-      top.length +
-      " provinsi teratas + " +
-      others.length +
-      " lainnya · " +
-      decimal.format((topTotal / total) * 100) +
-      "% dari total hotspot";
-  }
-
   function heatColor(ratio) {
     const ramp = palette().heat;
     if (ratio <= 0.001) return ramp[0];
@@ -1406,12 +1310,12 @@
       : "Tidak ada data";
   }
 
-  function renderTop(hostId, rows, key, gold, total) {
+  function renderTop(hostId, rows, key, gold, total, limit = 5, decimals = 0) {
     const host = $(hostId);
     const sorted = [...(rows || [])]
       .filter((row) => Number(row[key] || 0) > 0)
       .sort((a, b) => Number(b[key]) - Number(a[key]))
-      .slice(0, 5);
+      .slice(0, limit);
 
     if (!sorted.length) {
       host.innerHTML =
@@ -1420,11 +1324,18 @@
     }
 
     const denominator = Number(total) || 1;
+    const largest = Math.max(
+      ...sorted.map((row) => Number(row[key] || 0)),
+      1,
+    );
     host.innerHTML = sorted
       .map((row, index) => {
         const numeric = Number(row[key] || 0);
         const share = (numeric / denominator) * 100;
-        const width = Math.max(1.5, share);
+        const width = Math.max(1.5, (numeric / largest) * 100);
+        const printed = decimals
+          ? decimal.format(numeric)
+          : number.format(Math.round(numeric));
         return (
           '<div class="rank-row">' +
           '<span class="rank-no">' +
@@ -1433,14 +1344,14 @@
           '<span class="rank-name" title="' +
           row.province +
           " \u00b7 " +
-          number.format(Math.round(numeric)) +
+          printed +
           " \u00b7 " +
           decimal.format(share) +
           '%">' +
           row.province +
           "</span>" +
           '<span class="rank-val">' +
-          number.format(Math.round(numeric)) +
+          printed +
           "<small>" +
           decimal.format(share) +
           "%</small></span>" +
@@ -1453,6 +1364,38 @@
         );
       })
       .join("");
+  }
+
+  // Total scar per provinsi untuk bulan-bulan pada rentang terpilih.
+  function renderScarTop(monthlyRows) {
+    const note = $("top-scar-note");
+    const byProvince = new Map();
+    (monthlyRows || []).forEach((row) => {
+      const area = Number(row.scar_area_km2 || 0);
+      if (!area || !row.province) return;
+      byProvince.set(row.province, (byProvince.get(row.province) || 0) + area);
+    });
+    const rows = [...byProvince.entries()].map(([province, area]) => ({
+      province,
+      scar_area_km2: area,
+    }));
+    const total = rows.reduce((value, row) => value + row.scar_area_km2, 0);
+    if (!rows.length) {
+      $("top-scar").innerHTML =
+        '<p class="dash-empty">Belum ada data scar pada bulan ini.</p>';
+      note.textContent = "Data scar tersedia per bulan.";
+      return;
+    }
+    renderTop("top-scar", rows, "scar_area_km2", false, total, 5, 1);
+    const top = [...rows].sort(
+      (a, b) => b.scar_area_km2 - a.scar_area_km2,
+    )[0];
+    note.textContent =
+      decimal.format(total) +
+      " km² · " +
+      rows.length +
+      " provinsi · teratas " +
+      top.province;
   }
 
   // Batas kepulauan: Natural Earth 1:110m (domain publik), diproyeksikan
@@ -1471,6 +1414,26 @@
     "M460.8 104.7 L460.2 118.5 L454.0 117.0 L452.2 126.6 L457.1 134.9 L453.8 136.8 L449.0 126.8 L445.4 106.6 L447.8 94.0 L451.8 88.3 L452.6 96.9 L459.7 98.3 L460.8 104.7 Z" +
     "M331.5 93.8 L344.9 108.4 L330.8 110.2 L326.8 121.0 L327.3 135.3 L315.8 146.0 L315.5 161.7 L310.9 185.8 L309.1 180.2 L295.5 187.3 L290.8 177.7 L282.2 176.8 L276.3 171.8 L262.1 177.4 L257.7 169.8 L249.9 170.7 L240.0 168.8 L238.2 147.7 L232.2 143.3 L226.5 129.8 L224.8 116.0 L226.2 101.4 L233.3 91.0 L235.3 101.5 L243.5 110.4 L251.2 107.2 L258.8 108.3 L265.8 100.4 L271.5 99.0 L282.8 103.4 L292.6 100.0 L298.7 78.1 L303.3 72.6 L307.5 54.7 L321.2 54.7 L331.6 57.4 L324.8 71.6 L333.6 86.5 L331.5 93.8 Z" +
     "M187.3 214.8 L174.1 215.2 L164.0 202.0 L148.7 189.1 L143.5 179.6 L134.5 166.7 L128.5 154.9 L119.4 132.8 L108.9 119.7 L105.4 106.1 L101.0 93.8 L90.2 83.9 L84.0 70.4 L75.0 61.6 L62.5 44.2 L61.5 36.2 L69.2 36.8 L87.7 39.9 L98.2 55.3 L107.5 66.0 L114.1 72.5 L125.4 89.5 L137.6 89.7 L147.6 100.5 L154.5 113.7 L163.7 120.9 L158.9 133.8 L165.7 139.3 L170.0 139.7 L172.0 150.7 L176.2 159.5 L185.0 160.9 L190.8 170.9 L187.8 190.5 L187.3 214.8 Z";
+
+  const SHORT_PROVINCE = {
+    "Kalimantan Barat": "Kalbar",
+    "Kalimantan Tengah": "Kalteng",
+    "Kalimantan Selatan": "Kalsel",
+    "Kalimantan Timur": "Kaltim",
+    "Kalimantan Utara": "Kaltara",
+    "Sumatera Barat": "Sumbar",
+    "Sumatera Selatan": "Sumsel",
+    "Sumatera Utara": "Sumut",
+    "Nusa Tenggara Barat": "NTB",
+    "Nusa Tenggara Timur": "NTT",
+    "Kepulauan Bangka Belitung": "Babel",
+    "Kepulauan Riau": "Kepri",
+    "DI Yogyakarta": "DIY",
+    "DKI Jakarta": "DKI",
+    "Papua Barat Daya": "PBD",
+    "Papua Pegunungan": "Pegunungan",
+    "Papua Selatan": "Papua Sel.",
+  };
 
   function renderMap(rows, summaryRows) {
     const svg = $("map-hotspot");
@@ -1822,9 +1785,6 @@
     });
     if (focus) $("tab-" + next).focus();
     if (updateHash) history.replaceState(null, "", "#" + next);
-    // The treemap sizes itself from its frame, which has no width while the
-    // Sebaran panel is hidden, so redraw it when that panel comes back.
-    if (next === "sebaran" && lastData) renderTreemap(lastData.summaryRows);
   }
 
   function bindTabs() {
@@ -1854,7 +1814,6 @@
 
   document.addEventListener("DOMContentLoaded", () => {
     bindTheme();
-    bindResize();
     bindTooltips();
     bindTabs();
     bindFilters();
