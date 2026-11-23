@@ -4,7 +4,7 @@
 <div class="shell">
   <div class="page-head">
     <div class="breadcrumb"><a href="/catalog">Katalog</a> / {{ table.name }}</div>
-    <h1 class="serif">{{ table.name }} <span class="badge {{ 'ok' if table.status == 'implemented' else 'plan' }}">{{ "Terpasang" if table.status == "implemented" else "Direncanakan" }}</span></h1>
+    <h1 class="serif"><span class="mono">{{ table.name }}</span> <span class="badge {{ 'ok' if table.status == 'implemented' else 'plan' }}">{{ "Terpasang" if table.status == "implemented" else "Direncanakan" }}</span></h1>
     <p class="lead">{{ table.grain }}</p>
   </div>
 

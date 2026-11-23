@@ -135,7 +135,10 @@ def test_dashboard_page_renders(tmp_path):
 
 def test_header_shows_logged_in_user(tmp_path):
     _write(tmp_path, _catalog())
-    client = TestClient(create_app(_settings(tmp_path)))
+    settings = Settings(
+        gold_root=tmp_path, catalog_root=tmp_path, auth_url="https://auth.contoh"
+    )
+    client = TestClient(create_app(settings))
 
     response = client.get("/", headers={"Remote-User": "viewer"})
 
@@ -165,6 +168,7 @@ def test_lineage_graph_renders_nodes_edges_and_links(tmp_path):
     assert html.count('class="ln-node ') == 2
     assert html.count('marker-end="url(#ln-arrow') == 1
     assert 'href="/catalog/cell_daily"' in html
+    assert 'class="ln-rail gold"' in html
     assert 'role="group"' in html
     assert "marker-end" in html
 
@@ -232,6 +236,7 @@ def test_catalog_summary_counts_tables_and_columns(tmp_path):
     assert '<span class="cat-label">Tabel</span><span class="cat-value mono">1<' in html
     assert '<span class="cat-label">Kolom terpasang</span><span class="cat-value mono">2<' in html
     assert 'data-label="Kolom"' in html
+    assert 'class="col-meter' in html
 
 
 def _catalog_with_location():
@@ -278,3 +283,20 @@ def test_dataset_schema_lists_columns_with_type(tmp_path):
     assert "2 kolom" in html
     assert '<span class="type-badge mono">string</span>' in html
     assert "indeks sel" in html
+
+
+def test_nav_uses_avatar_with_role(tmp_path):
+    _write(tmp_path, _catalog())
+    settings = Settings(
+        gold_root=tmp_path, catalog_root=tmp_path, auth_url="https://auth.contoh"
+    )
+    client = TestClient(create_app(settings))
+
+    html = client.get("/", headers={"Remote-User": "viewer", "Remote-Groups": "admin"}).text
+
+    assert '<details class="nav-account">' in html
+    assert 'class="nav-avatar is-admin"' in html
+    assert 'aria-label="Menu akun viewer, peran admin"' in html
+    assert ">V</span>" in html
+    assert 'class="account-item" href=' in html
+    assert ">Keluar</a>" in html
