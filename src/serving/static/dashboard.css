@@ -314,14 +314,6 @@ html[data-theme="light"] .dash-hero {
   padding: 4px 0 4px 14px;
   border-left: 2px solid var(--lime);
 }
-.insight-label {
-  flex: none;
-  color: var(--lime);
-  font-size: 0.62rem;
-  font-weight: 500;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-}
 .dash-insight p {
   flex: 1;
   min-width: 0;
@@ -764,17 +756,6 @@ html[data-theme="light"] .map-focus {
 
 .trend-frame { display: flex; flex: 1; min-height: 0; align-items: center; }
 .trend-frame svg { display: block; width: 100%; height: auto; }
-.trend-legend {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-  margin-top: 6px;
-  color: var(--label);
-  font-size: 0.7rem;
-}
-.trend-legend span { display: inline-flex; align-items: center; gap: 6px; }
-.trend-legend i.dot { width: 7px; height: 7px; border-radius: 50%; background: var(--amber); }
-.trend-legend i.dash { width: 16px; border-top: 2px dashed currentColor; }
 
 .day-strip {
   display: grid;
@@ -1139,19 +1120,22 @@ html[data-theme="light"] .map-focus {
   .dash-panel { padding: 16px; }
 }
 
+.site-footer { margin-top: 36px; padding-bottom: 32px; }
+
 /* Desktop one-screen: 5 KPI cards + 4 visuals in a 2x2 grid. */
 @media (min-width: 1201px) {
-  .dash-hero-inner { padding: 5px clamp(32px, 4vw, 64px) 4px; }
+  .dash-hero-inner { padding: 4px clamp(32px, 4vw, 64px) 3px; text-align: center; }
   .dash-hero .breadcrumb { display: none; }
-  .dash-hero h1 { font-size: clamp(1.38rem, 1.55vw, 1.6rem); margin-top: 0; }
+  .dash-hero .hero-copy { max-width: none; }
+  .dash-hero h1 { font-size: clamp(1.5rem, 1.7vw, 1.75rem); margin-top: 0; letter-spacing: 0.08em; }
   .dash-hero .hero-lead { max-width: 980px; margin-top: 2px; font-size: 0.7rem; }
-  .hero-meta { gap: 6px; margin-top: 3px; }
+  .hero-meta { gap: 8px; margin-top: 4px; justify-content: center; }
   .hero-meta .dash-status { padding: 2px 7px; font-size: 0.62rem; }
   .hero-meta-row { padding: 2px 6px; font-size: 0.58rem; }
   .hero-meta-row b { font-size: 0.62rem; }
 
   .dash-wrap { padding-block: 8px 0; }
-  .dash-controlbar { margin: 0 0 5px; padding: 3px 8px; gap: 14px; }
+  .dash-controlbar { margin: 0 0 8px; padding: 5px 10px; gap: 14px; }
   .dash-controlbar .dash-tabbar { gap: 8px; padding-bottom: 0; border: 0; }
   .dash-tab { height: 28px; padding: 0 9px; font-size: 0.76rem; }
   .theme-toggle { height: 28px; margin-left: 4px; font-size: 0.66rem; }
@@ -1161,9 +1145,8 @@ html[data-theme="light"] .map-focus {
   .dash-field select { height: 28px; font-size: 0.75rem; }
   .dash-form-row .btn { min-height: 28px; padding: 0 12px; font-size: 0.72rem; }
 
-  .dash-insight { margin: 0 0 6px; padding: 0 0 0 9px; border-left-width: 2px; }
-  .insight-label { font-size: 0.55rem; }
-  .dash-insight p { font-size: 0.71rem; }
+  .dash-insight { margin: 0 0 8px; padding: 0 0 0 10px; border-left-width: 2px; }
+  .dash-insight p { font-size: 0.72rem; }
 
   .tab-kpis { margin: 5px 0 7px; gap: 8px; }
   .tab-kpi { height: 76px; min-height: 76px; padding: 6px 10px; overflow: hidden; }
@@ -1181,7 +1164,7 @@ html[data-theme="light"] .map-focus {
   .dash-badge { padding: 2px 6px; font-size: 0.58rem; }
   .panel-note { margin-top: 4px; padding-top: 4px; font-size: 0.6rem; }
 
-  .map-frame { height: 205px; aspect-ratio: auto; margin-bottom: 4px; }
+  .map-frame { height: 226px; aspect-ratio: auto; margin-bottom: 4px; }
   .map-focus { top: 7px; right: 7px; width: 140px; padding: 7px 8px; }
   .map-focus .focus-kicker { font-size: 0.52rem; }
   .map-focus .focus-name { font-size: 0.74rem; }
@@ -1191,7 +1174,7 @@ html[data-theme="light"] .map-focus {
   .map-chips { top: 7px; left: 7px; gap: 4px; }
   .map-chip { padding: 2px 5px; font-size: 0.55rem; }
   .map-chip b { font-size: 0.6rem; }
-  .map-legend { bottom: 7px; left: 7px; gap: 6px; padding: 3px 6px; font-size: 0.52rem; }
+  .map-legend { bottom: 7px; left: auto; right: 7px; gap: 6px; padding: 3px 6px; font-size: 0.52rem; }
 
   .donut-svg { width: 140px; }
   .donut-wrap { flex-direction: row; align-items: center; justify-content: flex-start; gap: 16px; }
@@ -1200,13 +1183,11 @@ html[data-theme="light"] .map-focus {
   .donut-item b { font-size: 0.6rem; }
   .donut-item small { font-size: 0.52rem; }
 
-  .trend-frame { margin-top: 2px; }
-  .trend-legend { gap: 9px; margin-top: 4px; font-size: 0.56rem; }
 
   .rank-list { gap: 0; padding-block: 0; }
   .rank-row { gap: 0 6px; }
   .rank-no { font-size: 0.58rem; line-height: 1.15; }
-  .rank-name { font-size: 0.66rem; line-height: 1.15; }
+  .rank-name { font-size: 0.66rem; line-height: 1.1; }
   .rank-val { font-size: 0.62rem; line-height: 1.15; }
   .rank-val small { font-size: 0.52rem; }
   .rank-track { height: 3px; margin-top: 1px; }

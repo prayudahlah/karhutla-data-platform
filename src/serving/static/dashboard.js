@@ -862,7 +862,7 @@
     }
 
     const width = 720;
-    const height = 200;
+    const height = 255;
     const padL = 46;
     const padR = 16;
     const padT = 18;
@@ -1470,7 +1470,7 @@
 
     const colors = palette();
     const land =
-      '<rect width="640" height="320" fill="url(#mapGrid)" />' +
+      '<rect x="-30" width="700" height="320" fill="url(#mapGrid)" />' +
       '<g fill="' +
       colors.mapLand +
       '" stroke="' +
@@ -1483,7 +1483,7 @@
       '<g fill="' +
       colors.mapLabel +
       '" font-size="9.5" font-weight="600" letter-spacing="1.2" text-anchor="middle" opacity=".8">' +
-      '<text x="95" y="223">SUMATERA</text><text x="235" y="260">JAWA</text><text x="338" y="206">KALIMANTAN</text><text x="440" y="218">SULAWESI</text><text x="568" y="216">PAPUA</text>' +
+      '<text x="95" y="223">SUMATERA</text><text x="338" y="206">KALIMANTAN</text><text x="440" y="218">SULAWESI</text><text x="568" y="216">PAPUA</text>' +
       "</g>";
 
     if (!rows.length) {

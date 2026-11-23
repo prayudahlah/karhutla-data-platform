@@ -11,15 +11,14 @@
   } catch (error) {}
 })();
 </script>
-<link rel="stylesheet" href="/static/dashboard.css?v=20261123J">
+<link rel="stylesheet" href="/static/dashboard.css?v=20261123P">
 {% endblock %}
 {% block content %}
 <section class="dash-hero">
   <div class="dash-hero-inner">
     <div class="hero-copy">
       <div class="breadcrumb"><a href="/">Ringkasan</a> / Dashboard</div>
-      <h1 class="serif">Pemantauan karhutla.</h1>
-      <p class="hero-lead">Hotspot, FRP, dan luas terbakar dari Gold layer. Angka indikatif, bukan peringatan resmi.</p>
+      <h1 class="serif">DASHBOARD</h1>
     </div>
     <div class="hero-meta" aria-label="Status data dashboard">
       <div class="dash-status"><i class="dot"></i><span id="freshness" aria-live="polite">Memuat status data…</span></div>
@@ -58,7 +57,6 @@
   <div class="notice dash-error" id="dash-error" hidden role="alert"></div>
 
   <div class="dash-insight">
-    <span class="insight-label">Insight</span>
     <p id="insight-text">Memuat insight…</p>
   </div>
 
@@ -77,7 +75,7 @@
       <div class="tab-kpi"><span class="kicker">Sel aktif</span><b id="tab1-active">—</b><span id="tab1-active-sub">—</span></div>
     </div>
     <div class="dash-grid">
-      <article class="dash-panel span-5 dash-map-panel">
+      <article class="dash-panel span-6 dash-map-panel">
         <div class="dash-head">
           <div>
             <div class="kicker">Lokasi</div>
@@ -86,7 +84,7 @@
           </div>
         </div>
         <div class="map-frame">
-          <svg id="map-hotspot" viewBox="0 0 640 320" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Peta sebaran sel hotspot"></svg>
+          <svg id="map-hotspot" viewBox="-30 0 700 320" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Peta sebaran sel hotspot"></svg>
           <div class="map-chips">
             <span class="map-chip"><b id="map-provinces">—</b> provinsi</span>
             <span class="map-chip"><b id="map-count">—</b> sel</span>
@@ -110,7 +108,7 @@
         <p class="panel-note">Natural Earth · 500 sel teratas pada tanggal terakhir periode.</p>
       </article>
 
-      <article class="dash-panel span-7">
+      <article class="dash-panel span-6">
         <div class="dash-head">
           <div>
             <div class="kicker">Waktu</div>
@@ -120,7 +118,7 @@
           <span class="dash-badge" id="daily-badge">—</span>
         </div>
         <div class="trend-frame">
-          <svg id="chart-daily" viewBox="0 0 720 200" role="img" aria-label="Tren hotspot harian"></svg>
+          <svg id="chart-daily" viewBox="0 0 720 255" role="img" aria-label="Tren hotspot harian"></svg>
         </div>
         <p class="panel-note" id="daily-note">—</p>
       </article>
@@ -279,4 +277,4 @@
 <div class="chart-tooltip" id="chart-tooltip" role="tooltip" aria-hidden="true"></div>
 </div>
 {% endblock %}
-{% block extra_scripts %}<script src="/static/dashboard.js?v=20261123J" defer></script>{% endblock %}
+{% block extra_scripts %}<script src="/static/dashboard.js?v=20261123P" defer></script>{% endblock %}
