@@ -127,7 +127,7 @@ def test_dashboard_page_renders(tmp_path):
     response = client.get("/dashboard")
 
     assert response.status_code == 200
-    assert '<h1 class="serif">DASHBOARD</h1>' in response.text
+    assert '<h1 class="serif">Pemantauan Karhutla</h1>' in response.text
     assert "Total hotspot" in response.text
     assert "/static/dashboard.css" in response.text
     assert "/static/dashboard.js" in response.text

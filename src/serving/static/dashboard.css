@@ -238,98 +238,8 @@ html[data-theme="light"] .dash-hero {
   font-size: clamp(2rem, 2.1vw, 2.25rem);
   line-height: 1.08;
 }
-.dash-hero .hero-lead {
-  max-width: 760px;
-  margin: 8px 0 0;
-  color: var(--body);
-  font-size: 0.9rem;
-  line-height: 1.6;
-}
-.hero-meta {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px;
-  margin-top: 14px;
-  text-align: left;
-}
-.hero-meta .dash-status { margin: 0; white-space: nowrap; }
-.hero-meta-row {
-  display: inline-flex;
-  align-items: baseline;
-  gap: 6px;
-  padding: 4px 9px;
-  border: 1px solid var(--chip-border, rgba(255, 210, 173, 0.22));
-  border-radius: 999px;
-  background: var(--chip-bg, rgba(10, 23, 18, 0.32));
-  color: var(--label);
-  font-size: 0.68rem;
-  line-height: 1.35;
-}
-.hero-meta-row b {
-  color: var(--text);
-  font-family: "JetBrains Mono", ui-monospace, monospace;
-  font-size: 0.7rem;
-  font-weight: 500;
-}
-
-.dash-status {
-  display: inline-flex;
-  align-items: center;
-  gap: 9px;
-  margin-top: 16px;
-  padding: 7px 13px;
-  border: 1px solid var(--chip-border, rgba(255, 210, 173, 0.22));
-  border-radius: 999px;
-  background: var(--chip-bg, rgba(10, 23, 18, 0.32));
-  color: var(--body);
-  font-size: 0.8rem;
-  line-height: 1.35;
-}
-.dash-status .dot {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: var(--lime);
-  box-shadow: 0 0 0 3px var(--lime-soft);
-  flex: none;
-}
-.dash-status.warn .dot {
-  background: var(--gold);
-  box-shadow: 0 0 0 3px rgba(255, 176, 46, 0.16);
-}
-.dash-status.bad .dot {
-  background: var(--ember);
-  box-shadow: 0 0 0 3px rgba(255, 90, 43, 0.16);
-}
-
 .dash-wrap { padding-block: 14px 0; }
 .dash-error { margin: 0 0 16px; }
-
-.dash-insight {
-  display: flex;
-  align-items: baseline;
-  gap: 12px;
-  margin: 0 0 16px;
-  padding: 4px 0 4px 14px;
-  border-left: 2px solid var(--lime);
-}
-.dash-insight p {
-  flex: 1;
-  min-width: 0;
-  margin: 0;
-  color: var(--body);
-  font-size: 0.8rem;
-  line-height: 1.5;
-}
-.dash-insight b {
-  color: var(--text);
-  font-weight: 600;
-}
-.dash-insight .insight-sep {
-  margin: 0 6px;
-  color: var(--label);
-}
 
 .tab-head {
   display: flex;
@@ -1042,8 +952,6 @@ html[data-theme="light"] .map-focus {
 
 @media (max-width: 1000px) {
   .dash-hero-inner { padding: 20px clamp(24px, 4vw, 32px) 18px; }
-  .hero-meta { gap: 8px; }
-  .hero-meta .dash-status { white-space: normal; }
 }
 
 @media (min-width: 521px) and (max-width: 800px) {
@@ -1124,15 +1032,10 @@ html[data-theme="light"] .map-focus {
 
 /* Desktop one-screen: 5 KPI cards + 4 visuals in a 2x2 grid. */
 @media (min-width: 1201px) {
-  .dash-hero-inner { padding: 4px clamp(32px, 4vw, 64px) 3px; text-align: center; }
+  .dash-hero-inner { padding: 12px clamp(32px, 4vw, 64px) 11px; text-align: center; }
   .dash-hero .breadcrumb { display: none; }
   .dash-hero .hero-copy { max-width: none; }
-  .dash-hero h1 { font-size: clamp(1.5rem, 1.7vw, 1.75rem); margin-top: 0; letter-spacing: 0.08em; }
-  .dash-hero .hero-lead { max-width: 980px; margin-top: 2px; font-size: 0.7rem; }
-  .hero-meta { gap: 8px; margin-top: 4px; justify-content: center; }
-  .hero-meta .dash-status { padding: 2px 7px; font-size: 0.62rem; }
-  .hero-meta-row { padding: 2px 6px; font-size: 0.58rem; }
-  .hero-meta-row b { font-size: 0.62rem; }
+  .dash-hero h1 { font-size: clamp(2rem, 2.5vw, 2.5rem); margin-top: 0; letter-spacing: 0.01em; }
 
   .dash-wrap { padding-block: 8px 0; }
   .dash-controlbar { margin: 0 0 8px; padding: 5px 10px; gap: 14px; }
@@ -1145,8 +1048,6 @@ html[data-theme="light"] .map-focus {
   .dash-field select { height: 28px; font-size: 0.75rem; }
   .dash-form-row .btn { min-height: 28px; padding: 0 12px; font-size: 0.72rem; }
 
-  .dash-insight { margin: 0 0 8px; padding: 0 0 0 10px; border-left-width: 2px; }
-  .dash-insight p { font-size: 0.72rem; }
 
   .tab-kpis { margin: 5px 0 7px; gap: 8px; }
   .tab-kpi { height: 76px; min-height: 76px; padding: 6px 10px; overflow: hidden; }
@@ -1156,7 +1057,7 @@ html[data-theme="light"] .map-focus {
   .kpi-spark { top: 7px; right: 8px; width: 54px; height: 15px; }
   .kpi-tier { height: 3px; margin-top: 4px; }
 
-  .dash-grid { gap: 8px; }
+  .dash-grid { gap: 10px; }
   .dash-panel { padding: 11px 13px 9px; }
   .dash-head { margin-bottom: 6px; }
   .dash-title { margin-top: 2px; font-size: 1.08rem; }
@@ -1164,7 +1065,7 @@ html[data-theme="light"] .map-focus {
   .dash-badge { padding: 2px 6px; font-size: 0.58rem; }
   .panel-note { margin-top: 4px; padding-top: 4px; font-size: 0.6rem; }
 
-  .map-frame { height: 226px; aspect-ratio: auto; margin-bottom: 4px; }
+  .map-frame { height: 241px; aspect-ratio: auto; margin-bottom: 4px; }
   .map-focus { top: 7px; right: 7px; width: 140px; padding: 7px 8px; }
   .map-focus .focus-kicker { font-size: 0.52rem; }
   .map-focus .focus-name { font-size: 0.74rem; }
@@ -1187,7 +1088,7 @@ html[data-theme="light"] .map-focus {
   .rank-list { gap: 0; padding-block: 0; }
   .rank-row { gap: 0 6px; }
   .rank-no { font-size: 0.58rem; line-height: 1.15; }
-  .rank-name { font-size: 0.66rem; line-height: 1.1; }
+  .rank-name { font-size: 0.66rem; line-height: 1.15; }
   .rank-val { font-size: 0.62rem; line-height: 1.15; }
   .rank-val small { font-size: 0.52rem; }
   .rank-track { height: 3px; margin-top: 1px; }

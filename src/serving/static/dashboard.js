@@ -117,7 +117,8 @@
   const setLoading = (loading) => {
     const button = $("dash-apply");
     if (button) button.disabled = loading;
-    if (loading) $("freshness").textContent = "Memuat data…";
+    const fresh = $("freshness");
+    if (loading && fresh) fresh.textContent = "Memuat data…";
   };
 
   const query = (extra = {}) => {
@@ -330,7 +331,6 @@
     renderSparkline(dailyRows, "spark-total");
     renderSparkline(dailyRows, "spark-peak");
     renderTierBar(summaryRows);
-    renderInsight(summaryRows, dailyRows);
     renderTrendKpis(dailyRows);
     renderTierChart(dailyRows);
     renderDailyStrip(dailyRows);
@@ -419,7 +419,6 @@
     const frpMax = max(summaryRows, "frp_max");
     const scar = sum(monthlyRows, "scar_area_km2");
     const scarPixels = sum(monthlyRows, "scar_pixels");
-    const provinceCount = (summaryRows || []).length;
 
     $("tab1-total").textContent = number.format(total);
     $("tab1-total-sub").textContent = periodLabel();
@@ -444,8 +443,6 @@
     $("tab1-active").textContent = number.format(activeCells);
     $("tab1-active-sub").textContent = "sel-hari \u00b7 grid 0,25\u00b0";
 
-    $("rail-period").textContent = periodLabel();
-    $("rail-coverage").textContent = provinceCount + " provinsi";
   }
 
   function renderSparkline(rows, id) {
@@ -520,49 +517,6 @@
           '"></i>',
       )
       .join("");
-  }
-
-  function renderInsight(summaryRows, dailyRows) {
-    const host = $("insight-text");
-    if (!host) return;
-    const total = sum(summaryRows, "hotspot_count");
-    const top = [...(summaryRows || [])]
-      .filter((row) => Number(row.hotspot_count || 0) > 0)
-      .sort((a, b) => Number(b.hotspot_count) - Number(a.hotspot_count))[0];
-    const kandidat = sum(summaryRows, "hotspot_kandidat");
-    const peak = [...(dailyRows || [])]
-      .filter((row) => row.date)
-      .sort(
-        (a, b) => Number(b.hotspot_count || 0) - Number(a.hotspot_count || 0),
-      )[0];
-    const parts = [];
-    if (top && total) {
-      parts.push(
-        "<b>" +
-          escapeText(top.province) +
-          "</b> " +
-          decimal.format((Number(top.hotspot_count) / total) * 100) +
-          "% hotspot",
-      );
-    }
-    if (total) {
-      parts.push(
-        "<b>" +
-          decimal.format((kandidat / total) * 100) +
-          "%</b> kandidat",
-      );
-    }
-    if (peak) {
-      parts.push(
-        "Puncak <b>" +
-          number.format(Math.round(Number(peak.hotspot_count || 0))) +
-          "</b> pada " +
-          dateShort(peak.date),
-      );
-    }
-    host.innerHTML = parts.length
-      ? parts.join('<span class="insight-sep" aria-hidden="true">·</span>')
-      : "Belum ada insight pada rentang ini.";
   }
 
   function renderTrendKpis(dailyRows) {
@@ -862,7 +816,7 @@
     }
 
     const width = 720;
-    const height = 255;
+    const height = 280;
     const padL = 46;
     const padR = 16;
     const padT = 18;
@@ -1678,6 +1632,7 @@
     const age = Number(iceberg.age_hours);
     const stale = Boolean(iceberg.stale);
     const status = $("freshness");
+    if (!status) return;
     const wrapper = status.parentElement;
 
     let text = "Data " + latest + " · Iceberg ";
