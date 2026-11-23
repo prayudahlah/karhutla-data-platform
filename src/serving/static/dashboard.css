@@ -1032,13 +1032,13 @@ html[data-theme="light"] .map-focus {
 
 /* Desktop one-screen: 5 KPI cards + 4 visuals in a 2x2 grid. */
 @media (min-width: 1201px) {
-  .dash-hero-inner { padding: 12px clamp(32px, 4vw, 64px) 11px; text-align: center; }
+  .dash-hero-inner { padding: 14px clamp(32px, 4vw, 64px) 19px; text-align: center; }
   .dash-hero .breadcrumb { display: none; }
   .dash-hero .hero-copy { max-width: none; }
   .dash-hero h1 { font-size: clamp(2rem, 2.5vw, 2.5rem); margin-top: 0; letter-spacing: 0.01em; }
 
-  .dash-wrap { padding-block: 8px 0; }
-  .dash-controlbar { margin: 0 0 8px; padding: 5px 10px; gap: 14px; }
+  .dash-wrap { padding-block: 7px 0; }
+  .dash-controlbar { margin: 0 0 7px; padding: 5px 10px; gap: 14px; }
   .dash-controlbar .dash-tabbar { gap: 8px; padding-bottom: 0; border: 0; }
   .dash-tab { height: 28px; padding: 0 9px; font-size: 0.76rem; }
   .theme-toggle { height: 28px; margin-left: 4px; font-size: 0.66rem; }
@@ -1050,14 +1050,14 @@ html[data-theme="light"] .map-focus {
 
 
   .tab-kpis { margin: 5px 0 7px; gap: 8px; }
-  .tab-kpi { height: 76px; min-height: 76px; padding: 6px 10px; overflow: hidden; }
+  .tab-kpi { height: 74px; min-height: 74px; padding: 6px 10px; overflow: hidden; }
   .tab-kpi b { margin-top: 3px; font-size: 1.2rem; }
   .tab-kpi.accent b { font-size: clamp(1.42rem, 1.55vw, 1.6rem); }
   .tab-kpi > span:last-child { margin-top: 2px; font-size: 0.58rem; -webkit-line-clamp: 1; }
   .kpi-spark { top: 7px; right: 8px; width: 54px; height: 15px; }
   .kpi-tier { height: 3px; margin-top: 4px; }
 
-  .dash-grid { gap: 10px; }
+  .dash-grid { gap: 9px; }
   .dash-panel { padding: 11px 13px 9px; }
   .dash-head { margin-bottom: 6px; }
   .dash-title { margin-top: 2px; font-size: 1.08rem; }
@@ -1065,7 +1065,7 @@ html[data-theme="light"] .map-focus {
   .dash-badge { padding: 2px 6px; font-size: 0.58rem; }
   .panel-note { margin-top: 4px; padding-top: 4px; font-size: 0.6rem; }
 
-  .map-frame { height: 241px; aspect-ratio: auto; margin-bottom: 4px; }
+  .map-frame { height: 230px; aspect-ratio: auto; margin-bottom: 4px; }
   .map-focus { top: 7px; right: 7px; width: 140px; padding: 7px 8px; }
   .map-focus .focus-kicker { font-size: 0.52rem; }
   .map-focus .focus-name { font-size: 0.74rem; }
@@ -1088,7 +1088,7 @@ html[data-theme="light"] .map-focus {
   .rank-list { gap: 0; padding-block: 0; }
   .rank-row { gap: 0 6px; }
   .rank-no { font-size: 0.58rem; line-height: 1.15; }
-  .rank-name { font-size: 0.66rem; line-height: 1.15; }
+  .rank-name { font-size: 0.66rem; line-height: 1.11; }
   .rank-val { font-size: 0.62rem; line-height: 1.15; }
   .rank-val small { font-size: 0.52rem; }
   .rank-track { height: 3px; margin-top: 1px; }

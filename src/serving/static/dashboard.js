@@ -816,7 +816,7 @@
     }
 
     const width = 720;
-    const height = 280;
+    const height = 270;
     const padL = 46;
     const padR = 16;
     const padT = 18;

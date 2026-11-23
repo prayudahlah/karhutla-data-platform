@@ -11,14 +11,14 @@
   } catch (error) {}
 })();
 </script>
-<link rel="stylesheet" href="/static/dashboard.css?v=20261123R">
+<link rel="stylesheet" href="/static/dashboard.css?v=20261123V">
 {% endblock %}
 {% block content %}
 <section class="dash-hero">
   <div class="dash-hero-inner">
     <div class="hero-copy">
       <div class="breadcrumb"><a href="/">Ringkasan</a> / Dashboard</div>
-      <h1 class="serif">Pemantauan Karhutla</h1>
+      <h1 class="serif">Pantau Karhutla</h1>
     </div>
   </div>
 </section>
@@ -109,7 +109,7 @@
           <span class="dash-badge" id="daily-badge">—</span>
         </div>
         <div class="trend-frame">
-          <svg id="chart-daily" viewBox="0 0 720 280" role="img" aria-label="Tren hotspot harian"></svg>
+          <svg id="chart-daily" viewBox="0 0 720 270" role="img" aria-label="Tren hotspot harian"></svg>
         </div>
         <p class="panel-note" id="daily-note">—</p>
       </article>
@@ -268,4 +268,4 @@
 <div class="chart-tooltip" id="chart-tooltip" role="tooltip" aria-hidden="true"></div>
 </div>
 {% endblock %}
-{% block extra_scripts %}<script src="/static/dashboard.js?v=20261123R" defer></script>{% endblock %}
+{% block extra_scripts %}<script src="/static/dashboard.js?v=20261123V" defer></script>{% endblock %}
