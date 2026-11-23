@@ -11,7 +11,7 @@
   } catch (error) {}
 })();
 </script>
-<link rel="stylesheet" href="/static/dashboard.css?v=20261123D">
+<link rel="stylesheet" href="/static/dashboard.css?v=20261123J">
 {% endblock %}
 {% block content %}
 <section class="dash-hero">
@@ -77,7 +77,7 @@
       <div class="tab-kpi"><span class="kicker">Sel aktif</span><b id="tab1-active">—</b><span id="tab1-active-sub">—</span></div>
     </div>
     <div class="dash-grid">
-      <article class="dash-panel span-4 dash-map-panel">
+      <article class="dash-panel span-5 dash-map-panel">
         <div class="dash-head">
           <div>
             <div class="kicker">Lokasi</div>
@@ -110,6 +110,21 @@
         <p class="panel-note">Natural Earth · 500 sel teratas pada tanggal terakhir periode.</p>
       </article>
 
+      <article class="dash-panel span-7">
+        <div class="dash-head">
+          <div>
+            <div class="kicker">Waktu</div>
+            <h2 class="dash-title">Tren hotspot harian</h2>
+            <p class="dash-sub">Harian · garis putus rata-rata 7 hari</p>
+          </div>
+          <span class="dash-badge" id="daily-badge">—</span>
+        </div>
+        <div class="trend-frame">
+          <svg id="chart-daily" viewBox="0 0 720 200" role="img" aria-label="Tren hotspot harian"></svg>
+        </div>
+        <p class="panel-note" id="daily-note">—</p>
+      </article>
+
       <article class="dash-panel span-4">
         <div class="dash-head">
           <div>
@@ -125,25 +140,6 @@
       <article class="dash-panel span-4">
         <div class="dash-head">
           <div>
-            <div class="kicker">Waktu</div>
-            <h2 class="dash-title">Tren hotspot harian</h2>
-            <p class="dash-sub">Harian · garis putus rata-rata 7 hari</p>
-          </div>
-          <span class="dash-badge" id="daily-badge">—</span>
-        </div>
-        <div class="trend-frame">
-          <svg id="chart-daily" viewBox="0 0 480 240" role="img" aria-label="Tren hotspot harian"></svg>
-        </div>
-        <div class="trend-legend">
-          <span><i class="dot"></i>Harian</span>
-          <span><i class="dash"></i>Rata-rata 7 hari</span>
-        </div>
-        <p class="panel-note" id="daily-note">—</p>
-      </article>
-
-      <article class="dash-panel span-6">
-        <div class="dash-head">
-          <div>
             <div class="kicker">Tingkat bukti</div>
             <h2 class="dash-title">Komposisi tingkat bukti</h2>
             <p class="dash-sub">Kuat + sedang + lemah + kandidat</p>
@@ -156,7 +152,7 @@
         <p class="panel-note" id="donut-note">—</p>
       </article>
 
-      <article class="dash-panel span-6">
+      <article class="dash-panel span-4">
         <div class="dash-head">
           <div>
             <div class="kicker">Luas terbakar</div>
@@ -283,4 +279,4 @@
 <div class="chart-tooltip" id="chart-tooltip" role="tooltip" aria-hidden="true"></div>
 </div>
 {% endblock %}
-{% block extra_scripts %}<script src="/static/dashboard.js?v=20261123D" defer></script>{% endblock %}
+{% block extra_scripts %}<script src="/static/dashboard.js?v=20261123J" defer></script>{% endblock %}

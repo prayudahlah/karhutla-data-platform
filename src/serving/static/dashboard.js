@@ -861,12 +861,12 @@
       return;
     }
 
-    const width = 480;
-    const height = 240;
+    const width = 720;
+    const height = 200;
     const padL = 46;
     const padR = 16;
-    const padT = 22;
-    const padB = 28;
+    const padT = 18;
+    const padB = 24;
     const plotW = width - padL - padR;
     const plotH = height - padT - padB;
     const peak = present.reduce(

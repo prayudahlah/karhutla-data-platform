@@ -1182,7 +1182,7 @@ html[data-theme="light"] .map-focus {
   .panel-note { margin-top: 4px; padding-top: 4px; font-size: 0.6rem; }
 
   .map-frame { height: 205px; aspect-ratio: auto; margin-bottom: 4px; }
-  .map-focus { top: 7px; right: 7px; width: 132px; padding: 6px 7px; }
+  .map-focus { top: 7px; right: 7px; width: 140px; padding: 7px 8px; }
   .map-focus .focus-kicker { font-size: 0.52rem; }
   .map-focus .focus-name { font-size: 0.74rem; }
   .map-focus .focus-stats { gap: 5px; margin-top: 5px; }
@@ -1193,8 +1193,8 @@ html[data-theme="light"] .map-focus {
   .map-chip b { font-size: 0.6rem; }
   .map-legend { bottom: 7px; left: 7px; gap: 6px; padding: 3px 6px; font-size: 0.52rem; }
 
-  .donut-svg { width: 150px; }
-  .donut-wrap { flex-direction: row; align-items: center; justify-content: flex-start; gap: 20px; }
+  .donut-svg { width: 140px; }
+  .donut-wrap { flex-direction: row; align-items: center; justify-content: flex-start; gap: 16px; }
   .donut-legend { flex: 1; max-width: none; gap: 4px; margin-top: 0; }
   .donut-item { font-size: 0.62rem; }
   .donut-item b { font-size: 0.6rem; }
@@ -1203,13 +1203,13 @@ html[data-theme="light"] .map-focus {
   .trend-frame { margin-top: 2px; }
   .trend-legend { gap: 9px; margin-top: 4px; font-size: 0.56rem; }
 
-  .rank-list { gap: 2px; padding-block: 0; }
+  .rank-list { gap: 0; padding-block: 0; }
   .rank-row { gap: 0 6px; }
-  .rank-no { font-size: 0.58rem; }
-  .rank-name { font-size: 0.7rem; }
-  .rank-val { font-size: 0.62rem; }
+  .rank-no { font-size: 0.58rem; line-height: 1.15; }
+  .rank-name { font-size: 0.66rem; line-height: 1.15; }
+  .rank-val { font-size: 0.62rem; line-height: 1.15; }
   .rank-val small { font-size: 0.52rem; }
-  .rank-track { height: 4px; margin-top: 1px; }
+  .rank-track { height: 3px; margin-top: 1px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
