@@ -6,6 +6,8 @@ vars:
   STREAM_COMPOSE: docker compose -f compose/base.yml -f compose/vps-stream.yml
   DEV_COMPOSE: docker compose -f compose/base.yml -f compose/vps-stream.yml -f compose/dev.yml
   BATCH_COMPOSE: docker compose -f compose/base.yml -f compose/vps-batch.yml
+  CORE_COMPOSE: docker compose --env-file .env -f compose/base.yml -f compose/vps-core.yml
+  PORTAL_COMPOSE: docker compose --env-file .env -f compose/base.yml -f compose/vps-core.yml -f compose/vps-portal.yml --profile sso
   RPK: docker compose -f compose/base.yml -f compose/vps-stream.yml exec -T redpanda rpk -X brokers=redpanda:9092
 
 tasks:
@@ -174,9 +176,41 @@ tasks:
 
   # ----------------------------------------------------------- node lain
   up-core:
-    desc: Nyalakan node core
+    desc: Nyalakan node core lengkap (Prefect, Postgres, API, Metabase)
     cmds:
-      - 'docker compose -f compose/base.yml -f compose/vps-core.yml up -d'
+      - '{{.CORE_COMPOSE}} --profile full up -d'
+
+  up-ui:
+    desc: Nyalakan API dan portal saja, tanpa Postgres dan Metabase
+    cmds:
+      - '{{.CORE_COMPOSE}} up -d --build api'
+
+  down-ui:
+    desc: Matikan API dan portal
+    cmds:
+      - '{{.CORE_COMPOSE}} stop api'
+
+  sso-config:
+    desc: Render infra/authelia/configuration.yml dari .env
+    cmds:
+      - 'python scripts/render_authelia.py'
+
+  up-sso:
+    desc: Nyalakan Caddy, Authelia, Grafana, dan API untuk uji SSO
+    deps: [sso-config]
+    cmds:
+      - '{{.PORTAL_COMPOSE}} up -d --build'
+
+  up-demo:
+    desc: SSO plus Grafana, Metabase, dan Prefect kosong untuk demo
+    deps: [sso-config]
+    cmds:
+      - '{{.PORTAL_COMPOSE}} --profile demo up -d --build'
+
+  down-demo:
+    desc: Matikan layanan demo
+    cmds:
+      - '{{.PORTAL_COMPOSE}} --profile demo stop'
 
   # --------------------------------------------------------------- silver
   dbt-build:
@@ -232,6 +266,81 @@ tasks:
       - task: lint
       - task: test
       - task: dbt-build
+
+  # ----------------------------------------------------------------- gold
+  gold-build:
+    desc: Bangun tabel Gold lewat dbt tanpa menyentuh Silver
+    env:
+      SILVER_NORMALIZED_ROOT: data/silver/_normalized
+      SILVER_PUBLISH_ROOT: data/silver/published
+      GOLD_PUBLISH_ROOT: data/gold/published
+    cmds:
+      - 'python -m batch.silver.prepare --layer gold --clean'
+      - 'dbt build --project-dir dbt --profiles-dir dbt --select tag:gold'
+      - 'python -m batch.gold.catalog'
+
+  gold-catalog:
+    desc: Hasilkan catalog.json dan lineage.json dari kontrak Gold
+    env:
+      GOLD_CATALOG_ROOT: data/gold/_catalog
+    cmds:
+      - 'python -m batch.gold.catalog'
+
+  gold-publish:
+    desc: Publish Gold Parquet ke Iceberg v2 + parity + pointer
+    env:
+      GOLD_PUBLISH_ROOT: data/gold/published
+      ICEBERG_ROOT: data/gold/_iceberg
+      PYTHONUTF8: "1"
+    cmds:
+      - 'python -m batch.gold.publish --table all --mode full --strict'
+
+  gold-refresh:
+    desc: Build Gold lalu publish Iceberg dengan parity
+    cmds:
+      - task: gold-build
+      - task: gold-publish
+
+  gold-maintenance:
+    desc: Expire snapshot, backup katalog, lalu verify
+    env:
+      GOLD_PUBLISH_ROOT: data/gold/published
+      ICEBERG_ROOT: data/gold/_iceberg
+      PYTHONUTF8: "1"
+    cmds:
+      - 'python -m batch.gold.publish --expire --retention-days 30 --min-snapshots 2'
+      - 'python -m batch.gold.publish --backup data/gold/_iceberg_backup'
+      - 'python -m batch.gold.publish --verify'
+
+  gold-test:
+    desc: Jalankan uji model Gold saja
+    env:
+      GOLD_PUBLISH_ROOT: data/gold/published
+    cmds:
+      - 'dbt test --project-dir dbt --profiles-dir dbt --select tag:gold'
+
+  gold-check:
+    desc: Lint, unit test, lalu refresh Gold + Iceberg
+    cmds:
+      - task: lint
+      - task: test
+      - task: gold-refresh
+
+  # --------------------------------------------------------------- serving
+  serving-dev:
+    desc: Jalankan FastAPI Gold lokal di http://127.0.0.1:8000
+    env:
+      GOLD_PUBLISH_ROOT: data/gold/published
+      ICEBERG_ROOT: data/gold/_iceberg
+    cmds:
+      - 'uvicorn serving.main:app --reload --host 127.0.0.1 --port 8000'
+
+  serving-sync:
+    desc: Salin 3 mart Gold dari Iceberg ke Postgres (butuh DATABASE_DSN)
+    env:
+      ICEBERG_ROOT: data/gold/_iceberg
+    cmds:
+      - 'python -m serving.sync_marts'
 
   # ------------------------------------------------------------------- ml
   ml-audit:

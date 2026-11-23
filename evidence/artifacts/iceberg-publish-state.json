@@ -1,0 +1,52 @@
+{
+  "published_at": "2026-11-21T08:18:01.182790+00:00",
+  "run_id": "evidence-3",
+  "tables": {
+    "cell_daily": {
+      "parquet": {
+        "row_count": 95360,
+        "hotspot_sum": 486238,
+        "label_sum": 6377,
+        "max_date": "2026-11-14"
+      },
+      "iceberg": {
+        "row_count": 95360,
+        "hotspot_sum": 486238,
+        "label_sum": 6377,
+        "max_date": "2026-11-14"
+      },
+      "snapshot_id": 5730114291177768438,
+      "snapshot_count": 3
+    },
+    "province_daily": {
+      "parquet": {
+        "row_count": 1216,
+        "hotspot_sum": 486238,
+        "scar_sum": 721226,
+        "max_date": "2026-11-14"
+      },
+      "iceberg": {
+        "row_count": 1216,
+        "hotspot_sum": 486238,
+        "scar_sum": 721226,
+        "max_date": "2026-11-14"
+      },
+      "snapshot_id": 1135712900791749098,
+      "snapshot_count": 7
+    },
+    "burn_scar_monthly": {
+      "parquet": {
+        "row_count": 34,
+        "scar_sum": 36916,
+        "max_month": "2026-09"
+      },
+      "iceberg": {
+        "row_count": 34,
+        "scar_sum": 36916,
+        "max_month": "2026-09"
+      },
+      "snapshot_id": 8954783690607722154,
+      "snapshot_count": 3
+    }
+  }
+}

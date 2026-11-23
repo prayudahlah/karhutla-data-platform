@@ -1,0 +1,145 @@
+{% extends "base.html" %}
+{% block title %}Lineage | JAGAHUTAN{% endblock %}
+{% block content %}
+<div class="shell">
+  <div class="page-head">
+    <div class="breadcrumb"><a href="/">Ringkasan</a> / Lineage</div>
+    <h1 class="serif">Jalur Bronze ke Silver ke Gold.</h1>
+    <p class="lead">Dibaca dari <code>lineage.json</code> hasil katalog Gold. Setiap panah menandai ketergantungan antar dataset yang bisa diaudit.</p>
+  </div>
+
+  {% if graph is none %}
+    <div class="notice"><strong>Lineage belum ada.</strong> Jalankan <code>task gold-catalog</code>, lalu muat ulang halaman ini.</div>
+  {% else %}
+    <section class="graph-card" aria-labelledby="grafik-judul">
+      <div class="graph-head">
+        <div>
+          <h2 class="graph-title" id="grafik-judul">Alur data</h2>
+          <p class="graph-sub">Klik nama tabel Gold untuk detail, klik dataset perantara untuk menyorot jalur hulu dan hilirnya.</p>
+        </div>
+        <div class="graph-aside">
+          <dl class="graph-meta">
+            <div><dt>Node</dt><dd>{{ graph.node_total }}</dd></div>
+            <div><dt>Edge</dt><dd>{{ graph.edge_total }}</dd></div>
+            <div><dt>Run</dt><dd class="mono">{{ lineage.run_id or "-" }}</dd></div>
+          </dl>
+          {% if graph.focus %}
+            <a class="focus-chip" href="/lineage">Fokus: <span class="mono">{{ graph.focus }}</span> <span aria-hidden="true">x</span><span class="sr-only">Hapus fokus</span></a>
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="graph-frame">
+      <div class="graph-scroll">
+        <svg class="lineage-svg" style="min-width: {{ graph.width }}px" viewBox="0 0 {{ graph.width }} {{ graph.height }}" role="group" aria-label="Graf lineage: {{ graph.node_total }} node dan {{ graph.edge_total }} edge dari Bronze ke Silver ke Gold. Setiap node adalah tautan: tabel Gold membuka detail, dataset lain menyorot jalurnya.">
+          <defs>
+            <marker id="ln-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+              <path d="M0,0 L10,5 L0,10 z" class="ln-head"></path>
+            </marker>
+            <marker id="ln-arrow-gold" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+              <path d="M0,0 L10,5 L0,10 z" class="ln-head gold"></path>
+            </marker>
+          </defs>
+
+          {% for band in graph.bands %}
+            <rect class="ln-band" x="{{ band.x - 8 }}" y="28" width="{{ band.width + 16 }}" height="{{ graph.height - 40 }}" rx="10"></rect>
+          {% endfor %}
+
+          {% for layer in graph.layers %}
+            <text class="ln-layer" x="{{ layer.x }}" y="16">{{ layer.label }} ({{ layer.count }})</text>
+          {% endfor %}
+
+          <g class="ln-edges">
+            {% for edge in graph.edges %}
+              <path class="ln-edge{% if edge.into_gold %} into-gold{% endif %}{% if edge.dim %} dim{% endif %}"
+                    d="{{ edge.path }}"
+                    marker-end="url(#{{ 'ln-arrow-gold' if edge.into_gold else 'ln-arrow' }})">
+                <title>{{ edge["from"] }} ke {{ edge.to }}{% if edge.note %} ({{ edge.note }}){% endif %}</title>
+              </path>
+            {% endfor %}
+          </g>
+
+          <g class="ln-nodes">
+            {% for node in graph.nodes %}
+              <a class="ln-node {{ node.layer }}{% if node.is_table %} table{% endif %}{% if node.focus %} is-focus{% endif %}{% if node.dim %} dim{% endif %}"
+                 href="{{ node.href }}"
+                 aria-label="{{ node.id }}, {{ node.layer }}{% if node.is_table %}, buka detail tabel{% else %}, sorot jalur{% endif %}">
+                <title>{{ node.id }} ({{ node.layer }}{% if node.type %}, {{ node.type }}{% endif %})</title>
+                <rect x="{{ node.x }}" y="{{ node.y }}" width="{{ node.w }}" height="{{ node.h }}" rx="8"></rect>
+                <rect class="ln-rail {{ node.layer }}" x="{{ node.x + 2 }}" y="{{ node.y + 9 }}" width="3" height="{{ node.h - 18 }}" rx="1.5"></rect>
+                <text class="ln-name" x="{{ node.x + 14 }}" y="{{ node.cy + 4 }}">{{ node.id }}</text>
+              </a>
+            {% endfor %}
+          </g>
+        </svg>
+      </div>
+      </div>
+      <p class="graph-hint">
+        Geser ke samping untuk melihat Bronze sampai Gold.
+        {% if graph.focus %}Node fokus {{ graph.focus }} ada di kolom {{ graph.focus_layer }}.{% endif %}
+      </p>
+
+      <ul class="ln-legend">
+        <li><span class="ln-swatch"></span>Sumber dan dataset perantara</li>
+        <li><span class="ln-swatch gold"></span>Tabel Gold, klik untuk detail</li>
+        <li><span class="ln-swatch arrow"></span>Arah aliran data</li>
+        {% if graph.focus %}<li><span class="ln-swatch focus"></span>Node yang sedang difokuskan</li>{% endif %}
+      </ul>
+    </section>
+
+    {% if graph.focus %}
+      <div class="focus-bar">
+        <div>
+          <span class="kicker">Fokus</span>
+          <p class="focus-title mono">{{ graph.focus }}</p>
+          <p class="focus-count">{{ graph.upstream|length }} hulu, {{ graph.downstream|length }} hilir, {{ graph.visible_edge_total }} dari {{ graph.edge_total }} edge terkait.</p>
+        </div>
+        <div class="focus-actions">
+          {% if graph.focus_detail %}<a class="btn btn-light" href="{{ graph.focus_detail }}">Buka detail tabel</a>{% endif %}
+          <a class="btn btn-ghost" href="/lineage">Tampilkan semua</a>
+        </div>
+      </div>
+
+      {% if graph.upstream or graph.downstream %}
+        <div class="focus-lists">
+          <div>
+            <span class="kicker">Hulu</span>
+            <p class="focus-links">
+              {% for id in graph.upstream %}<a class="chip" href="/lineage?focus={{ id }}">{{ id }}</a>{% else %}<span class="muted">Tidak ada, node ini sumber.</span>{% endfor %}
+            </p>
+          </div>
+          <div>
+            <span class="kicker">Hilir</span>
+            <p class="focus-links">
+              {% for id in graph.downstream %}<a class="chip" href="/lineage?focus={{ id }}">{{ id }}</a>{% else %}<span class="muted">Tidak ada, node ini ujung.</span>{% endfor %}
+            </p>
+          </div>
+        </div>
+      {% endif %}
+    {% elif graph.focus_missing %}
+      <div class="notice"><strong>Node tidak ditemukan.</strong> <code>{{ graph.focus_label }}</code> tidak ada di lineage, jadi seluruh graf ditampilkan. <a href="/lineage">Hapus fokus</a>.</div>
+    {% endif %}
+
+    <div class="edge-head">
+      <h2 class="serif">Edge</h2>
+      <p class="edge-sub">
+        {% if graph.focus %}{{ graph.visible_edge_total }} edge pada jalur {{ graph.focus }}{% else %}{{ graph.edge_total }} ketergantungan antar dataset{% endif %}
+      </p>
+    </div>
+    <div class="table-wrap">
+    <table class="data edge-table">
+      <thead><tr><th scope="col">Dari</th><th scope="col">Ke</th><th scope="col">Catatan</th></tr></thead>
+      <tbody>
+      {% for edge in graph.edges %}
+        <tr>
+          <td class="mono" data-label="Dari"><a href="/lineage?focus={{ edge["from"] }}">{{ edge["from"] }}</a></td>
+          <td class="mono" data-label="Ke"><a href="/lineage?focus={{ edge.to }}">{{ edge.to }}</a></td>
+          <td class="edge-note" data-label="Catatan">{{ edge.note }}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

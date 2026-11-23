@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+{% block title %}JAGAHUTAN | Platform Data{% endblock %}
+{% block content %}
+<section class="hero">
+  <div class="hero-glow"></div>
+  <svg class="treeline" viewBox="0 0 1440 300" preserveAspectRatio="xMidYMax slice" aria-hidden="true" fill="#07110C">
+    <path d="M-20,300 L12,120 L43,300 L46,79 L83,300 L63,157 L87,300 L104,78 L144,300 L129,165 L158,300 L172,88 L203,300 L217,136 L242,300 L248,126 L271,300 L308,114 L339,300 L342,138 L373,300 L370,85 L394,300 L424,94 L458,300 L460,117 L487,300 L496,59 L526,300 L515,104 L537,300 L566,101 L604,300 L596,75 L631,300 L640,107 L676,300 L674,139 L703,300 L703,114 L726,300 L744,169 L781,300 L792,109 L831,300 L830,60 L862,300 L851,130 L875,300 L902,129 L938,300 L933,133 L966,300 L978,98 L1018,300 L996,98 L1021,300 L1052,165 L1081,300 L1082,120 L1108,300 L1124,135 L1155,300 L1156,174 L1179,300 L1201,159 L1232,300 L1242,97 L1264,300 L1287,107 L1319,300 L1309,75 L1333,300 L1356,131 L1392,300 L1385,146 L1415,300 L1426,140 L1458,300 Z"/>
+  </svg>
+
+  <div class="hero-inner">
+    <h1 class="serif">Jaga yang hijau.<br>Pantau yang menyala.</h1>
+    <p class="hero-lead">Platform data kebakaran hutan dan lahan: titik panas satelit, luas terbakar, cuaca, sampai tabel yang siap dipakai model dan dashboard.</p>
+    <div class="hero-cta">
+      <a class="btn btn-primary" href="#peta">Lihat peta risiko</a>
+      <a class="btn btn-ghost" href="/catalog">Jelajahi katalog</a>
+    </div>
+    <div class="hero-number">
+      <b class="mono">483.584</b>
+      <span>titik panas terdeteksi pada September 2026</span>
+    </div>
+  </div>
+</section>
+
+<div class="stats">
+  <div class="stat"><div class="kicker">Terkonfirmasi scar</div><div class="mono num">13,2%</div><div class="sub">kuat + sedang, 63.838 titik</div></div>
+  <div class="stat"><div class="kicker">Luas terbakar</div><div class="mono num">7.922 km²</div><div class="sub">September 2026, MCD64A1</div></div>
+  <div class="stat"><div class="kicker">Wilayah</div><div class="mono num">38</div><div class="sub">provinsi, FIRMS</div></div>
+  <div class="stat"><div class="kicker">Data siap model</div><div class="mono num">95.360</div><div class="sub">sel-hari Gold, 0,25 derajat</div></div>
+</div>
+
+<div class="shell"><p class="footnote" style="margin-top:16px">Angka bersifat indikatif dari periode September 2026, bukan peringatan resmi.</p></div>
+
+{% if catalog is none %}
+<div class="shell">
+  <div class="notice">
+    <strong>Katalog belum ada.</strong> Jalankan <code>task gold-catalog</code>, lalu muat ulang halaman ini.
+  </div>
+</div>
+{% endif %}
+
+<section class="section" id="peta">
+  <div class="split">
+    <div>
+      <div class="kicker">Peta interaktif</div>
+      <h2 class="serif">Sebaran titik panas per provinsi.</h2>
+      <p class="lead">Filter waktu dan provinsi, lapisan hotspot per tingkat bukti, serta luas terbakar bulanan. Setiap sel menampilkan jumlah deteksi dan tier keyakinannya.</p>
+      <a class="link-arrow" href="/catalog" style="margin-top:24px">Buka data di katalog &rarr;</a>
+    </div>
+    <div class="map-preview">
+      <svg viewBox="0 0 600 420" fill="none" stroke="#2C5240" stroke-width="1.2" aria-hidden="true">
+        <path d="M-10 300C90 240 140 330 240 270S400 180 610 240"/>
+        <path d="M-10 250C100 190 150 280 250 220S400 130 610 190"/>
+        <path d="M-10 200C110 140 160 230 260 170S400 80 610 140"/>
+        <path d="M-10 350C80 300 150 380 230 320S410 240 610 300"/>
+        <path d="M-10 160C120 100 170 190 270 130S400 40 610 100"/>
+      </svg>
+      <span class="map-dot a"></span><span class="map-dot b"></span><span class="map-dot c"></span><span class="map-dot d"></span>
+      <div class="map-legend"><span><i style="background:#FF5A2B"></i>tinggi</span><span><i class="ring"></i>sedang</span><span><i class="small" style="background:#FFB02E"></i>rendah</span></div>
+      <div class="map-caption mono">Pratinjau tampilan peta, data contoh</div>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="tingkat">
+  <div class="kicker">Tingkat bukti</div>
+  <h2 class="serif">Empat tingkat bukti scar.</h2>
+  <div class="levels">
+    <div class="level" style="--tone:#EAF3EC"><h3>Kuat</h3><span class="count mono">45.869 titik (9,5%)</span><p>Scar terdeteksi dalam 3 hari dari titik panas. Bukti paling meyakinkan.</p></div>
+    <div class="level" style="--tone:#A9C6B6"><h3>Sedang</h3><span class="count mono">17.969 titik (3,7%)</span><p>Scar muncul 4 sampai 7 hari kemudian. Masih kuat, tetapi ada jeda.</p></div>
+    <div class="level" style="--tone:#6F8E7E"><h3>Lemah</h3><span class="count mono">11.531 titik (2,4%)</span><p>Jarak 8 sampai 14 hari. Bisa api membara, bisa juga peristiwa lain.</p></div>
+    <div class="level" style="--tone:#46604F"><h3>Kandidat</h3><span class="count mono">408.215 titik (84,4%)</span><p>Tidak ada scar dalam 14 hari. Belum bisa dipastikan terbakar.</p></div>
+  </div>
+  <p class="footnote">Tingkat ini menunjukkan kekuatan bukti scar, bukan tingkat bahaya.</p>
+</section>
+
+<section class="section" id="sumber">
+  <h2 class="serif">Sumber data dan jadwal pembaruannya.</h2>
+  <div class="tiles">
+    <a class="tile" href="/lineage"><div><h3>FIRMS</h3><p>Titik panas VIIRS dan MODIS, dipantau tiap 10 menit, dialirkan lewat antrean event.</p></div><div class="tag">Stream / near real time</div></a>
+    <a class="tile" href="/lineage"><div><h3>MCD64A1</h3><p>Luas terbakar bulanan 500 meter, dipakai sebagai bukti scar untuk melabeli titik panas.</p></div><div class="tag">Batch / bulanan</div></a>
+    <a class="tile" href="/lineage"><div><h3>Open-Meteo</h3><p>Cuaca dan kualitas udara per provinsi, menjadi fitur harian untuk model risiko.</p></div><div class="tag">Batch / harian</div></a>
+  </div>
+</section>
+
+{% if user and services %}
+<section class="section" id="layanan">
+  <div class="kicker">Layanan internal</div>
+  <h2 class="serif">Masuk sekali, buka layanan lain.</h2>
+  <div class="tiles">
+    {% for service in services %}
+      <a class="tile" href="{{ service.url }}">
+        <div><h3>{{ service.name }}</h3><p>{{ service.note }}</p></div>
+        <div class="tag">Buka {{ service.name }} &rarr;</div>
+      </a>
+    {% endfor %}
+  </div>
+  <p class="footnote">Prefect hanya terbuka untuk admin. Metabase meminta login sendiri karena versi OSS.</p>
+</section>
+{% endif %}
+
+<section class="closing" id="masuk">
+  <div class="closing-box">
+    <div>
+      <h2 class="serif">Masuk untuk melihat data dan laporan.</h2>
+      <p>Akses dibedakan per peran: viewer untuk membaca, operator untuk menjalankan job, admin untuk mengelola layanan.</p>
+      <p class="footnote" style="margin-top:12px">Tombol masuk akan mengarahkan ke halaman login SSO.</p>
+    </div>
+    <div class="hero-cta">
+      <a class="btn btn-primary" href="{{ dashboard_url }}">Buka dashboard</a>
+      <a class="btn btn-ghost" href="/docs" style="border-color:#6F9A85">Baca dokumentasi</a>
+    </div>
+  </div>
+</section>
+{% endblock %}

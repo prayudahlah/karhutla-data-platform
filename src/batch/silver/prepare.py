@@ -14,8 +14,8 @@ import shutil
 from collections.abc import Sequence
 from pathlib import Path
 
-# Daftar ini bertambah setiap ada model Silver baru yang menulis parquet.
-PUBLISHED_DATASETS: tuple[tuple[str, str], ...] = (
+# Daftar ini bertambah setiap ada model yang menulis parquet.
+PUBLISHED_DATASETS: tuple[tuple[str, ...], ...] = (
     ("open_meteo", "weather"),
     ("open_meteo", "air_quality"),
     ("firms", "hotspot"),
@@ -24,40 +24,61 @@ PUBLISHED_DATASETS: tuple[tuple[str, str], ...] = (
     ("mcd64a1", "tiles"),
 )
 
-DEFAULT_ROOT = "data/silver/published"
+# Gold: tabel yang ditulis dbt. Folder ini dibersihkan sebelum build supaya
+# partisi lama tidak tertinggal (materialization external menulis ulang semua).
+GOLD_DB_TABLES: tuple[tuple[str, ...], ...] = (
+    ("cell_daily",),
+    ("province_daily",),
+    ("burn_scar_monthly",),
+)
 
-# Dataset Gold yang ditulis dbt sebagai parquet external.
-GOLD_DATASETS: tuple[str, ...] = ("hotspot_cell_day",)
+# Gold: tabel yang ditulis proses lain (inference ML), jadi tidak ikut dibersihkan.
+GOLD_EXTERNAL_TABLES: tuple[tuple[str, ...], ...] = (("risk_prediction_daily",),)
+
+GOLD_DATASETS: tuple[tuple[str, ...], ...] = GOLD_DB_TABLES + GOLD_EXTERNAL_TABLES
+
+DEFAULT_SILVER_ROOT = "data/silver/published"
 DEFAULT_GOLD_ROOT = "data/gold/published"
+
+LAYER_DATASETS: dict[str, tuple[tuple[str, ...], ...]] = {
+    "silver": PUBLISHED_DATASETS,
+    "gold": GOLD_DATASETS,
+}
+
+# Hanya folder ini yang boleh dikosongkan oleh --clean. ``None`` berarti
+# seluruh akar layer dibersihkan; Gold dibatasi agar output ML tidak terhapus.
+LAYER_DB_DATASETS: dict[str, tuple[tuple[str, ...], ...] | None] = {
+    "silver": None,
+    "gold": GOLD_DB_TABLES,
+}
+
+
+def datasets_for_layer(layer: str) -> tuple[tuple[str, ...], ...]:
+    """Kembalikan daftar folder untuk satu layer."""
+    try:
+        return LAYER_DATASETS[layer]
+    except KeyError as exc:  # pragma: no cover - argparse sudah membatasi pilihan
+        raise ValueError(f"Layer tidak dikenal: {layer}") from exc
+
+
+def default_root_for_layer(layer: str) -> str:
+    """Akar folder hasil dbt untuk satu layer, bisa dioverride lewat env."""
+    if layer == "gold":
+        return os.environ.get("GOLD_PUBLISH_ROOT", DEFAULT_GOLD_ROOT)
+    return os.environ.get("SILVER_PUBLISH_ROOT", DEFAULT_SILVER_ROOT)
 
 
 def prepare_publish_root(
     root: Path,
-    datasets: Sequence[tuple[str, str]] = PUBLISHED_DATASETS,
+    datasets: Sequence[Sequence[str]] = PUBLISHED_DATASETS,
 ) -> list[Path]:
-    """Buat folder ``<root>/<source>/<dataset>`` dan kembalikan daftarnya."""
+    """Buat folder ``<root>/<part...>`` dan kembalikan daftarnya."""
     created: list[Path] = []
-    for source, dataset in datasets:
-        folder = root / source / dataset
+    for parts in datasets:
+        folder = root.joinpath(*parts)
         folder.mkdir(parents=True, exist_ok=True)
         created.append(folder)
     return created
-
-
-def prepare_gold_root(
-    root: Path,
-    datasets: Sequence[str] = GOLD_DATASETS,
-) -> list[Path]:
-    """Buat akar folder Gold saja.
-
-    DuckDB menolak menulis ke folder partisi yang sudah ada, jadi folder
-    ``<root>/<dataset>`` sengaja tidak dibuat di sini: dbt yang membuatnya saat
-    menulis parquet pertama. ``datasets`` dipertahankan sebagai dokumentasi
-    dataset Gold yang dikenal.
-    """
-    del datasets
-    root.mkdir(parents=True, exist_ok=True)
-    return [root]
 
 
 def _assert_safe_clean_target(root: Path) -> Path:
@@ -73,13 +94,28 @@ def _assert_safe_clean_target(root: Path) -> Path:
     return resolved
 
 
-def clean_publish_root(root: Path) -> int:
-    """Kosongkan folder hasil dbt, kembalikan jumlah berkas yang dihapus."""
+def clean_publish_root(
+    root: Path,
+    datasets: Sequence[Sequence[str]] | None = None,
+) -> int:
+    """Kosongkan folder hasil dbt, kembalikan jumlah berkas yang dihapus.
+
+    ``datasets`` membatasi pembersihan ke folder tertentu. Tanpa argumen,
+    seluruh ``root`` dikosongkan.
+    """
     resolved = _assert_safe_clean_target(root)
     if not resolved.exists():
         return 0
-    removed = sum(1 for path in resolved.rglob("*") if path.is_file())
-    shutil.rmtree(resolved)
+    targets = (
+        [resolved.joinpath(*parts) for parts in datasets]
+        if datasets is not None
+        else [resolved]
+    )
+    removed = 0
+    for target in targets:
+        if target.is_dir():
+            removed += sum(1 for path in target.rglob("*") if path.is_file())
+            shutil.rmtree(target)
     return removed
 
 
@@ -99,39 +135,58 @@ def ensure_profiles(project_dir: Path = Path("dbt")) -> Path | None:
     return target
 
 
+def prepare_layer(
+    layer: str,
+    root: Path | None = None,
+    clean: bool = False,
+) -> dict[str, object]:
+    """Siapkan satu layer: bersihkan (opsional) lalu buat foldernya."""
+    root_path = root or Path(default_root_for_layer(layer))
+    removed = (
+        clean_publish_root(root_path, LAYER_DB_DATASETS[layer]) if clean else 0
+    )
+    created = prepare_publish_root(root_path, datasets_for_layer(layer))
+    return {
+        "layer": layer,
+        "root": str(root_path),
+        "folders": [str(folder) for folder in created],
+        "files_removed": removed,
+    }
+
+
 def main(argv: Sequence[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Siapkan folder hasil dbt")
     parser.add_argument(
+        "--layer",
+        choices=["all", *sorted(LAYER_DATASETS)],
+        default="all",
+        help="layer yang disiapkan (default: all)",
+    )
+    parser.add_argument(
         "--root",
-        default=os.environ.get("SILVER_PUBLISH_ROOT", DEFAULT_ROOT),
-        help="akar folder hasil dbt",
+        default=None,
+        help="akar folder hasil dbt, hanya bisa dipakai dengan satu layer",
     )
     parser.add_argument(
         "--clean",
         action="store_true",
         help="kosongkan folder hasil dulu supaya partisi lama tidak tertinggal",
     )
-    parser.add_argument(
-        "--gold-root",
-        default=os.environ.get("GOLD_PUBLISH_ROOT", DEFAULT_GOLD_ROOT),
-        help="akar folder hasil Gold (tidak dibersihkan)",
-    )
     args = parser.parse_args(argv)
 
-    removed = clean_publish_root(Path(args.root)) if args.clean else 0
-    gold_removed = clean_publish_root(Path(args.gold_root)) if args.clean else 0
-    created = prepare_publish_root(Path(args.root))
-    gold_created = prepare_gold_root(Path(args.gold_root))
+    layers = sorted(LAYER_DATASETS) if args.layer == "all" else [args.layer]
+    if args.root and len(layers) > 1:
+        parser.error("--root hanya bisa dipakai bersama satu --layer")
+
+    results = [
+        prepare_layer(layer, Path(args.root) if args.root else None, args.clean)
+        for layer in layers
+    ]
     created_profiles = ensure_profiles()
     print(
         json.dumps(
             {
-                "root": args.root,
-                "folders": [str(folder) for folder in created],
-                "gold_root": args.gold_root,
-                "gold_folders": [str(folder) for folder in gold_created],
-                "files_removed": removed,
-                "gold_files_removed": gold_removed,
+                "layers": results,
                 "profiles_created": str(created_profiles) if created_profiles else None,
             },
             indent=2,

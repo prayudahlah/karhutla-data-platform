@@ -1,0 +1,34 @@
+version: 2
+
+models:
+  - name: int_grid_cell
+    description: >-
+      Grid 0,25 derajat untuk seluruh bbox Indonesia, satu baris per sel, dengan
+      provinsi dari centroid provinsi terdekat. Dipakai sebagai lookup tetap
+      untuk semua tabel Gold supaya cell_id konsisten antar run.
+    columns:
+      - name: cell_id
+        description: Indeks sel dalam format rrrr_cccc.
+        data_tests:
+          - unique
+          - not_null
+      - name: row_idx
+        data_tests:
+          - not_null
+      - name: col_idx
+        data_tests:
+          - not_null
+      - name: cell_lat
+        data_tests:
+          - not_null
+      - name: cell_lon
+        data_tests:
+          - not_null
+      - name: province
+        description: Provinsi dari centroid provinsi terdekat.
+        data_tests:
+          - not_null
+      - name: distance_km
+        description: Jarak pusat sel ke centroid provinsi terpilih.
+        data_tests:
+          - not_null

@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+{% block title %}{{ table.name }} | JAGAHUTAN{% endblock %}
+{% block content %}
+<div class="shell">
+  <div class="page-head">
+    <div class="breadcrumb"><a href="/catalog">Katalog</a> / {{ table.name }}</div>
+    <h1 class="serif"><span class="mono">{{ table.name }}</span> <span class="badge {{ 'ok' if table.status == 'implemented' else 'plan' }}">{{ "Terpasang" if table.status == "implemented" else "Direncanakan" }}</span></h1>
+    <p class="lead">{{ table.grain }}</p>
+  </div>
+
+  <div class="detail-grid">
+    <aside class="detail-side">
+      <section class="side-card">
+        <h2 class="side-title">Ringkasan</h2>
+        <dl class="spec-list compact">
+          <dt>Owner</dt><dd>{{ table.owner }}</dd>
+          <dt>Layer</dt><dd>{{ table.layer|capitalize }}</dd>
+          <dt>Klasifikasi</dt><dd>{{ table.classification }}</dd>
+          <dt>Retensi / rebuild</dt><dd>{{ table.retention }}</dd>
+          <dt>Business key</dt><dd class="mono">{{ (table.business_key or [])|join(", ") or "-" }}</dd>
+        </dl>
+        <a class="side-lineage" href="/lineage?focus={{ table.name }}">Lihat {{ table.name }} di lineage <span aria-hidden="true">&#8594;</span></a>
+      </section>
+
+      <section class="side-card">
+        <h2 class="side-title">Sumber</h2>
+        <p class="side-chips">
+          {% for source in (table.source_models or []) %}
+            {% if source in table_names %}<a class="chip" href="/catalog/{{ source }}">{{ source }}</a>{% else %}<span class="chip chip-static">{{ source }}</span>{% endif %}
+          {% else %}<span class="muted">Tidak ada, tabel ini sumber.</span>{% endfor %}
+        </p>
+      </section>
+
+      <section class="side-card">
+        <h2 class="side-title">Konsumen</h2>
+        <ul class="side-plain">
+          {% for consumer in (table.consumers or []) %}<li>{{ consumer }}</li>{% else %}<li class="muted">Belum ada konsumen.</li>{% endfor %}
+        </ul>
+      </section>
+
+    </aside>
+
+    <div class="detail-main">
+      <section class="panel-block">
+        <h2 class="sec-title" id="freshness">Freshness</h2>
+        {% if freshness.rows %}
+          <dl class="spec-list">
+            {% for row in freshness.rows if row.key != "alert_threshold" %}
+              <dt>{{ row.label }}</dt><dd>{{ row.value }}</dd>
+            {% endfor %}
+          </dl>
+        {% else %}
+          <p class="muted">Kontrak belum mencantumkan freshness.</p>
+        {% endif %}
+        {% if freshness.alert %}
+          <div class="alert-note">
+            <span class="cat-label">Ambang alert</span>
+            <p>{{ freshness.alert }}</p>
+          </div>
+        {% endif %}
+        {% if freshness.raw %}
+          <details class="raw"><summary>Lihat JSON freshness</summary><pre class="code">{{ freshness.raw | pretty }}</pre></details>
+        {% endif %}
+      </section>
+
+      <section class="panel-block">
+        <h2 class="sec-title" id="lokasi">Lokasi</h2>
+        {% if location.rows %}
+          <dl class="spec-list">
+            {% for row in location.rows %}
+              <dt>{{ row.label }}</dt>
+              <dd>{% if row.code %}<code>{{ row.value }}</code>{% else %}{{ row.value }}{% endif %}</dd>
+            {% endfor %}
+          </dl>
+        {% else %}
+          <p class="muted">Kontrak belum mencantumkan lokasi.</p>
+        {% endif %}
+        {% if location.note %}<p class="spec-note">{{ location.note }}</p>{% endif %}
+        {% if location.raw %}
+          <details class="raw"><summary>Lihat JSON lokasi</summary><pre class="code">{{ location.raw | pretty }}</pre></details>
+        {% endif %}
+      </section>
+
+      {% if table.quality_rules %}
+        <section class="panel-block">
+          <h2 class="sec-title" id="kualitas">Aturan kualitas <span class="count">{{ table.quality_rules|length }} aturan</span></h2>
+          <ul class="rule-list">
+            {% for rule in table.quality_rules %}<li>{{ rule }}</li>{% endfor %}
+          </ul>
+        </section>
+      {% endif %}
+
+      <section class="panel-block">
+        <h2 class="sec-title" id="skema">Skema <span class="count">{{ columns|length }} kolom</span></h2>
+        <p class="schema-hint">Geser ke samping untuk melihat tipe dan keterangan kolom.</p>
+        <div class="schema-scroll">
+          <table class="data schema-table">
+            <caption class="sr-only">Skema kolom {{ table.name }}, {{ columns|length }} kolom</caption>
+            <thead><tr><th scope="col">Kolom</th><th scope="col">Tipe</th><th scope="col">Keterangan</th></tr></thead>
+            <tbody>
+            {% for column in columns %}
+              <tr>
+                <td class="mono" data-label="Kolom">{{ column.name }}</td>
+                <td data-label="Tipe"><span class="type-badge mono">{{ column.type }}</span></td>
+                <td class="tbl-grain" data-label="Keterangan">{{ column.description }}</td>
+              </tr>
+            {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -7,14 +7,14 @@
 | F-03 | Backfill report | TBD | TBD | TBD |
 | F-04 | Producer, consumer, lag | `compose/vps-stream.yml` + `compose/vps-batch.yml`; `task lag` = 0; `stream/README.md` | `task selftest` lalu `task lag` | selesai | Kelompok 8 |
 | F-05 | Dedup, DLQ, watermark | dedup producer (`firms_seen.json`), DLQ `firms.hotspot.dlq`, watermark `data/batch/state/watermark.json` | `task dlq`, `task bronze-files` | selesai | Kelompok 8 |
-| F-06 | Bronze, Silver, Gold | [Kontrak Silver](../docs/data-contracts/README.md); Silver final di `silver/`; Gold TBD | `dbt build --project-dir dbt --profiles-dir dbt` lalu `python -m batch.silver.sync push` | sebagian | Batch |
-| F-07 | Delta atau Iceberg snapshot | TBD | TBD | TBD |
-| F-08 | DQ report dan quarantine | [Kontrak Silver](../docs/data-contracts/README.md); `silver/_dq/` dan `silver/_quarantine/` | `python -m pytest -q tests/unit/test_data_contracts.py` dan inspeksi manifest | sebagian | Batch |
-| F-09 | Catalog dan lineage | TBD | TBD | TBD |
-| F-10 | Query dan OpenAPI | TBD | TBD | TBD |
+| F-06 | Bronze, Silver, Gold | [Kontrak Silver](../docs/data-contracts/README.md); Silver final di `silver/`; Gold `cell_daily`, `province_daily`, `burn_scar_monthly` (95.360 / 1.216 / 34 baris) | `task gold-build` | sebagian (risk_prediction_daily menunggu ML) | Batch |
+| F-07 | Format tabel dan snapshot | [Iceberg v2](F-07-iceberg.md): Parquet staging + Iceberg canonical; parity + `current.json`; 95.360 / 1.216 / 34 baris; snapshot, upsert, schema evolution, backup/restore | `task gold-refresh`; `python -m batch.gold.publish --check` | selesai (Garage/expire/jadwal pending) | Batch |
+| F-08 | DQ report dan quarantine | [Kontrak Silver](../docs/data-contracts/README.md); `silver/_dq/` dan `silver/_quarantine/`; 57 uji Gold termasuk rekonsiliasi dan label | `task gold-test` | sebagian | Batch |
+| F-09 | Catalog dan lineage | Kontrak Gold 3 tabel + `catalog.json`/`lineage.json` (4 tabel, 13 node, 13 edge) di `data/gold/_catalog/` | `task gold-catalog` | sebagian (risk_prediction_daily `planned`) | Batch |
+| F-10 | Query dan OpenAPI | 3 mart di Postgres (`gold_*`) via `serving.sync_marts` dari snapshot Iceberg `current.json`; FastAPI membaca Postgres; 10 endpoint + `/predictions/daily` 503; tanggal salah 400; `/health` memuat snapshot + `stale`; OpenAPI `/docs`; tes integrasi Postgres memakai schema sementara | `pytest -q tests/unit/test_serving_api.py tests/unit/test_serving_sync.py`; `pytest -m integration tests/integration/test_serving_postgres.py` (butuh `DATABASE_DSN`); `task serving-sync` | selesai (prediksi menunggu ML) | Kelompok 8 |
 | F-11 | MLflow experiment | TBD | TBD | TBD |
 | F-12 | Predictions table | TBD | TBD | TBD |
-| F-13 | Dashboard dan SQL | TBD | TBD | TBD |
+| F-13 | Dashboard dan SQL | Dashboard HTML di `/dashboard` (`dashboard.html`, `dashboard.css`, `dashboard.js`) membaca API serving; API + mart Postgres sudah ada; panel prediksi menunggu ML | `task serving-dev`, buka `/dashboard`; `pytest -m "not integration"` | sebagian (prediksi menunggu ML; uji konsistensi SQL dua rentang belum) | Kelompok 8 |
 | F-14 | Metrics dan structured log | TBD | TBD | TBD |
 | F-15 | Tiga alert | TBD | TBD | TBD |
 | F-16 | Auth, role, audit | TBD | TBD | TBD |

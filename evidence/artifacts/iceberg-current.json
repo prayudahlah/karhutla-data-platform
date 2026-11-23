@@ -1,0 +1,9 @@
+{
+  "run_id": "evidence-3",
+  "published_at": "2026-11-21T08:18:01.182790+00:00",
+  "snapshots": {
+    "cell_daily": 5730114291177768438,
+    "province_daily": 1135712900791749098,
+    "burn_scar_monthly": 8954783690607722154
+  }
+}

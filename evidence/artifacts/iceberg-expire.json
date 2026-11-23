@@ -1,0 +1,23 @@
+﻿[
+  {
+    "table": "gold.cell_daily",
+    "before": 3,
+    "after": 3,
+    "cutoff": "2026-10-22T08:21:49.439064+00:00",
+    "current_snapshot": 5730114291177768438
+  },
+  {
+    "table": "gold.province_daily",
+    "before": 7,
+    "after": 7,
+    "cutoff": "2026-10-22T08:21:49.439064+00:00",
+    "current_snapshot": 1135712900791749098
+  },
+  {
+    "table": "gold.burn_scar_monthly",
+    "before": 3,
+    "after": 3,
+    "cutoff": "2026-10-22T08:21:49.439064+00:00",
+    "current_snapshot": 8954783690607722154
+  }
+]

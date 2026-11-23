@@ -1,0 +1,108 @@
+name: cell_daily
+owner: Kelompok 8 - Batch
+layer: gold
+status: implemented
+location:
+  storage: Garage (S3-compatible)
+  bucket: lakehouse
+  prefix: gold/cell_daily
+  pattern: date=YYYY-MM-DD/*.parquet
+  publish:
+    materialization: external parquet (dbt-duckdb)
+    local_root: data/gold/published/cell_daily
+    uploader: null
+    table_format: Iceberg v2
+    iceberg_prefix: gold/iceberg/cell_daily
+    iceberg_warehouse: local (Garage path untested)
+    publish_command: python -m batch.gold.publish --table cell_daily
+    role: canonical
+    staging: parquet
+    serving_reads: postgres (synced from Iceberg active snapshot)
+    ml_reads: iceberg
+  partition_note: >-
+    Partisi memakai tanggal fitur (acq_date hotspot). dbt menulis seluruh tabel
+    setiap build, jadi rerun menimpa partisi dan tidak menumpuk baris ganda.
+source_models:
+  - hotspot_scar_label
+  - open_meteo_weather
+  - open_meteo_air_quality
+  - mcd64a1_burn_scar
+grain: Satu baris per sel grid 0,25 derajat per tanggal.
+business_key:
+  - cell_id
+  - date
+deduplication:
+  key: [cell_id, date]
+  status: dijamin oleh semi-join ke semesta sel x tanggal
+  reason: >-
+    Semesta contoh dibentuk dari sel yang pernah punya hotspot dikali semua
+    tanggal hotspot, sehingga setiap pasangan muncul tepat sekali.
+schema:
+  cell_id: {type: string, description: indeks sel rrrr_cccc dari int_grid_cell}
+  date: {type: date, description: tanggal fitur, sama dengan acq_date hotspot}
+  cell_lat: {type: double, description: lintang pusat sel}
+  cell_lon: {type: double, description: bujur pusat sel}
+  province: {type: string, description: provinsi dari centroid provinsi terdekat}
+  distance_km: {type: double, description: jarak pusat sel ke centroid provinsi}
+  hotspot_count: {type: integer}
+  hotspot_kuat: {type: integer}
+  hotspot_sedang: {type: integer}
+  hotspot_lemah: {type: integer}
+  hotspot_kandidat: {type: integer}
+  hotspot_day: {type: integer, nullable: true}
+  hotspot_night: {type: integer, nullable: true}
+  frp_sum: {type: double, nullable: true}
+  frp_mean: {type: double, nullable: true}
+  frp_max: {type: double, nullable: true}
+  confidence_mean: {type: double, nullable: true}
+  gap_days_min: {type: integer, nullable: true}
+  scar_pixels_cum: {type: integer, description: piksel scar sampai tanggal ini}
+  scar_area_km2_cum: {type: double}
+  scar_pixels_30d: {type: integer}
+  scar_area_km2_30d: {type: double}
+  days_since_last_scar: {type: integer, nullable: true}
+  temp_mean: {type: double, nullable: true}
+  temp_max: {type: double, nullable: true}
+  rh_mean: {type: double, nullable: true}
+  rh_min: {type: double, nullable: true}
+  precip_sum: {type: double, nullable: true}
+  wind_speed_max: {type: double, nullable: true}
+  vpd_max: {type: double, nullable: true}
+  soil_moisture_mean: {type: double, nullable: true}
+  et0_sum: {type: double, nullable: true}
+  weather_hours: {type: integer}
+  weather_complete: {type: boolean, description: weather_hours >= 20}
+  pm25_mean: {type: double, nullable: true}
+  pm25_max: {type: double, nullable: true}
+  pm10_mean: {type: double, nullable: true}
+  co_mean: {type: double, nullable: true}
+  no2_mean: {type: double, nullable: true}
+  so2_mean: {type: double, nullable: true}
+  o3_mean: {type: double, nullable: true}
+  aod_mean: {type: double, nullable: true}
+  aq_hours: {type: integer}
+  label_risk: {type: integer, description: 1 bila ada hotspot tier kuat/sedang pada D..D+2}
+  label_hotspot_count: {type: integer}
+  label_window_end: {type: date}
+  label_complete: {type: boolean, description: false untuk dua tanggal terakhir}
+
+freshness:
+  expected: dibangun ulang setiap hari setelah Silver selesai
+  alert_threshold: build Gold lebih dari 26 jam
+  measured_by: freshness_at di province_daily
+
+retention: mengikuti Silver; Gold selalu bisa dibangun ulang dari Silver.
+classification: public
+quality_rules:
+  - (cell_id, date) unik
+  - cell_id dan province tidak null
+  - label_risk hanya 0 atau 1
+  - total hotspot_count sama dengan jumlah baris hotspot_scar_label (486.238)
+  - jumlah per tier sama dengan Silver
+  - label_risk bisa direkonstruksi dari hotspot tier kuat/sedang pada D..D+2
+  - weather_complete konsisten dengan weather_hours >= 20
+  - dua build berturut-turut menghasilkan isi identik
+consumers:
+  - ml training (fase berikutnya)
+  - province_daily
+  - dashboard analitik

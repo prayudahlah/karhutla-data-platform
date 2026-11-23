@@ -1,0 +1,76 @@
+﻿[
+  {
+    "table": "gold.province_daily",
+    "rows": 1216,
+    "columns": [
+      "province",
+      "hotspot_count",
+      "hotspot_kuat",
+      "hotspot_sedang",
+      "hotspot_lemah",
+      "hotspot_kandidat",
+      "active_cells",
+      "frp_sum",
+      "frp_mean",
+      "frp_max",
+      "scar_pixels_cum",
+      "scar_area_km2_cum",
+      "temp_max",
+      "rh_min",
+      "precip_sum",
+      "wind_speed_max",
+      "vpd_max",
+      "weather_hours",
+      "weather_complete",
+      "pm25_mean",
+      "pm25_max",
+      "freshness_at",
+      "date"
+    ],
+    "snapshot_count": 7,
+    "snapshots": [
+      {
+        "snapshot_id": 2533910752168233320,
+        "sequence_number": 1,
+        "timestamp_ms": 1795249026707,
+        "operation": "append"
+      },
+      {
+        "snapshot_id": 240950714328608324,
+        "sequence_number": 2,
+        "timestamp_ms": 1795249031040,
+        "operation": "delete"
+      },
+      {
+        "snapshot_id": 1315307575469508135,
+        "sequence_number": 3,
+        "timestamp_ms": 1795249031243,
+        "operation": "append"
+      },
+      {
+        "snapshot_id": 536578795075080026,
+        "sequence_number": 4,
+        "timestamp_ms": 1795249034906,
+        "operation": "delete"
+      },
+      {
+        "snapshot_id": 2459439502482192464,
+        "sequence_number": 5,
+        "timestamp_ms": 1795249034947,
+        "operation": "append"
+      },
+      {
+        "snapshot_id": 5934356096958546751,
+        "sequence_number": 6,
+        "timestamp_ms": 1795249080409,
+        "operation": "delete"
+      },
+      {
+        "snapshot_id": 1135712900791749098,
+        "sequence_number": 7,
+        "timestamp_ms": 1795249080444,
+        "operation": "append"
+      }
+    ]
+  }
+]

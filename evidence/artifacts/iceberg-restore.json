@@ -1,0 +1,6 @@
+﻿{
+  "source": "data\\gold\\_iceberg_evidence_backup",
+  "destination": "data\\gold\\_iceberg_evidence",
+  "catalog": true,
+  "warehouse": true
+}

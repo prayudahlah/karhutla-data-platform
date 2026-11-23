@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}Admin | JAGAHUTAN{% endblock %}
+{% block content %}
+<div class="shell">
+  <div class="page-head">
+    <div class="kicker">Area terbatas</div>
+    <h1 class="serif">Halaman admin.</h1>
+    <p class="lead">Halaman ini hanya bisa dibuka lewat Caddy dengan grup admin. Viewer yang mencoba akan dihentikan Authelia dengan 403.</p>
+  </div>
+
+  {% if user %}
+    <dl class="kv">
+      <dt>Remote-User</dt><dd class="mono">{{ user }}</dd>
+      <dt>Remote-Groups</dt><dd class="mono">{{ groups or "-" }}</dd>
+    </dl>
+  {% else %}
+    <div class="notice">Tidak ada header identitas. Halaman dibuka langsung, bukan lewat Caddy dan Authelia.</div>
+  {% endif %}
+</div>
+{% endblock %}
